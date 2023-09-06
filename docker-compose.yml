@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  web:
+    build: ./jaz_api_v03
+    command: uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8001
+    #command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0'
+    volumes:
+      - ./jaz_api_v03:/usr/src/app
+    ports:
+      - 8004:8001

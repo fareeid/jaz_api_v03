@@ -1,4 +1,4 @@
-![image](https://github.com/fareeid/jaz_api_v03/assets/13124297/1476fa30-f500-48e5-bff4-f3dccf26914f)![image](https://github.com/fareeid/jaz_api_v03/assets/13124297/6d9e3b4c-8c89-49d6-a936-4b8580023c4d)# jaz_api_v03
+# jaz_api_v03
 
 1. az group create --name c --location northeurope
 2. az acr create --resource-group jazk-api-rg --name jazkapiregistry --sku Basic --admin-enabled                ------------------------Cannot contain dashes

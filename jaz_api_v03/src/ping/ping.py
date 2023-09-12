@@ -7,3 +7,9 @@ async def pong() -> dict:
     return {
         "ping": "pong"
     }
+
+@router.get("/ping_azure")
+async def pong_azure() -> dict:
+    return {
+        "ping": "pong"
+    }

@@ -4,8 +4,8 @@
 2. az acr create --resource-group jazk-api-rg --name jazkapiregistry --sku Basic --admin-enabled                ------------------------Cannot contain dashes
 3. az acr credential show --name jazkapiregistry --resource-group jazk-api-rg
 4. az acr login --name jazkapiregistry
-5. az acr build --registry jazkapiregistry --resource-group jazk-api-rg --file Dockerfile.Azure --image jaz_api_v03:latest .
-6. OR az acr build --registry jazkapiregistry --resource-group jazk-api-rg --file Dockerfile.Azure --image jaz_api_v03:latest .
+5. az acr build --registry jazkapiregistry --resource-group jazk-api-rg --image jaz_api_v03:latest .
+6. az acr build --registry jazkapiregistry --resource-group jazk-api-rg --file Dockerfile.Azure --image jaz_api_v03:latest jaz_api_v03
 7. az acr repository list --name jazkapiregistry
 8. az containerapp env create --name jazk-api-env --resource-group jazk-api-rg --location northeurope
 9. az containerapp create `

@@ -7,7 +7,7 @@ on:
     branches: 
       [ uat_branch ]
     paths:
-    - 'Dockerfile.Azure/**'
+    - '**'
     - '.github/workflows/jazk-api-app-AutoDeployTrigger-280f1a53-6001-415b-a83e-38c5a297364f.yml'
 
   # Allow manual trigger 
@@ -29,14 +29,11 @@ jobs:
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v1
         with:
-          appSourcePath: ${{ github.workspace }}/Dockerfile.Azure 
+          appSourcePath: ${{ github.workspace }} 
           registryUrl: jazkapiregistry.azurecr.io
           registryUsername: ${{ secrets.JAZKAPIAPP_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.JAZKAPIAPP_REGISTRY_PASSWORD }}
           containerAppName: jazk-api-app
           resourceGroup: jazk-api-rg
           imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app:${{ github.sha }}
-          dockerfilePath: Dockerfile
-
-     
-
+          dockerfilePath: Dockerfile.Azure

@@ -19,3 +19,7 @@ RUN pip install -r requirements-dev.txt
 
 # add app
 COPY . .
+
+EXPOSE 3100
+
+CMD ["gunicorn", "src.main:app"]

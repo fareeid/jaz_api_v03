@@ -33,4 +33,11 @@
   * Target port→ Set to 8000 for Django or 5000 for Flask.
 
   * ContainerAppSystemLogs_CL | where RevisionName_s == "jazk-api-app--xg82nuf"
+
+https://github.com/fareeid/jaz_api_v02/blob/main/app/config.py
+https://github.com/fareeid/fastapi-tdd/blob/main/project/app/config.py
+https://github.com/fareeid/jaz_api_v02/blob/main/app/config.py
+https://github.com/fareeid/fastapi/blob/master/pyproject.toml
+https://github.com/fareeid/tiangolo/blob/master/backend/app/app/core/config.py
+
 ```

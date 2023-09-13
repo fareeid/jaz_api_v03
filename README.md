@@ -1,5 +1,5 @@
 # jaz_api_v03
-
+```
 1. az group create --name c --location northeurope
 2. az acr create --resource-group jazk-api-rg --name jazkapiregistry --sku Basic --admin-enabled                ------------------------Cannot contain dashes
 3. az acr credential show --name jazkapiregistry --resource-group jazk-api-rg
@@ -33,3 +33,4 @@
   * Target port→ Set to 8000 for Django or 5000 for Flask.
 
   * ContainerAppSystemLogs_CL | where RevisionName_s == "jazk-api-app--xg82nuf"
+```

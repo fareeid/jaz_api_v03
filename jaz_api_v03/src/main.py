@@ -4,7 +4,7 @@ from .ping import ping
 
 # xtype: ignore
 
-def create_application():
+def create_application() -> FastAPI:
     fastapi_app = FastAPI()
     fastapi_app.include_router(ping.router)
     return fastapi_app

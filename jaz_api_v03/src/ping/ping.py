@@ -1,15 +1,10 @@
+from typing import Any
 from fastapi import APIRouter
 
 router = APIRouter()
 
 @router.get("/ping")
-async def pong() -> dict:
+async def pong() -> dict[Any, Any]: 
     return {
         "ping": "pong"
-    }
-
-@router.get("/ping_depracate")
-async def pong_azure() -> dict:
-    return {
-        "ping_depracate": "pong_depracate"
     }

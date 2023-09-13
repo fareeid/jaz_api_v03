@@ -12,5 +12,5 @@ authors = [
 strict = true
 
 [[tool.mypy.overrides]]
-module = "src.ping.*"
+module = "jaz_api_v03.src.ping.*"
 ignore_missing_imports = true

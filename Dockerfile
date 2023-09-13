@@ -22,4 +22,4 @@ COPY . .
 
 EXPOSE 3100
 
-CMD ["gunicorn", "src.main:app"]
+CMD ["gunicorn", "jaz_api_v03.src.main:app"]

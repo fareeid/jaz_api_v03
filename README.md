@@ -14,7 +14,7 @@
     --image jazkapiregistry.azurecr.io/jaz_api_v03:latest `
     --environment jazk-api-env `
     --ingress external `
-    --target-port 8081 `
+    --target-port 3100 `
     --registry-server jazkapiregistry.azurecr.io `
     --registry-username jazkapiregistry `
     --registry-password 7T/VfhS1iuxAF2YKNYPjX9h8SvOMpCJkkbyzHZBOzj+ACRBPFERz `

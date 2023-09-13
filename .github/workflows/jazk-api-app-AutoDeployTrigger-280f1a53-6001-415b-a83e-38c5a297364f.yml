@@ -35,5 +35,9 @@ jobs:
           registryPassword: ${{ secrets.JAZKAPIAPP_REGISTRY_PASSWORD }}
           containerAppName: jazk-api-app
           resourceGroup: jazk-api-rg
+          containerAppEnvironment: jazk-api-env
+          ingress: external
+          targetPort: 3100
+          dockerfilePath: Dockerfile
           #imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app:${{ github.sha }}
           imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest

@@ -35,4 +35,5 @@ jobs:
           registryPassword: ${{ secrets.JAZKAPIAPP_REGISTRY_PASSWORD }}
           containerAppName: jazk-api-app
           resourceGroup: jazk-api-rg
-          imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app:${{ github.sha }}
+          #imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app:${{ github.sha }}
+          imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest

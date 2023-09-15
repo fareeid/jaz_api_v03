@@ -23,7 +23,7 @@ class Settings(BaseSettings):
             return v
         # return info.data["POSTGRES_PASSWORD"]
         return PostgresDsn.build(
-            scheme="postgresql",
+            scheme="postgresql+asyncpg",
             username=info.data["POSTGRES_USER"],
             password=info.data["POSTGRES_PASSWORD"],
             host=info.data["POSTGRES_SERVER"],

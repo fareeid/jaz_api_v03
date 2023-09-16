@@ -1,19 +1,25 @@
-[project]
-name = "jaz_api_v03"
-description = "JAZK API Repository"
-readme = "README.md"
-requires-python = ">=3.11"
-license = "MIT"
-authors = [
-    { name = "Matthew F. Kimweli", email = "matthew.kimweli@allianz.com" },
-]
+# [project]
+# name = "jaz_api_v03"
+# description = "JAZK API Repository"
+# readme = "README.md"
+# requires-python = ">=3.11"
+# license = "MIT"
+# authors = [
+#     { name = "Matthew F. Kimweli", email = "matthew.kimweli@allianz.com" },
+# ]
 
 [tool.mypy]
+plugins = ["pydantic.mypy"]
 strict = true
 ignore_missing_imports = true
-implicit_reexport = True
+implicit_reexport = true
+check_untyped_defs = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [[tool.mypy.overrides]]
 module = "jaz_api_v03.src.ping.*"
 ignore_missing_imports = true
-disallow-any-generics = false

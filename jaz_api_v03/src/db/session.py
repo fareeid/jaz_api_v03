@@ -1,4 +1,3 @@
-from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from ..core.config import Settings, get_settings
 
@@ -6,7 +5,7 @@ from ..core.config import Settings, get_settings
 # from sqlalchemy.orm import sessionmaker
 
 
-settings: Settings = Depends(get_settings)
+settings: Settings = get_settings()
 
 
 # engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)  # type: ignore  # noqa: E501

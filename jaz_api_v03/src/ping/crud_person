@@ -1,0 +1,21 @@
+from src.db.crud_base import CRUDBase
+from src.ping.models import Person
+from src.ping.schemas import PersonCreate, PersonUpdate
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):
+    async def create(self, async_db: AsyncSession, *, obj_in: PersonCreate) -> Person:
+        db_obj = Person(
+            email=obj_in.email,
+            hashed_password=obj_in.password,
+            full_name=obj_in.full_name,
+            is_superuser=obj_in.is_superuser,
+        )
+        async_db.add(db_obj)
+        await async_db.commit()
+        await async_db.refresh(db_obj)
+        return db_obj
+
+
+person = CRUDPerson(Person)

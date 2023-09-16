@@ -41,3 +41,31 @@ https://github.com/fareeid/fastapi/blob/master/pyproject.toml
 https://github.com/fareeid/tiangolo/blob/master/backend/app/app/core/config.py
 
 ```
+Adding Alembic functionality
+
+Intialize alembic with async template
+    - invoke container bash using docker-compose exec web bash
+    - run - alembic init -t async migrations   ## Don't use docker-compose exec web  due to path issues
+    - comment out in alembic.ini - #### sqlalchemy.url  = driver://user:pass@localhost/dbname
+    - update migrations/env.py with the following
+        from app.db import Base # noqa
+        target_metadata = Base.metadata
+
+        # Add this function that constructs the db url from settings having disabled it in alembic.ini
+        def get_url():
+            from fastapi import Depends
+            from src.core.config import Settings, get_settings
+            settings: Settings = Depends(get_settings)
+
+            # user = settings.POSTGRES_USER
+            # password = settings.POSTGRES_PASSWORD
+            # server = settings.POSTGRES_SERVER
+            # db = settings.POSTGRES_DB
+            # return f"postgresql://{user}:{password}@{server}/{db}"
+            return settings.SQLALCHEMY_DATABASE_URI
+    - update def run_migrations_offline() to use get_url instead of alembic.ini connection string
+    - update async def run_async_migrations() to use get_url instead of alembic.ini connection string
+    - run - alembic revision --autogenerate -m "init"
+    - run - alembic upgrade head or alembic downgrade head
+
+```

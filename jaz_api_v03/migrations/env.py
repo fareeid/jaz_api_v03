@@ -32,7 +32,7 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-def get_url():
+def get_url():  # type: ignore
     from src.core.config import Settings, get_settings
 
     settings: Settings = get_settings()
@@ -57,7 +57,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = get_url()  # config.get_main_option("sqlalchemy.url")
+    url = get_url()  # type: ignore # config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -82,9 +82,9 @@ async def run_async_migrations() -> None:
 
     """
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = get_url()
+    configuration["sqlalchemy.url"] = get_url()  # type: ignore
     connectable = async_engine_from_config(
-        configuration,
+        configuration,  # type: ignore
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

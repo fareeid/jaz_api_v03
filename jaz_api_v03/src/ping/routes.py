@@ -4,8 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.dependencies import get_session
 from ..core.config import Settings, get_settings
-from . import schemas
-from .crud_person import person
+from . import schemas, crud_person
 
 router = APIRouter()
 
@@ -34,5 +33,5 @@ async def create_person(
     """
     Create new person.
     """
-    user = await person.create(async_db, obj_in=person_in)
+    user = await crud_person.person.create(async_db, obj_in=person_in)
     return user

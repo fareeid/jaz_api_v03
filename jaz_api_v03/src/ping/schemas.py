@@ -6,7 +6,7 @@ from pydantic import EmailStr, BaseModel  # noqa: F401
 class PersonBase(BaseModel):
     email: Union[str | None] = None
     is_active: Union[bool | None] = True
-    is_superPerson: bool = False
+    is_superuser: bool = False
     full_name: Union[str | None] = None
 
 
@@ -62,7 +62,7 @@ class ItemInDBBase(ItemBase):
     owner_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Properties to return to client

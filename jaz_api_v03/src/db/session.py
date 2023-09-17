@@ -5,7 +5,7 @@ from ..core.config import Settings, get_settings
 # from sqlalchemy.orm import sessionmaker
 
 
-settings: Settings = get_settings()
+settings: Settings = get_settings()  # type: ignore
 
 
 # engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)  # type: ignore  # noqa: E501

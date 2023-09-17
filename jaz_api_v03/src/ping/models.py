@@ -11,7 +11,7 @@ class Person(Base):
     full_name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_active = Column(Boolean(), default=True)
+    is_active = Column(Boolean(), default=True)  # type: ignore
     is_superuser = Column(Boolean(), default=False)  # type: ignore
     items = relationship(
         "Item", back_populates="owner", lazy="subquery"

@@ -6,6 +6,10 @@ from ..core.dependencies import get_session
 from ..core.config import Settings, get_settings
 from . import schemas, crud_person
 
+import logging
+
+log = logging.getLogger("uvicorn")
+
 router = APIRouter()
 
 
@@ -33,5 +37,52 @@ async def create_person(
     """
     Create new person.
     """
-    user = await crud_person.person.create(async_db, obj_in=person_in)
-    return user
+    person = await crud_person.person.create(async_db, obj_in=person_in)
+    return person
+
+
+@router.get("/{person_id}", response_model=schemas.Person)
+def read_person_by_id(
+    person_id: int,
+    # current_user: models.User = Depends(deps.get_current_active_user),
+    async_db: AsyncSession = Depends(get_session),
+) -> Any:
+    """
+    Get a specific user by id.
+    """
+    # person = schemas.Person(id=999)
+    person = crud_person.person.get(async_db, person_id)
+    log.info("Test logging from crud_base get...")
+    log.info(person)
+    # person = schemas.Person(id=9999)
+    # log.info("Test logging from routes...")
+    # log.info(person)
+    # if user == current_user:
+    #     return user
+    # if not crud.user.is_superuser(current_user):
+    #     raise HTTPException(
+    #         status_code=400, detail="The user doesn't have enough privileges"
+    #     )
+    return person
+
+
+@router.put("/{user_id}", response_model=schemas.Person)
+def update_user(
+    *,
+    async_db: AsyncSession = Depends(get_session),
+    user_id: int,
+    user_in: schemas.PersonUpdate,
+    # current_user: models.User = Depends(deps.get_current_active_superuser),
+) -> Any:
+    """
+    Update a user.
+    """
+    # user = crud.user.get(db, id=user_id)
+    # if not user:
+    #     raise HTTPException(
+    #         status_code=404,
+    #         detail="The user with this username does not exist in the system",
+    #     )
+    # user = crud_person.person.update(async_db, db_obj=user, obj_in=user_in)
+    # return user
+    ...

@@ -47,14 +47,14 @@ class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):  # type: ignore
     ) -> Person:
         insert_data = obj_in.dict()
 
-        log.info("Test logging from crud_person before...")
-        log.info(insert_data)
+        # log.info("Test logging from crud_person before...")
+        # log.info(insert_data)
         if insert_data["password"]:
             hashed_password = insert_data["password"]
             del insert_data["password"]
             insert_data["hashed_password"] = hashed_password
-        log.info("Test logging from crud_person after...")
-        log.info(insert_data)
+        # log.info("Test logging from crud_person after...")
+        # log.info(insert_data)
         return super().create(async_db, obj_in=insert_data)
 
 

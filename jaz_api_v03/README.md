@@ -68,4 +68,9 @@ Intialize alembic with async template
     - run - alembic revision --autogenerate -m "init"
     - run - alembic upgrade head or alembic downgrade head
 
+Logging construct
+    - import logging
+    - log = logging.getLogger("uvicorn")
+    - log.info("Test logging from crud_base get...")
+
 ```

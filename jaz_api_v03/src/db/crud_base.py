@@ -1,4 +1,4 @@
-from typing import Generic, Type, TypeVar, Union, Any, Optional
+from typing import Generic, Type, TypeVar, Union, Any
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy import select
 
@@ -8,10 +8,6 @@ from .base import Base
 
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
-
-import logging
-
-log = logging.getLogger("uvicorn")
 
 
 # Define custom types for SQLAlchemy model, and Pydantic schemas
@@ -61,6 +57,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await async_db.refresh(db_obj)
         return db_obj
 
-    async def get(self, async_db: AsyncSession, id: Any) -> Optional[ModelType]:
+    async def get(self, async_db: AsyncSession, id: int) -> list[ModelType]:
         result = await async_db.execute(select(self.model).where(self.model.id == id))
-        return result.scalars().all()[0]
+        return list(result.scalars().all())

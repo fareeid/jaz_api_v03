@@ -41,8 +41,8 @@ async def create_person(
     return person
 
 
-@router.get("/{person_id}", response_model=schemas.Person)
-def read_person_by_id(
+@router.get("/{person_id}", response_model=list[schemas.Person])
+async def read_person_by_id(
     person_id: int,
     # current_user: models.User = Depends(deps.get_current_active_user),
     async_db: AsyncSession = Depends(get_session),
@@ -51,12 +51,7 @@ def read_person_by_id(
     Get a specific user by id.
     """
     # person = schemas.Person(id=999)
-    person = crud_person.person.get(async_db, person_id)
-    log.info("Test logging from crud_base get...")
-    log.info(person)
-    # person = schemas.Person(id=9999)
-    # log.info("Test logging from routes...")
-    # log.info(person)
+    person = await crud_person.person.get(async_db, person_id)
     # if user == current_user:
     #     return user
     # if not crud.user.is_superuser(current_user):

@@ -1,8 +1,6 @@
 from typing import Generic, Type, TypeVar, Union, Any
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
-from sqlalchemy import select
-
-# from sqlalchemy.orm import Session
+from sqlalchemy import select, delete
 
 from .base import Base
 
@@ -44,6 +42,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj: ModelType,
         obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
+        # await async_db.execute(select(self.model).where(self.model.id == 3))
         obj_data = jsonable_encoder(db_obj)
         if isinstance(obj_in, dict):
             update_data = obj_in
@@ -53,6 +52,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
         async_db.add(db_obj)
+
         await async_db.commit()
         await async_db.refresh(db_obj)
         return db_obj
@@ -60,3 +60,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def get(self, async_db: AsyncSession, id: int) -> list[ModelType]:
         result = await async_db.execute(select(self.model).where(self.model.id == id))
         return list(result.scalars().all())
+
+    async def get_multi(
+        self, async_db: AsyncSession, skip: int = 0, limit: int = 100
+    ) -> list[ModelType]:
+        result = await async_db.execute(select(self.model).offset(skip).limit(limit))
+        return list(result.scalars().all())
+
+    async def remove(self, async_db: AsyncSession, *, id: int) -> ModelType:
+        obj = await async_db.execute(select(self.model).where(self.model.id == id))
+        deleted_obj = list(obj.scalars().all())[0]
+        await async_db.execute(delete(self.model).where(self.model.id == id))
+        await async_db.commit()
+        return deleted_obj

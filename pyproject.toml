@@ -23,3 +23,7 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 module = "jaz_api_v03.src.ping.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "jaz_api_v03.migrations.*"
+ignore_missing_imports = true

@@ -40,7 +40,18 @@ class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):  # type: ignore
             hashed_password = update_data["password"]
             del update_data["password"]
             update_data["hashed_password"] = hashed_password
-        return super().update(async_db, db_obj=db_obj, obj_in=update_data)
+        # await person.get(async_db, 1)
+        # return update_data
+        # return {
+        #     "email": "xxx",
+        #     "is_active": "true",
+        #     "is_superuser": "false",
+        #     "full_name": "xxx",
+        #     "id": 99999999,
+        # }
+        # return db_obj
+
+        return await super().update(async_db, db_obj=db_obj, obj_in=update_data)
 
     async def createyyyyy(
         self, async_db: AsyncSession, *, obj_in: PersonCreate

@@ -1,5 +1,5 @@
 from typing import Any
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.dependencies import get_session
@@ -61,23 +61,57 @@ async def read_person_by_id(
     return person
 
 
-@router.put("/{user_id}", response_model=schemas.Person)
-def update_user(
+@router.get("/", response_model=list[schemas.Person])
+async def read_persons(
+    async_db: AsyncSession = Depends(get_session),
+    skip: int = 0,
+    limit: int = 100,
+    # current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Retrieve persons.
+    """
+    persons = await crud_person.person.get_multi(async_db, skip=skip, limit=limit)
+    return persons
+
+
+@router.put(
+    "/{user_id}", response_model=schemas.Person
+)  # response_model=schemas.Person
+async def update_user(
     *,
     async_db: AsyncSession = Depends(get_session),
-    user_id: int,
-    user_in: schemas.PersonUpdate,
+    person_id: int,
+    person_in: schemas.PersonUpdate,
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     """
     Update a user.
     """
-    # user = crud.user.get(db, id=user_id)
-    # if not user:
-    #     raise HTTPException(
-    #         status_code=404,
-    #         detail="The user with this username does not exist in the system",
-    #     )
-    # user = crud_person.person.update(async_db, db_obj=user, obj_in=user_in)
-    # return user
-    ...
+    person = await crud_person.person.get(async_db, person_id)
+    if not person:
+        raise HTTPException(
+            status_code=404,
+            detail="The person with this username does not exist in the system",
+        )
+    person = await crud_person.person.update(
+        async_db, db_obj=person[0], obj_in=person_in
+    )
+    return person
+
+
+@router.delete("/{person_id}", response_model=schemas.Person)
+async def delete_person(
+    *,
+    async_db: AsyncSession = Depends(get_session),
+    person_id: int,
+    # current_user: models.User = Depends(deps.get_current_active_user),
+) -> Any:
+    """
+    Delete a person.
+    """
+    person = await crud_person.person.get(async_db, person_id)
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+    person = await crud_person.person.remove(async_db=async_db, id=person_id)
+    return person

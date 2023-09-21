@@ -46,23 +46,25 @@ class PersonBase(BaseModel):
     is_active: Union[bool | None] = True
     is_superuser: bool = False
     full_name: Union[str | None] = None
-    items: list[Item] = []
 
 
 # Properties to receive via API on creation
 class PersonCreate(PersonBase):
     email: str
     password: str
-    # items: list[Item]
+    items: list[ItemCreate] = []
 
 
 # Properties to receive via API on update
 class PersonUpdate(PersonBase):
     password: Union[str | None] = None
+    # items: list[ItemCreate] = []
 
 
+# Properties shared by models stored in DB
 class PersonInDBBase(PersonBase):
     id: Union[int | None] = None
+    items: list[Item] = []
 
     class Config:
         from_attributes = True

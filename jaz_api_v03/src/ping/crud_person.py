@@ -1,7 +1,7 @@
 from typing import Union, Any
 
 from src.db.crud_base import CRUDBase
-from src.ping.models import Person
+from src.ping.models import Person, Item
 from src.ping.schemas import PersonCreate, PersonUpdate
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,16 +14,10 @@ log = logging.getLogger("uvicorn")
 
 class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):  # type: ignore
     async def create(self, async_db: AsyncSession, *, obj_in: PersonCreate) -> Person:
-        db_obj = Person(
-            email=obj_in.email,
-            hashed_password=obj_in.password,
-            full_name=obj_in.full_name,
-            is_superuser=obj_in.is_superuser,
-        )
-        async_db.add(db_obj)
-        await async_db.commit()
-        await async_db.refresh(db_obj)
-        return db_obj
+        person_dict = self.replace_pass_items_field(
+            obj_in.dict(exclude_unset=True)
+        )  # __dict__
+        return await super().create_v2(async_db, obj_in=person_dict)
 
     async def update(
         self,
@@ -36,37 +30,31 @@ class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):  # type: ignore
             update_data = obj_in
         else:
             update_data = obj_in.dict(exclude_unset=True)
-        if update_data["password"]:
-            hashed_password = update_data["password"]
-            del update_data["password"]
-            update_data["hashed_password"] = hashed_password
-        # await person.get(async_db, 1)
-        # return update_data
-        # return {
-        #     "email": "xxx",
-        #     "is_active": "true",
-        #     "is_superuser": "false",
-        #     "full_name": "xxx",
-        #     "id": 99999999,
-        # }
-        # return db_obj
+        # if update_data["password"]:
+        # if update_data.get("password"):
+        #     hashed_password = update_data["password"]
+        #     del update_data["password"]
+        #     update_data["hashed_password"] = hashed_password
+        log.info("update_data upstream: " + str(update_data))
+        update_dict = self.replace_pass_items_field(update_data)
+        return await super().update(async_db, db_obj=db_obj, obj_in=update_dict)
 
-        return await super().update(async_db, db_obj=db_obj, obj_in=update_data)
-
-    async def createyyyyy(
-        self, async_db: AsyncSession, *, obj_in: PersonCreate
-    ) -> Person:
-        insert_data = obj_in.dict()
-
-        # log.info("Test logging from crud_person before...")
-        # log.info(insert_data)
-        if insert_data["password"]:
-            hashed_password = insert_data["password"]
-            del insert_data["password"]
-            insert_data["hashed_password"] = hashed_password
-        # log.info("Test logging from crud_person after...")
-        # log.info(insert_data)
-        return super().create(async_db, obj_in=insert_data)
+    def replace_pass_items_field(self, obj_in: dict[str, Any]) -> dict[str, Any]:
+        """
+        Replace password field with hashed_password to make it possible to create a sqlalchemy model Person
+        Items contains pydantic model ItemCreate. You need to create sqlalchemy model Item
+        """  # noqa: E501
+        # if obj_in["password"]:
+        if obj_in.get("password"):
+            obj_in["hashed_password"] = obj_in["password"]
+            del obj_in["password"]
+        # if obj_in["items"]:
+        if obj_in.get("items"):
+            # del obj_in["items"]
+            obj_in["items"] = [Item(**item) for item in obj_in["items"]]  # .__dict__
+        return obj_in
+        # {'email': 'mark64examplenet', 'is_active': True, 'is_superuser': False, 'full_name': 'Edgar Morton', 'password': 'qwerty',   # noqa: E501
+        # 'items': [ItemCreate(title='q1', description='zxcv'), ItemCreate(title='q2', description='wqeqee')]}  # noqa: E501
 
 
 person = CRUDPerson(Person)

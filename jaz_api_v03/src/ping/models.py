@@ -17,7 +17,8 @@ class Person(Base):
         "Item",
         back_populates="owner",
         lazy="subquery",
-        cascade="all, delete",
+        cascade="all, delete-orphan",
+        # cascade="save-update",
         passive_deletes=True,
     )  # , uselist=False, backref="owner", , lazy="joined"
 
@@ -27,7 +28,9 @@ class Item(Base):
     title = Column(String, index=True)
     description = Column(String, index=True)
     owner_id = Column(
-        Integer, ForeignKey("person.id", ondelete="CASCADE", onupdate="CASCADE")
+        Integer,
+        ForeignKey("person.id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
     )
 
     owner = relationship(

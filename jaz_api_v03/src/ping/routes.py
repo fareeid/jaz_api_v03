@@ -8,9 +8,33 @@ from . import schemas, crud_person
 
 import logging
 
+from faker import Faker
+import random
+
 log = logging.getLogger("uvicorn")
 
 router = APIRouter()
+
+sample = Faker()
+
+
+def test_data() -> Any:
+    person = schemas.PersonCreate(
+        email=sample.email(),
+        password=sample.password(),
+        full_name=sample.name(),
+    )
+    item_count = random.randint(0, 4)
+    # item = schemas.ItemCreate(title=sample.items())
+    items = [
+        schemas.ItemCreate(
+            title="item " + str(n + 1) + " - " + sample.word(),
+            description=sample.sentence(),
+        )
+        for n in range(item_count)
+    ]
+    person.items = items
+    return person
 
 
 @router.get("/ping")
@@ -25,6 +49,11 @@ async def pong_env(settings: Settings = Depends(get_settings)) -> dict[Any, Any]
         "POSTGRES_DB": settings.POSTGRES_DB,
         "environment": settings.SQLALCHEMY_DATABASE_URI,
     }
+
+
+@router.get("/sample_person", response_model=schemas.PersonCreate)  #
+async def sample_person(person: schemas.Person = Depends(test_data)) -> Any:
+    return person
 
 
 @router.post("/", response_model=schemas.Person)

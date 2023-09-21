@@ -7,6 +7,9 @@ from .base import Base
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
 
+import logging
+
+log = logging.getLogger("uvicorn")
 
 # Define custom types for SQLAlchemy model, and Pydantic schemas
 ModelType = TypeVar("ModelType", bound=Base)
@@ -35,6 +38,19 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await async_db.refresh(db_obj)
         return db_obj
 
+    async def create_v2(
+        self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
+    ) -> ModelType:
+        if isinstance(obj_in, dict):
+            insert_data = obj_in
+        else:
+            insert_data = obj_in.dict(exclude_unset=True)
+        db_obj = self.model(**insert_data)
+        async_db.add(db_obj)
+        await async_db.commit()
+        await async_db.refresh(db_obj)
+        return db_obj
+
     async def update(
         self,
         async_db: AsyncSession,
@@ -42,7 +58,6 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj: ModelType,
         obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
-        # await async_db.execute(select(self.model).where(self.model.id == 3))
         obj_data = jsonable_encoder(db_obj)
         if isinstance(obj_in, dict):
             update_data = obj_in

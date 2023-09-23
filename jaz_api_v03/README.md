@@ -65,7 +65,7 @@ Intialize alembic with async template
             return settings.SQLALCHEMY_DATABASE_URI
     - update def run_migrations_offline() to use get_url instead of alembic.ini connection string
     - update async def run_async_migrations() to use get_url instead of alembic.ini connection string
-    - run - alembic revision --autogenerate -m "init"
+    - run - alembic revision --autogenerate -m "create update stamp"
     - run - alembic upgrade head or alembic downgrade head
 
 Logging construct

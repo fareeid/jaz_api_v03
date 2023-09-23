@@ -1,11 +1,10 @@
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
-from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -21,8 +20,10 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 
+
+from src.auth import models as auth_models  # noqa: E402, F401
 from src.db.base import Base  # noqa: E402
-from src.ping import models  # noqa: E402, F401
+from src.ping import models as ping_models  # noqa: E402, F401
 
 # from jaz_api_v03.src.db import Base
 target_metadata = Base.metadata

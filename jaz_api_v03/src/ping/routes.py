@@ -1,15 +1,14 @@
+import logging
+import random
 from typing import Any
+
+from faker import Faker
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.dependencies import get_session
 from ..core.config import Settings, get_settings
-from . import schemas, crud_person
-
-import logging
-
-from faker import Faker
-import random
+from ..core.dependencies import get_session
+from . import crud_person, schemas
 
 log = logging.getLogger("uvicorn")
 
@@ -37,12 +36,12 @@ def test_data() -> Any:
     return person
 
 
-@router.get("/ping")
+@router.get("/")
 async def pong() -> dict[Any, Any]:
     return {"ping": "pong"}
 
 
-@router.get("/ping_env")
+@router.get("/env")
 async def pong_env(settings: Settings = Depends(get_settings)) -> dict[Any, Any]:
     return {
         "ping_env": "pong_env",
@@ -56,7 +55,7 @@ async def sample_person(person: schemas.Person = Depends(test_data)) -> Any:
     return person
 
 
-@router.post("/", response_model=schemas.Person)
+@router.post("/create_person", response_model=schemas.Person)
 async def create_person(
     *,
     async_db: AsyncSession = Depends(get_session),

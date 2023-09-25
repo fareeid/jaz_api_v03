@@ -1,8 +1,9 @@
-from typing import Any, Union
-from pydantic import FieldValidationInfo, PostgresDsn, field_validator
-from pydantic_settings import BaseSettings
 import logging
 from functools import lru_cache
+from typing import Any, Union
+
+from pydantic import FieldValidationInfo, PostgresDsn, field_validator
+from pydantic_settings import BaseSettings
 
 log = logging.getLogger("uvicorn")
 
@@ -32,8 +33,10 @@ class Settings(BaseSettings):
         )
         return str(conn_url)
 
+    USERS_OPEN_REGISTRATION: bool = True
+
 
 @lru_cache()
-def get_settings() -> BaseSettings:
+def get_settings() -> Settings:
     log.info("Loading config settings from the .env...")
-    return Settings()  # type: ignore
+    return Settings()

@@ -5,12 +5,7 @@ from pydantic import BaseModel, EmailStr
 
 # Shared properties
 class UserBase(BaseModel):
-    first_name: Union[str | None] = None
-    last_name: Union[str | None] = None
-    email: Union[EmailStr | None] = None
-    username: Union[str | None] = None
-    phone: Union[str | None] = None
-    is_active: Union[str | None] = None
+    ...
 
 
 # Properties to receive via API on creation
@@ -25,12 +20,18 @@ class UserCreate(UserBase):
 
 # Properties to receive via API on update by User
 class UserUpdate(UserBase):
+    first_name: Union[str | None] = None
+    last_name: Union[str | None] = None
+    email: Union[EmailStr | None] = None
+    username: Union[str | None] = None
+    phone: Union[str | None] = None
     password: Union[str | None] = None
+    is_active: Union[bool | None] = True
 
 
 # Properties to receive via API on update by Staff Admin
 class UserUpdateByStaffAdmin(UserBase):
-    is_staff: Union[str | None] = None
+    is_staff: Union[bool | None] = None
     agent_code: Union[str | None] = None
 
 
@@ -39,7 +40,7 @@ class UserUpdateByAgencyAdmin(UserBase):
     agent_code: Union[str | None] = None
 
 
-class UserInDBBase(UserBase):
+class UserInDBBase(UserUpdate):
     id: Union[int | None] = None
 
     class Config:

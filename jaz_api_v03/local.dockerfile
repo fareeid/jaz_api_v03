@@ -8,8 +8,11 @@ ENV PYTHONUNBUFFERED 1
 
 # install system dependencies
 RUN apt-get update \
-  && apt-get -y install netcat gcc \
+  && apt-get -y install netcat gcc tzdata \
   && apt-get clean
+
+ENV TZ Africa/Nairobi
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # install python dependencies
 RUN pip install --upgrade pip
@@ -19,3 +22,5 @@ RUN pip install -r requirements-dev.txt
 
 # add app
 COPY . .
+
+EXPOSE 3100

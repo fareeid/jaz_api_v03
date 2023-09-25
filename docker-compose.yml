@@ -4,9 +4,11 @@ services:
   web:
     env_file:
       - web.env
-    build: ./jaz_api_v03
-    # command: uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8001
-    #command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0'
+    build: 
+      context: ./jaz_api_v03
+      dockerfile: local.dockerfile
+    #command: uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 3100
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn src.main:app --reload --host 0.0.0.0 --port 3100'
     volumes:
       - ./jaz_api_v03:/usr/src/app
     ports:

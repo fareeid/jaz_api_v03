@@ -2,8 +2,11 @@
 FROM postgres:15.4
 
 RUN apt-get update \
-    && apt-get -y install net-tools netcat-traditional gcc \
+    && apt-get -y install net-tools netcat-traditional gcc tzdata \
     && apt-get clean
+
+ENV TZ Africa/Nairobi
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # run create.sql on init
 ADD create.sql /docker-entrypoint-initdb.d

@@ -57,12 +57,11 @@ class UserInDB(UserInDBBase):
     pass
 
 
-# class User(Base):
-#     id: Mapped[int] = mapped_column(primary_key=True)
+# Token Schemas
+class TokenPayload(BaseModel):
+    sub: Union[int | None] = None
 
-#     client_code: Mapped[str] = mapped_column(String(10), nullable=True)
-#     agent_code: Mapped[str] = mapped_column(String(10), nullable=True)
-#     is_staff: Mapped[bool] = mapped_column(server_default="false")
-#     is_active: Mapped[bool] = mapped_column(server_default="false")
-#     is_superuser: Mapped[bool] = mapped_column(server_default="false")
-# Union[str | None]
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str

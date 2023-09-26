@@ -1,4 +1,5 @@
 import logging
+import secrets
 from functools import lru_cache
 from typing import Any, Union
 
@@ -10,6 +11,8 @@ log = logging.getLogger("uvicorn")
 
 class Settings(BaseSettings):
     # model_config = SettingsConfigDict(env_file=".env")
+    API_V1_STR: str = ""
+    SECRET_KEY: str = secrets.token_urlsafe(32)
 
     POSTGRES_SERVER: str
     POSTGRES_USER: str
@@ -34,6 +37,7 @@ class Settings(BaseSettings):
         return str(conn_url)
 
     USERS_OPEN_REGISTRATION: bool = True
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
 
 @lru_cache()

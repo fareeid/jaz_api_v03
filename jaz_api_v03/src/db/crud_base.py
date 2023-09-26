@@ -1,13 +1,12 @@
-from typing import Generic, Type, TypeVar, Union, Any
+import logging
+from typing import Any, Generic, Type, TypeVar, Union
+
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
-from sqlalchemy import select, delete
 
 from .base import Base
-
-from pydantic import BaseModel
-from fastapi.encoders import jsonable_encoder
-
-import logging
 
 log = logging.getLogger("uvicorn")
 

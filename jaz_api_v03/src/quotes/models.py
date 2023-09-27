@@ -14,6 +14,7 @@ class Quote(Base):
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
     quot_assr_email: Mapped[str] = mapped_column(nullable=True)
 
+    # Releation to Proposal - down
     proposals: Mapped[list["Proposal"]] = relationship(
         back_populates="quote", cascade="all, delete-orphan"
     )
@@ -22,11 +23,12 @@ class Quote(Base):
         return f"Quote(quot_sys_id={self.quot_sys_id!r}, quot_num={self.quot_num!r})"
 
 
-class Proposal:
+class Proposal(Base):
     prop_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
     prop_sr_no: Mapped[int]
     prop_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     prop_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
     # input fields mapped to premia pgit_policy fields
     pol_quot_sys_id: Mapped[int] = mapped_column(nullable=True)
     pol_quot_no: Mapped[str] = mapped_column(nullable=True)
@@ -40,15 +42,7 @@ class Proposal:
     pol_to_dt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     pol_dflt_si_curr_code: Mapped[str] = mapped_column(nullable=False)
     pol_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
-    pol_flex_01: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_02: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_09: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_10: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_13: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_14: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_16: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_17: Mapped[str] = mapped_column(nullable=True)
-    pol_flex_18: Mapped[str] = mapped_column(nullable=True)
+
     # output fields mapped from premia pgit_policy fields
     pol_sys_id: Mapped[int] = mapped_column(nullable=True)
     pol_end_no_idx: Mapped[int] = mapped_column(nullable=True)
@@ -57,10 +51,160 @@ class Proposal:
     pol_appr_dt: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     pol_sts: Mapped[str] = mapped_column(nullable=True)
 
+    # Relation to Quote - up
     prop_quot_sys_id: Mapped[int] = mapped_column(
         ForeignKey("quote.quot_sys_id", ondelete="CASCADE", onupdate="CASCADE")
     )
     quote: Mapped["Quote"] = relationship(back_populates="proposals")
 
+    # Relation to ProposalCharge - down
+    proposalcharges: Mapped[list["ProposalCharge"]] = relationship(
+        back_populates="proposal", cascade="all, delete-orphan"
+    )
+
+    # Relation to ProposalRisk - down
+    proposalsections: Mapped[list["ProposalSection"]] = relationship(
+        back_populates="proposal", cascade="all, delete-orphan"
+    )
+
     def __repr__(self) -> str:
         return f"Proposal(prop_sys_id={self.prop_sys_id!r}, prop_quot_sys_id={self.prop_quot_sys_id!r})"  # noqa: E501
+
+
+class ProposalSection(Base):
+    sec_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    sec_sr_no: Mapped[int]
+
+    # Input fields mapped to premia pgit_pol_section fields
+    psec_sec_code: Mapped[str] = mapped_column(nullable=False)
+
+    # Output fields mapped to premia pgit_pol_risk_addl_info fields
+    psec_sys_id: Mapped[int] = mapped_column(nullable=True)
+    psec_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    psec_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+
+    # Relation to Quote - up
+    sec_prop_sys_id: Mapped[int] = mapped_column(
+        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+    )
+    proposal: Mapped["Proposal"] = relationship(back_populates="proposalsections")
+
+    # Relation to ProposalRisk - down
+    proposalrisks: Mapped[list["ProposalRisk"]] = relationship(
+        back_populates="proposalsection", cascade="all, delete-orphan"
+    )
+
+
+class ProposalRisk(Base):
+    risk_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    risk_sr_no: Mapped[int]
+
+    # Input fields mapped to premia pgit_pol_risk_addl_info fields
+    prai_data_18: Mapped[str]  # 'Kenya'
+    prai_code_03: Mapped[str]  # '503'
+    prai_desc_09: Mapped[str]  # 'Residential'
+
+    # Output fields mapped to premia pgit_pol_risk_addl_info fields
+    prai_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prai_risk_lvl_no: Mapped[int] = mapped_column(nullable=True)
+    prai_risk_id: Mapped[int] = mapped_column(nullable=True)
+    prai_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prai_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+
+    # Relation to ProposalSection - up
+    risk_sec_sys_id: Mapped[int] = mapped_column(
+        ForeignKey("proposalsection.sec_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+    )
+    proposalsection: Mapped["ProposalSection"] = relationship(
+        back_populates="proposalrisks"
+    )
+
+    # Relation to ProposalCover - down
+    proposalcovers: Mapped[list["ProposalCover"]] = relationship(
+        back_populates="proposalrisk", cascade="all, delete-orphan"
+    )
+
+
+class ProposalSMI(Base):
+    smi_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    smi_sr_no: Mapped[int]
+
+    # Input fields mapped to premia pgit_pol_risk_smi fields
+    prs_smi_code: Mapped[str] = mapped_column(nullable=False)
+    prs_rate: Mapped[float] = mapped_column(nullable=True)
+    prs_rate_per: Mapped[float] = mapped_column(nullable=True)
+    prs_si_fc: Mapped[float] = mapped_column(nullable=True)
+    prs_prem_fc: Mapped[float] = mapped_column(nullable=True)
+    prs_smi_desc: Mapped[float] = mapped_column(nullable=True)
+
+    # Output fields mapped to premia pgit_pol_risk_smi fields
+    prs_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prs_lvl1_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prs_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prs_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+    prs_psec_sys_id: Mapped[int] = mapped_column(nullable=True)
+
+
+class ProposalCover(Base):
+    cvr_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    cvr_sr_no: Mapped[int]
+
+    # Input fields mapped to premia pgit_pol_risk_cover fields
+    prc_code: Mapped[str] = mapped_column(nullable=False)
+    prc_rate: Mapped[float] = mapped_column(nullable=True)
+    prc_rate_per: Mapped[float] = mapped_column(nullable=True)
+    prc_si_curr_code: Mapped[str] = mapped_column(nullable=False)
+    prc_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
+    prc_si_fc: Mapped[float] = mapped_column(nullable=True)
+    prc_prem_fc: Mapped[float] = mapped_column(nullable=True)
+
+    # Output fields mapped to premia pgit_policy_risk_cover fields
+    prc_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prc_sr_no: Mapped[int] = mapped_column(nullable=True)
+    prc_lvl1_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prc_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prc_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+
+    # Relation to ProposalRisk - up
+    cvr_risk_sys_id: Mapped[int] = mapped_column(
+        ForeignKey("proposalrisk.risk_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+    )
+    proposalrisk: Mapped["ProposalRisk"] = relationship(back_populates="proposalcovers")
+
+
+class ProposalCharge(Base):
+    chg_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    chg_sr_no: Mapped[int]
+
+    # Input fields mapped to premia pgit_pol_charge fields
+    pchg_code: Mapped[str]
+    pchg_type: Mapped[str]
+    pchg_perc: Mapped[float] = mapped_column(nullable=True)
+    pchg_chg_fc: Mapped[float] = mapped_column(nullable=True)
+    pchg_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
+    pchg_rate_per: Mapped[float] = mapped_column(nullable=True)
+
+    # Output fields mapped to premia pgit_pol_charge fields
+    pchg_sys_id: Mapped[int] = mapped_column(nullable=True)
+    pchg_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    pchg_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+
+    # Relation to Proposal - up
+    chg_prop_sys_id: Mapped[int] = mapped_column(
+        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+    )
+    proposal: Mapped["Proposal"] = relationship(back_populates="proposalcharges")
+
+
+# Proposal backup_fields
+# # input fields mapped to premia pgit_policy fields
+
+# pol_flex_01: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_02: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_09: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_10: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_13: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_14: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_16: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_17: Mapped[str] = mapped_column(nullable=True)
+# pol_flex_18: Mapped[str] = mapped_column(nullable=True)

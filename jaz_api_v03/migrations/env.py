@@ -24,6 +24,7 @@ if config.config_file_name is not None:
 from src.auth import models as auth_models  # noqa: E402, F401
 from src.db.base import Base  # noqa: E402
 from src.ping import models as ping_models  # noqa: E402, F401
+from src.quotes import models  # noqa: E402, F401
 
 # from jaz_api_v03.src.db import Base
 target_metadata = Base.metadata

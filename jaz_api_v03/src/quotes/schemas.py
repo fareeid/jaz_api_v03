@@ -21,8 +21,8 @@ class PartnerTransDetails(BaseModel):
 
 # #########Partner Payload#######
 class PartnerTransBase(BaseModel):
-    partner_id: str  # DIGITAL_MFS_4C939894,
-    mfs_transaction_id: str  # 5773197888,
+    cust_code: str  # DIGITAL_MFS_4C939894,
+    quote_ref: str  # 5773197888,
     customer_name: str  # John Doe,
     customer_nic: str  # 3000211,
     customer_pin: str  # P00892519Y,
@@ -80,14 +80,35 @@ class ProposalCover(ProposalCoverInDBBase):
 
 
 # Properties properties stored in DB
-class ItemInDB(ProposalCoverInDBBase):
+class ProposalCoverInDB(ProposalCoverInDBBase):
     pass
+
+
+# ########## Proposal Schema #########
+# Shared properties
+class ProposalBase(BaseModel):
+    prop_sys_id: Union[int | None] = None
+    prop_sr_no: Union[int | None] = None
+    prop_paymt_ref: Union[str | None] = None
+    prop_paymt_date: Union[datetime | None] = None
+    pol_quot_sys_id: Union[int | None] = None
+    pol_quot_no: Union[str | None] = None
+    pol_comp_code: Union[str | None] = None
+    pol_divn_code: Union[str | None] = None
+    pol_prod_code: Union[str | None] = None
+    pol_type: Union[str | None] = None
+    pol_cust_code: Union[str | None] = None
+    pol_assr_code: Union[str | None] = None
+    pol_fm_dt: Union[datetime | None] = None
+    pol_to_dt: Union[datetime | None] = None
+    pol_dflt_si_curr_code: Union[str | None] = None
+    pol_prem_curr_code: Union[str | None] = None
 
 
 # ########## Quote Schema #########
 # Shared properties
 class QuoteBase(BaseModel):
-    quote_num: Union[str | None] = None
+    quot_ref: Union[str | None] = None
     quot_paymt_ref: Union[str | None] = None
     quot_paymt_date: Union[datetime | None] = None
     quot_assr_phone: Union[str | None] = None
@@ -96,4 +117,27 @@ class QuoteBase(BaseModel):
 
 # Properties to receive on Proposal Cover creation
 class QuoteCreate(QuoteBase):
-    quot_num: str
+    quot_ref: str
+
+
+# Properties to receive via API on update by User
+class QuoteUpdate(QuoteBase):
+    pass
+
+
+# Properties shared by models stored in DB
+class QuoteInDBBase(QuoteBase):
+    quot_sys_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Properties to return to client
+class Quote(QuoteInDBBase):
+    pass
+
+
+# Properties properties stored in DB
+class QuoteInDB(QuoteInDBBase):
+    pass

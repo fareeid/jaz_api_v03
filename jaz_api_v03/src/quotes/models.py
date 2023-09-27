@@ -8,7 +8,7 @@ from ..db.base import Base
 
 class Quote(Base):
     quot_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    quot_num: Mapped[str] = mapped_column(index=True)
+    quot_ref: Mapped[str] = mapped_column(index=True)
     quot_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     quot_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
@@ -28,7 +28,7 @@ class Quote(Base):
     )
 
     def __repr__(self) -> str:
-        return f"Quote(quot_sys_id={self.quot_sys_id!r}, quot_num={self.quot_num!r})"
+        return f"Quote(quot_sys_id={self.quot_sys_id!r}, quot_ref={self.quot_ref!r})"
 
 
 class Proposal(Base):

@@ -18,7 +18,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):  # type: ignore
         if user_dict.get("password"):
             user_dict["password"] = get_password_hash(user_dict["password"])
             # del user_dict["password"]
-        return await super().create_v2(async_db, obj_in=user_dict)
+        return await super().create(async_db, obj_in=user_dict)
 
     async def get_by_email(self, async_db: AsyncSession, email: str) -> list[User]:
         result = await async_db.execute(
@@ -51,6 +51,4 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):  # type: ignore
         return user.is_superuser
 
 
-user = CRUDUser(User)
-user = CRUDUser(User)
 user = CRUDUser(User)

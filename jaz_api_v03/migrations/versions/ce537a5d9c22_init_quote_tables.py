@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table(
         "quote",
         sa.Column("quot_sys_id", sa.Integer(), nullable=False),
-        sa.Column("quot_num", sa.String(), nullable=False),
+        sa.Column("quot_ref", sa.String(), nullable=False),
         sa.Column("quot_paymt_ref", sa.String(), nullable=True),
         sa.Column("quot_paymt_date", sa.DateTime(), nullable=True),
         sa.Column("quot_assr_phone", sa.String(), nullable=True),
@@ -42,7 +42,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("quot_sys_id"),
     )
-    op.create_index(op.f("ix_quote_quot_num"), "quote", ["quot_num"], unique=False)
+    op.create_index(op.f("ix_quote_quot_ref"), "quote", ["quot_ref"], unique=False)
     op.create_index(
         op.f("ix_quote_quot_sys_id"), "quote", ["quot_sys_id"], unique=False
     )
@@ -284,6 +284,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_proposal_prop_sys_id"), table_name="proposal")
     op.drop_table("proposal")
     op.drop_index(op.f("ix_quote_quot_sys_id"), table_name="quote")
-    op.drop_index(op.f("ix_quote_quot_num"), table_name="quote")
+    op.drop_index(op.f("ix_quote_quot_ref"), table_name="quote")
     op.drop_table("quote")
     # ### end Alembic commands ###

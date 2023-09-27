@@ -27,7 +27,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
-    async def create(
+    async def create_old(
         self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
@@ -37,7 +37,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await async_db.refresh(db_obj)
         return db_obj
 
-    async def create_v2(
+    async def create(
         self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
     ) -> ModelType:
         if isinstance(obj_in, dict):

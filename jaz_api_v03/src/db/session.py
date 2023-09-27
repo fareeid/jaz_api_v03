@@ -1,11 +1,12 @@
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
 from ..core.config import Settings, get_settings
 
 # from sqlalchemy import create_engine
 # from sqlalchemy.orm import sessionmaker
 
 
-settings: Settings = get_settings()  # type: ignore
+settings: Settings = get_settings()
 
 
 # engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)  # type: ignore  # noqa: E501

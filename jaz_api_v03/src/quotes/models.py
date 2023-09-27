@@ -14,9 +14,17 @@ class Quote(Base):
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
     quot_assr_email: Mapped[str] = mapped_column(nullable=True)
 
+    # Relation to Quote - up
+    quot_assr_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id"),
+        nullable=True,
+    )
+
     # Releation to Proposal - down
     proposals: Mapped[list["Proposal"]] = relationship(
-        back_populates="quote", cascade="all, delete-orphan"
+        back_populates="quote",
+        cascade="all, delete-orphan",
+        lazy="subquery",
     )
 
     def __repr__(self) -> str:
@@ -53,18 +61,23 @@ class Proposal(Base):
 
     # Relation to Quote - up
     prop_quot_sys_id: Mapped[int] = mapped_column(
-        ForeignKey("quote.quot_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+        ForeignKey("quote.quot_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
     )
     quote: Mapped["Quote"] = relationship(back_populates="proposals")
 
     # Relation to ProposalCharge - down
     proposalcharges: Mapped[list["ProposalCharge"]] = relationship(
-        back_populates="proposal", cascade="all, delete-orphan"
+        back_populates="proposal",
+        cascade="all, delete-orphan",
+        lazy="subquery",
     )
 
-    # Relation to ProposalRisk - down
+    # Relation to ProposalSection - down
     proposalsections: Mapped[list["ProposalSection"]] = relationship(
-        back_populates="proposal", cascade="all, delete-orphan"
+        back_populates="proposal",
+        cascade="all, delete-orphan",
+        lazy="subquery",
     )
 
     def __repr__(self) -> str:
@@ -85,13 +98,16 @@ class ProposalSection(Base):
 
     # Relation to Quote - up
     sec_prop_sys_id: Mapped[int] = mapped_column(
-        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
     )
     proposal: Mapped["Proposal"] = relationship(back_populates="proposalsections")
 
     # Relation to ProposalRisk - down
     proposalrisks: Mapped[list["ProposalRisk"]] = relationship(
-        back_populates="proposalsection", cascade="all, delete-orphan"
+        back_populates="proposalsection",
+        cascade="all, delete-orphan",
+        lazy="subquery",
     )
 
 
@@ -113,7 +129,10 @@ class ProposalRisk(Base):
 
     # Relation to ProposalSection - up
     risk_sec_sys_id: Mapped[int] = mapped_column(
-        ForeignKey("proposalsection.sec_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+        ForeignKey(
+            "proposalsection.sec_sys_id", ondelete="CASCADE", onupdate="CASCADE"
+        ),
+        nullable=False,
     )
     proposalsection: Mapped["ProposalSection"] = relationship(
         back_populates="proposalrisks"
@@ -121,7 +140,16 @@ class ProposalRisk(Base):
 
     # Relation to ProposalCover - down
     proposalcovers: Mapped[list["ProposalCover"]] = relationship(
-        back_populates="proposalrisk", cascade="all, delete-orphan"
+        back_populates="proposalrisk",
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+    # Relation to ProposalSMI - down
+    proposalsmis: Mapped[list["ProposalSMI"]] = relationship(
+        back_populates="proposalrisk",
+        cascade="all, delete-orphan",
+        lazy="subquery",
     )
 
 
@@ -143,6 +171,17 @@ class ProposalSMI(Base):
     prs_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
     prs_end_no_idx: Mapped[int] = mapped_column(nullable=True)
     prs_psec_sys_id: Mapped[int] = mapped_column(nullable=True)
+
+    # Relation to ProposalRisk - up
+    cvr_risk_sys_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "proposalrisk.risk_sys_id",
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+        ),
+        nullable=False,
+    )
+    proposalrisk: Mapped["ProposalRisk"] = relationship(back_populates="proposalsmis")
 
 
 class ProposalCover(Base):
@@ -167,7 +206,8 @@ class ProposalCover(Base):
 
     # Relation to ProposalRisk - up
     cvr_risk_sys_id: Mapped[int] = mapped_column(
-        ForeignKey("proposalrisk.risk_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+        ForeignKey("proposalrisk.risk_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
     )
     proposalrisk: Mapped["ProposalRisk"] = relationship(back_populates="proposalcovers")
 
@@ -191,7 +231,8 @@ class ProposalCharge(Base):
 
     # Relation to Proposal - up
     chg_prop_sys_id: Mapped[int] = mapped_column(
-        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE")
+        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
     )
     proposal: Mapped["Proposal"] = relationship(back_populates="proposalcharges")
 

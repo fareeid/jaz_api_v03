@@ -1,8 +1,8 @@
-"""init
+"""Init - Ping Tables
 
-Revision ID: 89a8b8149530
-Revises:
-Create Date: 2023-09-25 14:09:36.815375
+Revision ID: 079defacff37
+Revises: 
+Create Date: 2023-09-27 14:41:26.355815
 
 """
 from typing import Sequence, Union
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "89a8b8149530"
+revision: str = "079defacff37"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,45 +30,16 @@ def upgrade() -> None:
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
-        sa.Column("created_by", sa.String(length=30), nullable=True),
+        sa.Column("created_by", sa.Integer(), nullable=True),
         sa.Column(
             "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
-        sa.Column("updated_by", sa.String(length=30), nullable=True),
+        sa.Column("updated_by", sa.Integer(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_person_email"), "person", ["email"], unique=True)
     op.create_index(op.f("ix_person_full_name"), "person", ["full_name"], unique=False)
     op.create_index(op.f("ix_person_id"), "person", ["id"], unique=False)
-    op.create_table(
-        "user",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("first_name", sa.String(length=30), nullable=False),
-        sa.Column("last_name", sa.String(length=30), nullable=False),
-        sa.Column("email", sa.String(), nullable=False),
-        sa.Column("username", sa.String(), nullable=False),
-        sa.Column("password", sa.String(), nullable=False),
-        sa.Column("phone", sa.String(), nullable=False),
-        sa.Column("client_code", sa.String(length=10), nullable=True),
-        sa.Column("agent_code", sa.String(length=10), nullable=True),
-        sa.Column("agency_admin", sa.Boolean(), server_default="false", nullable=False),
-        sa.Column("is_staff", sa.Boolean(), server_default="false", nullable=False),
-        sa.Column("staff_admin", sa.Boolean(), server_default="false", nullable=False),
-        sa.Column("is_active", sa.Boolean(), server_default="false", nullable=False),
-        sa.Column("is_superuser", sa.Boolean(), server_default="false", nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
-        sa.Column("created_by", sa.String(length=30), nullable=True),
-        sa.Column(
-            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
-        sa.Column("updated_by", sa.String(length=30), nullable=True),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(op.f("ix_user_email"), "user", ["email"], unique=True)
-    op.create_index(op.f("ix_user_id"), "user", ["id"], unique=False)
-    op.create_index(op.f("ix_user_username"), "user", ["username"], unique=True)
     op.create_table(
         "item",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -78,11 +49,11 @@ def upgrade() -> None:
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
-        sa.Column("created_by", sa.String(length=30), nullable=True),
+        sa.Column("created_by", sa.Integer(), nullable=True),
         sa.Column(
             "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
-        sa.Column("updated_by", sa.String(length=30), nullable=True),
+        sa.Column("updated_by", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["owner_id"], ["person.id"], onupdate="CASCADE", ondelete="CASCADE"
         ),
@@ -100,10 +71,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_item_id"), table_name="item")
     op.drop_index(op.f("ix_item_description"), table_name="item")
     op.drop_table("item")
-    op.drop_index(op.f("ix_user_username"), table_name="user")
-    op.drop_index(op.f("ix_user_id"), table_name="user")
-    op.drop_index(op.f("ix_user_email"), table_name="user")
-    op.drop_table("user")
     op.drop_index(op.f("ix_person_id"), table_name="person")
     op.drop_index(op.f("ix_person_full_name"), table_name="person")
     op.drop_index(op.f("ix_person_email"), table_name="person")

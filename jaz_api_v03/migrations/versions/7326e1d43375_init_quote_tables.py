@@ -1,17 +1,18 @@
-"""Init - Quote Tables
+"""init quote tables
 
-Revision ID: ce537a5d9c22
+Revision ID: 7326e1d43375
 Revises: 342ad69dcc32
-Create Date: 2023-09-27 14:46:51.714270
+Create Date: 2023-09-28 18:55:19.784045
 
 """
 from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "ce537a5d9c22"
+revision: str = "7326e1d43375"
 down_revision: Union[str, None] = "342ad69dcc32"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,6 +28,9 @@ def upgrade() -> None:
         sa.Column("quot_paymt_date", sa.DateTime(), nullable=True),
         sa.Column("quot_assr_phone", sa.String(), nullable=True),
         sa.Column("quot_assr_email", sa.String(), nullable=True),
+        sa.Column(
+            "quot_payload", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+        ),
         sa.Column("quot_assr_id", sa.Integer(), nullable=True),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
@@ -64,6 +68,7 @@ def upgrade() -> None:
         sa.Column("pol_to_dt", sa.DateTime(), nullable=False),
         sa.Column("pol_dflt_si_curr_code", sa.String(), nullable=False),
         sa.Column("pol_prem_curr_code", sa.String(), nullable=False),
+        sa.Column("pol_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("pol_sys_id", sa.Integer(), nullable=True),
         sa.Column("pol_end_no_idx", sa.Integer(), nullable=True),
         sa.Column("pol_no", sa.String(), nullable=True),
@@ -100,6 +105,7 @@ def upgrade() -> None:
         sa.Column("pchg_chg_fc", sa.Float(), nullable=True),
         sa.Column("pchg_prem_curr_code", sa.String(), nullable=False),
         sa.Column("pchg_rate_per", sa.Float(), nullable=True),
+        sa.Column("pchg_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("pchg_sys_id", sa.Integer(), nullable=True),
         sa.Column("pchg_pol_sys_id", sa.Integer(), nullable=True),
         sa.Column("pchg_end_no_idx", sa.Integer(), nullable=True),
@@ -131,6 +137,7 @@ def upgrade() -> None:
         sa.Column("sec_sys_id", sa.Integer(), nullable=False),
         sa.Column("sec_sr_no", sa.Integer(), nullable=False),
         sa.Column("psec_sec_code", sa.String(), nullable=False),
+        sa.Column("psec_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("psec_sys_id", sa.Integer(), nullable=True),
         sa.Column("psec_pol_sys_id", sa.Integer(), nullable=True),
         sa.Column("psec_end_no_idx", sa.Integer(), nullable=True),
@@ -164,6 +171,7 @@ def upgrade() -> None:
         sa.Column("prai_data_18", sa.String(), nullable=False),
         sa.Column("prai_code_03", sa.String(), nullable=False),
         sa.Column("prai_desc_09", sa.String(), nullable=False),
+        sa.Column("prai_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("prai_sys_id", sa.Integer(), nullable=True),
         sa.Column("prai_risk_lvl_no", sa.Integer(), nullable=True),
         sa.Column("prai_risk_id", sa.Integer(), nullable=True),
@@ -203,6 +211,7 @@ def upgrade() -> None:
         sa.Column("prc_prem_curr_code", sa.String(), nullable=False),
         sa.Column("prc_si_fc", sa.Float(), nullable=True),
         sa.Column("prc_prem_fc", sa.Float(), nullable=True),
+        sa.Column("prc_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("prc_sys_id", sa.Integer(), nullable=True),
         sa.Column("prc_sr_no", sa.Integer(), nullable=True),
         sa.Column("prc_lvl1_sys_id", sa.Integer(), nullable=True),
@@ -241,12 +250,13 @@ def upgrade() -> None:
         sa.Column("prs_si_fc", sa.Float(), nullable=True),
         sa.Column("prs_prem_fc", sa.Float(), nullable=True),
         sa.Column("prs_smi_desc", sa.Float(), nullable=True),
+        sa.Column("prs_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("prs_sys_id", sa.Integer(), nullable=True),
         sa.Column("prs_lvl1_sys_id", sa.Integer(), nullable=True),
         sa.Column("prs_pol_sys_id", sa.Integer(), nullable=True),
         sa.Column("prs_end_no_idx", sa.Integer(), nullable=True),
         sa.Column("prs_psec_sys_id", sa.Integer(), nullable=True),
-        sa.Column("cvr_risk_sys_id", sa.Integer(), nullable=False),
+        sa.Column("smi_risk_sys_id", sa.Integer(), nullable=False),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
@@ -256,7 +266,7 @@ def upgrade() -> None:
         ),
         sa.Column("updated_by", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
-            ["cvr_risk_sys_id"],
+            ["smi_risk_sys_id"],
             ["proposalrisk.risk_sys_id"],
             onupdate="CASCADE",
             ondelete="CASCADE",

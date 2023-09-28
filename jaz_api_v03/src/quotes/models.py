@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base import Base
@@ -13,6 +14,7 @@ class Quote(Base):
     quot_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
     quot_assr_email: Mapped[str] = mapped_column(nullable=True)
+    quot_payload: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Relation to Quote - up
     quot_assr_id: Mapped[int] = mapped_column(
@@ -50,6 +52,7 @@ class Proposal(Base):
     pol_to_dt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     pol_dflt_si_curr_code: Mapped[str] = mapped_column(nullable=False)
     pol_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
+    pol_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # output fields mapped from premia pgit_policy fields
     pol_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -90,6 +93,7 @@ class ProposalSection(Base):
 
     # Input fields mapped to premia pgit_pol_section fields
     psec_sec_code: Mapped[str] = mapped_column(nullable=False)
+    psec_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
     psec_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -119,6 +123,7 @@ class ProposalRisk(Base):
     prai_data_18: Mapped[str]  # 'Kenya'
     prai_code_03: Mapped[str]  # '503'
     prai_desc_09: Mapped[str]  # 'Residential'
+    prai_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
     prai_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -164,6 +169,7 @@ class ProposalSMI(Base):
     prs_si_fc: Mapped[float] = mapped_column(nullable=True)
     prs_prem_fc: Mapped[float] = mapped_column(nullable=True)
     prs_smi_desc: Mapped[float] = mapped_column(nullable=True)
+    prs_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_smi fields
     prs_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -173,7 +179,7 @@ class ProposalSMI(Base):
     prs_psec_sys_id: Mapped[int] = mapped_column(nullable=True)
 
     # Relation to ProposalRisk - up
-    cvr_risk_sys_id: Mapped[int] = mapped_column(
+    smi_risk_sys_id: Mapped[int] = mapped_column(
         ForeignKey(
             "proposalrisk.risk_sys_id",
             ondelete="CASCADE",
@@ -196,6 +202,7 @@ class ProposalCover(Base):
     prc_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
     prc_si_fc: Mapped[float] = mapped_column(nullable=True)
     prc_prem_fc: Mapped[float] = mapped_column(nullable=True)
+    prc_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_policy_risk_cover fields
     prc_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -223,6 +230,7 @@ class ProposalCharge(Base):
     pchg_chg_fc: Mapped[float] = mapped_column(nullable=True)
     pchg_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
     pchg_rate_per: Mapped[float] = mapped_column(nullable=True)
+    pchg_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_charge fields
     pchg_sys_id: Mapped[int] = mapped_column(nullable=True)

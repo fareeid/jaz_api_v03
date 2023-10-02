@@ -59,7 +59,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = get_url()  # type: ignore # config.get_main_option("sqlalchemy.url")
+    url = get_url()  # config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,

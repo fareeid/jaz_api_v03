@@ -116,14 +116,14 @@ async def update_user(
     """
     Update a user.
     """
-    person = await crud_person.person.get(async_db, person_id)
-    if not person:
+    person_list = await crud_person.person.get(async_db, person_id)
+    if person_list == []:
         raise HTTPException(
             status_code=404,
             detail="The person with this username does not exist in the system",
         )
     person = await crud_person.person.update(
-        async_db, db_obj=person[0], obj_in=person_in
+        async_db, db_obj=person_list[0], obj_in=person_in
     )
     return person
 
@@ -138,8 +138,8 @@ async def delete_person(
     """
     Delete a person.
     """
-    person = await crud_person.person.get(async_db, person_id)
-    if not person:
+    person_list = await crud_person.person.get(async_db, person_id)
+    if person_list == []:
         raise HTTPException(status_code=404, detail="Person not found")
     person = await crud_person.person.remove(async_db=async_db, id=person_id)
     return person

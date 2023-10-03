@@ -28,14 +28,14 @@ async def create_user_open(
             status_code=403,
             detail="Open user registration is forbidden on this server",
         )
-    user = await crud.user.get_by_email(async_db, email=user_in.email)
-    if not user == []:
+    user_list = await crud.user.get_by_email(async_db, email=user_in.email)
+    if not user_list == []:
         raise HTTPException(
             status_code=400,
             detail="A user with this email already exists in the system",
         )
-    user = await crud.user.get_by_username(async_db, username=user_in.username)
-    if not user == []:
+    user_list = await crud.user.get_by_username(async_db, username=user_in.username)
+    if not user_list == []:
         raise HTTPException(
             status_code=400,
             detail="A user with this username already exists in the system",

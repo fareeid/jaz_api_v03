@@ -56,7 +56,7 @@ class PartnerTransBase(BaseModel):
     "prem_payment_mode": "MPESA",
     "prem_payment_ref": "RIS1VW7M7H",
     "prem_payment_date": "2023-09-26 09:53",
-    "totalCost": 50000,
+    "items_total_cost": 50000,
     "items": [
         {
             "item_code": "9000004",
@@ -65,6 +65,7 @@ class PartnerTransBase(BaseModel):
             "item_model": "CHEST FREEZER AF-26K",
             "item_serial_num": "0FYJ4ABH700044V45",
             "item_cost": 30000,
+            "item_prem": 500
         },
         {
             "item_code": "9000006",
@@ -73,14 +74,15 @@ class PartnerTransBase(BaseModel):
             "item_model": "316LTR CHEST FREEZER#BCF3316",
             "item_serial_num": "0FYJ4ABH700044V4005",
             "item_cost": 20000,
-        },
+            "item_prem": 400
+        }
     ],
     "premium": {
         "basic_prem": 875,
         "pcf": 12,
         "itl": 11,
         "stamp_duty": 40,
-        "total": 1200,
-    },
+        "total": 1200
+    }
 }
 """

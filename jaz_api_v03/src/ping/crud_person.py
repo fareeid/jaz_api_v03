@@ -2,17 +2,20 @@ import logging
 from typing import Any, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.db.crud_base import CRUDBase
-from src.ping.models import Item, Person
-from src.ping.schemas import PersonCreate, PersonUpdate
+
+from ..db.crud_base import CRUDBase
+from .models import Item, Person
+from .schemas import PersonCreate, PersonUpdate
 
 log = logging.getLogger("uvicorn")
 
 
 class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):  # type: ignore
-    async def create(self, async_db: AsyncSession, *, obj_in: PersonCreate) -> Person:
+    async def create(
+        self, async_db: AsyncSession, *, obj_in: Union[PersonCreate, dict[str, Any]]
+    ) -> Person:
         person_dict = self.replace_pass_items_field(
-            obj_in.dict(exclude_unset=True)
+            obj_in.dict(exclude_unset=True)  # type: ignore
         )  # __dict__
         return await super().create(async_db, obj_in=person_dict)
 

@@ -6,14 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from ..core.dependencies import get_oracle_session, get_session
-from . import crud, schemas, schemas_
+from . import crud, schemas, schemas_  # noqa: F401
 
 # from . import schemas, schemas_
 
 router = APIRouter()
 
 
-@router.post("/send_payload", response_model=schemas.Quote)  # dict[str, Any]
+@router.post("/send_payload", response_model=schemas.Quote)  #  dict[str, Any]
 async def send_payload(
     *,
     async_db: AsyncSession = Depends(get_session),
@@ -71,7 +71,41 @@ async def send_payload(
     )
     sections_list.append(proposal_section_obj)
 
-    # 6. create proposal
+    # 6. Create charges
+    premium_items = payload_in.premium
+    charges_list = []
+    stamp_duty_obj = schemas.ProposalChargeCreate(
+        chg_sr_no=1,
+        pchg_code="stamp_duty",
+        pchg_type="stamp_duty",
+        pchg_perc=100,
+        pchg_chg_fc=premium_items.stamp_duty,
+        pchg_prem_curr_code="KES",
+        pchg_rate_per=100,
+    )
+    pcf_obj = schemas.ProposalChargeCreate(
+        chg_sr_no=1,
+        pchg_code="pcf",
+        pchg_type="pcf",
+        pchg_perc=0.25,
+        pchg_chg_fc=premium_items.pcf,
+        pchg_prem_curr_code="KES",
+        pchg_rate_per=100,
+    )
+    itl_obj = schemas.ProposalChargeCreate(
+        chg_sr_no=1,
+        pchg_code="itl",
+        pchg_type="itl",
+        pchg_perc=0.20,
+        pchg_chg_fc=premium_items.itl,
+        pchg_prem_curr_code="KES",
+        pchg_rate_per=100,
+    )
+    charges_list.append(stamp_duty_obj)
+    charges_list.append(pcf_obj)
+    charges_list.append(itl_obj)
+
+    # 7. create proposal
     proposals_list = []
     proposal_obj = schemas.ProposalCreate(
         prop_sr_no=1,
@@ -87,6 +121,8 @@ async def send_payload(
         pol_to_dt=payload_in.end_date,
         pol_prem_curr_code="KES",
         pol_dflt_si_curr_code="KES",
+        sections=sections_list,
+        charges=charges_list,
     )
     proposals_list.append(proposal_obj)
 
@@ -97,11 +133,8 @@ async def send_payload(
         quot_paymt_date=payload_in.prem_payment_date,
         proposals=proposals_list,
     )
-    # quote_obj.dict()
+    # return quote_obj.dict()
     quote = await crud.quote.create(async_db, obj_in=quote_obj)
-
-    # 7. create cover
-    # 8. create charges
 
     # user = await crud.user.get_by_email(async_db, email=payload_in.customer_email)
     # return {"test_key": "test_value"}

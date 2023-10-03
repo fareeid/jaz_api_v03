@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: FastAPI",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "jaz_api_v03.src.main:app",
+                "--reload"
+            ],
+            "jinja": true,
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/jaz_api_v03/src",
+                "POSTGRES_SERVER": "db:5432",
+                "POSTGRES_USER": "postgres",
+                "POSTGRES_PASSWORD": "changethis",
+                "POSTGRES_DB": "web_dev",
+                "PREMIA_SERVER": "10.158.2.24",
+                "PREMIA_USER": "P11_KE_LIVE",
+                "PREMIA_PASSWORD": "p11_ke_live",
+                "PREMIA_DB": "p11ke",
+                "PREMIA_PORT": "1521",
+            },
+        }
+    ]
+}

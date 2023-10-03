@@ -3,17 +3,17 @@ from typing import Union
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.auth.models import User
-from src.auth.schemas import UserCreate, UserUpdate
-from src.db.crud_base import CRUDBase
 
+from ..db.crud_base import CRUDBase
+from .models import User
+from .schemas import UserCreate, UserUpdate
 from .security import get_password_hash, verify_password
 
 log = logging.getLogger("uvicorn")
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):  # type: ignore
-    async def create(self, async_db: AsyncSession, *, obj_in: UserCreate) -> User:
+    async def create(self, async_db: AsyncSession, *, obj_in: UserCreate) -> User:  # type: ignore  # noqa: E501
         user_dict = obj_in.dict(exclude_unset=True)
         if user_dict.get("password"):
             user_dict["password"] = get_password_hash(user_dict["password"])

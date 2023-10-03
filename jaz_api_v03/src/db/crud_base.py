@@ -41,9 +41,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
     ) -> ModelType:
         if isinstance(obj_in, dict):
+            # insert_data = jsonable_encoder(obj_in, exclude_unset=True)
             insert_data = obj_in
         else:
             insert_data = obj_in.dict(exclude_unset=True)
+        print(insert_data)
         db_obj = self.model(**insert_data)
         async_db.add(db_obj)
         await async_db.commit()

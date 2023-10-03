@@ -10,6 +10,7 @@ class PartnerTransItems(BaseModel):
     item_model: str  # CHEST FREEZER AF-26K,
     item_serial_num: str  # 0FYJ4ABH700044V45,
     item_cost: float  # 30000
+    item_prem: float
 
 
 class PartnerTransPremium(BaseModel):

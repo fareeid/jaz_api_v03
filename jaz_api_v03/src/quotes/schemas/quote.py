@@ -3,6 +3,8 @@ from typing import Union
 
 from pydantic import BaseModel
 
+from . import Proposal, ProposalCreate
+
 
 # ########## Quote Schema #########
 # Shared properties
@@ -17,6 +19,7 @@ class QuoteBase(BaseModel):
 # Properties to receive on Proposal Cover creation
 class QuoteCreate(QuoteBase):
     quot_ref: str
+    proposals: list[ProposalCreate] = []
 
 
 # Properties to receive via API on update by User
@@ -27,6 +30,7 @@ class QuoteUpdate(QuoteBase):
 # Properties shared by models stored in DB
 class QuoteInDBBase(QuoteBase):
     quot_sys_id: int
+    proposals: list[Proposal] = []
 
     class Config:
         from_attributes = True
@@ -39,4 +43,5 @@ class Quote(QuoteInDBBase):
 
 # Properties properties stored in DB
 class QuoteInDB(QuoteInDBBase):
+    pass
     pass

@@ -74,3 +74,124 @@ Logging construct
     - log.info("Test logging from crud_base get...")
 
 ```
+
+```
+{
+   "quot_ref":"5773197888",
+   "quot_paymt_ref":"RIS1VW7M7H",
+   "quot_paymt_date":"2023-09-26T09:53:00",
+   "proposals":[
+      {
+         "prop_sr_no":1,
+         "prop_paymt_ref":"RIS1VW7M7H",
+         "prop_paymt_date":"2023-09-26T09:53:00",
+         "pol_quot_no":"5773197888",
+         "pol_comp_code":"001",
+         "pol_divn_code":"101",
+         "pol_prod_code":"5006",
+         "pol_type":"5006",
+         "pol_cust_code":"K21006439",
+         "pol_fm_dt":"2023-09-26T00:00:00",
+         "pol_to_dt":"2024-09-27T00:00:00",
+         "pol_dflt_si_curr_code":"KES",
+         "pol_prem_curr_code":"KES",
+         "sections":[
+            {
+               "sec_sr_no":1,
+               "psec_sec_code":"500601",
+               "risks":[
+                  {
+                     "risk_sr_no":1,
+                     "prai_data_18":"Kenya",
+                     "prai_code_03":"503",
+                     "prai_desc_09":"Residential",
+                     "covers":[
+                        {
+                           "cvr_sr_no":1,
+                           "prc_code":"3553",
+                           "prc_rate":1.75,
+                           "prc_rate_per":1000.0,
+                           "prc_si_curr_code":"KES",
+                           "prc_prem_curr_code":"KES",
+                           "prc_si_fc":50000.0,
+                           "prc_prem_fc":875.0
+                        }
+                     ],
+                     "smis":[
+                        {
+                           "smi_sr_no":1,
+                           "prs_smi_code":"9000004",
+                           "prs_rate":1.75,
+                           "prs_rate_per":100.0,
+                           "prs_si_fc":30000.0,
+                           "prs_prem_fc":500.0,
+                           "prs_smi_desc":"Details(name='COOKERS', make='ARMCO', model='CHEST FREEZER AF-26K', serial_num='0FYJ4ABH700044V45')"
+                        },
+                        {
+                           "smi_sr_no":2,
+                           "prs_smi_code":"9000006",
+                           "prs_rate":1.75,
+                           "prs_rate_per":100.0,
+                           "prs_si_fc":20000.0,
+                           "prs_prem_fc":400.0,
+                           "prs_smi_desc":"Details(name='FREEZERS', make='ARMCO', model='316LTR CHEST FREEZER#BCF3316', serial_num='0FYJ4ABH700044V4005')"
+                        }
+                     ]
+                  }
+               ]
+            }
+         ],
+         "charges":[
+            {
+               "chg_sr_no":1,
+               "pchg_code":"stamp_duty",
+               "pchg_type":"stamp_duty",
+               "pchg_perc":100.0,
+               "pchg_chg_fc":40.0,
+               "pchg_prem_curr_code":"KES",
+               "pchg_rate_per":100.0
+            },
+            {
+               "chg_sr_no":1,
+               "pchg_code":"pcf",
+               "pchg_type":"pcf",
+               "pchg_perc":0.25,
+               "pchg_chg_fc":12.0,
+               "pchg_prem_curr_code":"KES",
+               "pchg_rate_per":100.0
+            },
+            {
+               "chg_sr_no":1,
+               "pchg_code":"itl",
+               "pchg_type":"itl",
+               "pchg_perc":0.2,
+               "pchg_chg_fc":11.0,
+               "pchg_prem_curr_code":"KES",
+               "pchg_rate_per":100.0
+            }
+         ]
+      }
+   ]
+}
+
+def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
+	obj_in_data = jsonable_encoder(obj_in)
+	db_obj = self.model(**obj_in_data)  # type: ignore
+	db.add(db_obj)
+	db.commit()
+	db.refresh(db_obj)
+	return db_obj
+	
+
+def create(self, db: Session, *, obj_in: UserCreate) -> User:
+	db_obj = User(
+		email=obj_in.email,
+		hashed_password=get_password_hash(obj_in.password),
+		full_name=obj_in.full_name,
+		is_superuser=obj_in.is_superuser,
+	)
+	db.add(db_obj)
+	db.commit()
+	db.refresh(db_obj)
+	return db_obj
+```

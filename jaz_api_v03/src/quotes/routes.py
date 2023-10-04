@@ -6,23 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from ..core.dependencies import get_oracle_session, get_session
-from . import crud, schemas, schemas_  # noqa: F401
+from . import crud, models, schemas, schemas_  # noqa: F401
 
 # from . import schemas, schemas_
 
 router = APIRouter()
 
 
-@router.post("/send_payload", response_model=schemas.Quote)  #  dict[str, Any]
-async def send_payload(
-    *,
-    async_db: AsyncSession = Depends(get_session),
+def create_covers_list(
     payload_in: schemas_.PartnerTransBase,
-    # current_user: models.User = Depends(deps.get_current_active_superuser),
-) -> Any:
-    # 1. Search and/or create customer details in premia
-
-    # 2. create list of proposal covers
+) -> list[schemas.ProposalCoverCreate]:
     covers_list = []
     proposal_cover_obj = schemas.ProposalCoverCreate(
         cvr_sr_no=1,
@@ -35,8 +28,12 @@ async def send_payload(
         prc_prem_fc=payload_in.premium.basic_prem,
     )
     covers_list.append(proposal_cover_obj)
+    return covers_list
 
-    # 3. create list of proposal smis
+
+def create_smis_list(
+    payload_in: schemas_.PartnerTransBase,
+) -> list[schemas.ProposalSMICreate]:
     items = payload_in.items
     smis_list = []
     for item in enumerate(items, 1):
@@ -51,8 +48,13 @@ async def send_payload(
             prs_smi_desc=f"Details(name={smi.item_name!r}, make={smi.item_make!r}, model={smi.item_model!r}, serial_num={smi.item_serial_num!r})",  # noqa: E501
         )
         smis_list.append(proposal_smi_obj)
+    return smis_list
 
-    # 4. Create list of proposal risks
+
+def create_risks_list(
+    covers_list: list[schemas.ProposalCoverCreate],
+    smis_list: list[schemas.ProposalSMICreate],
+) -> list[schemas.ProposalRiskCreate]:
     risks_list = []
     proposal_risk_obj = schemas.ProposalRiskCreate(
         risk_sr_no=1,
@@ -63,15 +65,23 @@ async def send_payload(
         smis=smis_list,
     )
     risks_list.append(proposal_risk_obj)
+    return risks_list
 
-    # 5. create section
+
+def create_sections_list(
+    risks_list: list[schemas.ProposalRiskCreate],
+) -> list[schemas.ProposalSectionCreate]:
     sections_list = []
     proposal_section_obj = schemas.ProposalSectionCreate(
         sec_sr_no=1, psec_sec_code="500601", risks=risks_list
     )
     sections_list.append(proposal_section_obj)
+    return sections_list
 
-    # 6. Create charges
+
+def create_charges_list(
+    payload_in: schemas_.PartnerTransBase,
+) -> list[schemas.ProposalChargeCreate]:
     premium_items = payload_in.premium
     charges_list = []
     stamp_duty_obj = schemas.ProposalChargeCreate(
@@ -104,8 +114,14 @@ async def send_payload(
     charges_list.append(stamp_duty_obj)
     charges_list.append(pcf_obj)
     charges_list.append(itl_obj)
+    return charges_list
 
-    # 7. create proposal
+
+def create_proposals_list(
+    payload_in: schemas_.PartnerTransBase,
+    sections_list: list[schemas.ProposalSectionCreate],
+    charges_list: list[schemas.ProposalChargeCreate],
+) -> list[schemas.ProposalCreate]:
     proposals_list = []
     proposal_obj = schemas.ProposalCreate(
         prop_sr_no=1,
@@ -125,6 +141,40 @@ async def send_payload(
         charges=charges_list,
     )
     proposals_list.append(proposal_obj)
+    return proposals_list
+
+
+@router.post("/send_payload", response_model=schemas.Quote)  # dict[str, Any]
+async def send_payload(
+    *,
+    async_db: AsyncSession = Depends(get_session),
+    payload_in: schemas_.PartnerTransBase,
+    # current_user: models.User = Depends(deps.get_current_active_superuser),
+) -> Any:
+    # 1. Search and/or create customer details in premia
+
+    covers_list = create_covers_list(payload_in)
+    covers_list_db = [
+        models.ProposalCover(**cover.dict(exclude_unset=True)) for cover in covers_list
+    ]
+
+    smis_list = create_smis_list(payload_in)
+    smis_list_db = [
+        models.ProposalSMI(**smi.dict(exclude_unset=True)) for smi in smis_list
+    ]
+
+    risks_list = create_risks_list(covers_list, smis_list)
+    risks_list_db = [
+        models.ProposalRisk(**risk.dict(exclude_unset=True)) for risk in risks_list
+    ]
+    risks_list_db[0].proposalcovers = covers_list_db
+    risks_list_db[0].proposalsmis = smis_list_db
+
+    sections_list = create_sections_list(risks_list)
+    # sections_list_db =
+
+    charges_list = create_charges_list(payload_in)
+    proposals_list = create_proposals_list(payload_in, sections_list, charges_list)
 
     # 8. Create quote
     quote_obj = schemas.QuoteCreate(

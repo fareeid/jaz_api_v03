@@ -14,6 +14,7 @@ class ProposalRiskBase(BaseModel):
     prai_data_18: Union[str | None] = None
     prai_code_03: Union[str | None] = None
     prai_desc_09: Union[str | None] = None
+    prai_flexi: Union[str | None] = None
 
 
 # Properties to receive on Proposal Risk creation
@@ -22,8 +23,8 @@ class ProposalRiskCreate(ProposalRiskBase):
     prai_data_18: str
     prai_code_03: str
     prai_desc_09: str
-    covers: list[ProposalCoverCreate] = []
-    smis: list[ProposalSMICreate] = []
+    proposalcovers: list[ProposalCoverCreate]
+    proposalsmis: list[ProposalSMICreate] = []
 
 
 # Properties to receive via API on update by User
@@ -35,8 +36,8 @@ class ProposalRiskUpdate(ProposalRiskBase):
 class ProposalRiskInDBBase(ProposalRiskBase):
     risk_sys_id: int
     risk_sec_sys_id: int
-    covers: list[ProposalCover] = []
-    smis: list[ProposalSMI] = []
+    proposalcovers: list[ProposalCover] = []
+    proposalsmis: list[ProposalSMI] = []
 
     class Config:
         from_attributes = True

@@ -17,7 +17,7 @@ class ProposalSectionBase(BaseModel):
 class ProposalSectionCreate(ProposalSectionBase):
     sec_sr_no: int
     psec_sec_code: str
-    risks: list[ProposalRiskCreate] = []
+    proposalrisks: list[ProposalRiskCreate]
 
 
 # Properties to receive via API on update by User
@@ -29,7 +29,7 @@ class ProposalSectionUpdate(ProposalSectionBase):
 class ProposalSectionInDBBase(ProposalSectionBase):
     sec_sys_id: int
     sec_prop_sys_id: int
-    risks: list[ProposalRisk] = []
+    proposalrisks: list[ProposalRisk] = []
 
     class Config:
         from_attributes = True

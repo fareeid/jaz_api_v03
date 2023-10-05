@@ -48,4 +48,3 @@ class ProposalSMI(ProposalSMIInDBBase):
 # Properties properties stored in DB
 class ProposalSMIInDB(ProposalSMIInDBBase):
     pass
-    pass

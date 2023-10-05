@@ -61,8 +61,8 @@ def create_risks_list(
         prai_data_18="Kenya",
         prai_code_03="503",
         prai_desc_09="Residential",
-        covers=covers_list,
-        smis=smis_list,
+        proposalcovers=covers_list,
+        proposalsmis=smis_list,
     )
     risks_list.append(proposal_risk_obj)
     return risks_list
@@ -73,7 +73,7 @@ def create_sections_list(
 ) -> list[schemas.ProposalSectionCreate]:
     sections_list = []
     proposal_section_obj = schemas.ProposalSectionCreate(
-        sec_sr_no=1, psec_sec_code="500601", risks=risks_list
+        sec_sr_no=1, psec_sec_code="500601", proposalrisks=risks_list
     )
     sections_list.append(proposal_section_obj)
     return sections_list
@@ -133,18 +133,19 @@ def create_proposals_list(
         pol_prod_code="5006",
         pol_type="5006",
         pol_cust_code="K21006439",
+        pol_assr_code="K99999999",
         pol_fm_dt=payload_in.start_date,
         pol_to_dt=payload_in.end_date,
         pol_prem_curr_code="KES",
         pol_dflt_si_curr_code="KES",
-        sections=sections_list,
-        charges=charges_list,
+        proposalsections=sections_list,
+        proposalcharges=charges_list,
     )
     proposals_list.append(proposal_obj)
     return proposals_list
 
 
-@router.post("/send_payload", response_model=schemas.Quote)  # dict[str, Any]
+@router.post("/mfs_payload", response_model=schemas.Quote)  # dict[str, Any]
 async def send_payload(
     *,
     async_db: AsyncSession = Depends(get_session),
@@ -154,25 +155,9 @@ async def send_payload(
     # 1. Search and/or create customer details in premia
 
     covers_list = create_covers_list(payload_in)
-    covers_list_db = [
-        models.ProposalCover(**cover.dict(exclude_unset=True)) for cover in covers_list
-    ]
-
     smis_list = create_smis_list(payload_in)
-    smis_list_db = [
-        models.ProposalSMI(**smi.dict(exclude_unset=True)) for smi in smis_list
-    ]
-
     risks_list = create_risks_list(covers_list, smis_list)
-    risks_list_db = [
-        models.ProposalRisk(**risk.dict(exclude_unset=True)) for risk in risks_list
-    ]
-    risks_list_db[0].proposalcovers = covers_list_db
-    risks_list_db[0].proposalsmis = smis_list_db
-
     sections_list = create_sections_list(risks_list)
-    # sections_list_db =
-
     charges_list = create_charges_list(payload_in)
     proposals_list = create_proposals_list(payload_in, sections_list, charges_list)
 
@@ -184,11 +169,21 @@ async def send_payload(
         proposals=proposals_list,
     )
     # return quote_obj.dict()
-    quote = await crud.quote.create(async_db, obj_in=quote_obj)
+    quote = await crud.quote.create_v1(async_db, obj_in=quote_obj)
 
     # user = await crud.user.get_by_email(async_db, email=payload_in.customer_email)
     # return {"test_key": "test_value"}
     return quote
+
+
+@router.post("/quote", response_model=dict[str, Any])  # schemas.Quote
+async def quote(
+    *,
+    async_db: AsyncSession = Depends(get_session),
+    payload_in: schemas.QuoteCreate,
+    # current_user: models.User = Depends(deps.get_current_active_superuser),
+) -> Any:
+    return {"test_key": "test_value"}
 
 
 @router.post("/test_ora_conn")  # dict[str, Any] , response_model=schemas.Quote
@@ -200,5 +195,3 @@ def test_oracle(
 ) -> Any:
     result = oracle_db.execute(text("select * from jick_t where rownum<=5"))
     return result.scalars().all()
-    # list(result.scalars().all())
-    # list(result.scalars().all())

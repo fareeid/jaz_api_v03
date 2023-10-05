@@ -249,7 +249,7 @@ def upgrade() -> None:
         sa.Column("prs_rate_per", sa.Float(), nullable=True),
         sa.Column("prs_si_fc", sa.Float(), nullable=True),
         sa.Column("prs_prem_fc", sa.Float(), nullable=True),
-        sa.Column("prs_smi_desc", sa.Float(), nullable=True),
+        sa.Column("prs_smi_desc", sa.String(), nullable=True),
         sa.Column("prs_flexi", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("prs_sys_id", sa.Integer(), nullable=True),
         sa.Column("prs_lvl1_sys_id", sa.Integer(), nullable=True),

@@ -168,7 +168,7 @@ class ProposalSMI(Base):
     prs_rate_per: Mapped[float] = mapped_column(nullable=True)
     prs_si_fc: Mapped[float] = mapped_column(nullable=True)
     prs_prem_fc: Mapped[float] = mapped_column(nullable=True)
-    prs_smi_desc: Mapped[float] = mapped_column(nullable=True)
+    prs_smi_desc: Mapped[str] = mapped_column(nullable=True)
     prs_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_smi fields

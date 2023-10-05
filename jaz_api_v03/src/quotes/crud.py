@@ -19,39 +19,48 @@ class CRUDQuote(CRUDBase[models.Quote, schemas.QuoteCreate, schemas.QuoteUpdate]
     ) -> models.Quote:
         quote_dict = jsonable_encoder(obj_in.dict(exclude_unset=True))
 
-        # if quote_dict.proposals.get("charges"):
-        #     charges_list = [
-        #         models.ProposalCharge(**charge) for charge in quote_dict["charges"]
-        #     ]
+        proposals_list = obj_in.proposals
+        proposals_list_db = []
+        for proposal in proposals_list:
+            charges_list = proposal.proposalcharges
+            charges_list_db = [
+                models.ProposalCharge(**charge.dict(exclude_unset=True))
+                for charge in charges_list
+            ]
 
-        # if quote_dict.get("smis"):
-        #     smis_list = [models.ProposalSMI(**smi) for smi in quote_dict["smis"]]
-
-        # if quote_dict.get("covers"):
-        #     covers_list = [
-        #         models.ProposalCover(**cover) for cover in quote_dict["covers"]
-        #     ]
-
-        # if quote_dict.get("risks"):
-        #     quote_dict.risks["covers"] = covers_list
-        #     quote_dict.risks["smis"] = smis_list
-        #     risks_list = [models.ProposalSMI(**risk) for risk in quote_dict["risks"]]
-
-        # if quote_dict.get("sections"):
-        #     quote_dict.sections["risks"] = risks_list
-        #     sections_list = [
-        #         models.ProposalSection(**section) for section in quote_dict["sections"]  # noqa: E501
-        #     ]
-
-        # if quote_dict.get("proposals"):
-        #     quote_dict.proposals["sections"] = sections_list
-        #     quote_dict.proposals["charges"] = charges_list
-        #     proposals_list = [
-        #         models.Proposal(**proposal) for proposal in quote_dict["proposals"]
-        #     ]
-        #     quote_dict["proposals"]
+            sections_list = proposal.proposalsections
+            sections_list_db = []
+            for section in sections_list:
+                risks_list = section.proposalrisks
+                risks_list_db = []
+                for risk in risks_list:
+                    covers_list = risk.proposalcovers
+                    covers_list_db = [
+                        models.ProposalCover(**cover.dict(exclude_unset=True))
+                        for cover in covers_list
+                    ]
+                    smis_list = risk.proposalsmis
+                    smis_list_db = [
+                        models.ProposalSMI(**smi.dict(exclude_unset=True))
+                        for smi in smis_list
+                    ]
+                    risk_dict = risk.dict(exclude_unset=True)
+                    risk_dict["proposalcovers"] = covers_list_db
+                    risk_dict["proposalsmis"] = smis_list_db
+                    risk_db = models.ProposalRisk(**risk_dict)
+                    risks_list_db.append(risk_db)
+                section_dict = section.dict(exclude_unset=True)
+                section_dict["proposalrisks"] = risks_list_db
+                section_db = models.ProposalSection(**section_dict)
+                sections_list_db.append(section_db)
+            proposal_dict = proposal.dict(exclude_unset=True)
+            proposal_dict["proposalsections"] = sections_list_db
+            proposal_dict["proposalcharges"] = charges_list_db
+            proposal_db = models.Proposal(**proposal_dict)
+            proposals_list_db.append(proposal_db)
 
         quote_dict = obj_in.dict(exclude_unset=True)  # type: ignore
+        quote_dict["proposals"] = proposals_list_db
         return await super().create_v1(async_db, obj_in=quote_dict)
 
 

@@ -42,8 +42,8 @@ class ProposalCreate(ProposalBase):
     pol_to_dt: datetime
     pol_dflt_si_curr_code: str
     pol_prem_curr_code: str
-    sections: list[ProposalSectionCreate] = []
-    charges: list[ProposalChargeCreate] = []
+    proposalsections: list[ProposalSectionCreate]
+    proposalcharges: list[ProposalChargeCreate]
 
 
 # Properties to receive via API on update by User
@@ -55,8 +55,8 @@ class ProposalUpdate(ProposalBase):
 class ProposalInDBBase(ProposalBase):
     prop_sys_id: int
     prop_quot_sys_id: int
-    sections: list[ProposalSection] = []
-    charges: list[ProposalCharge] = []
+    proposalsections: list[ProposalSection] = []
+    proposalcharges: list[ProposalCharge] = []
 
     class Config:
         from_attributes = True

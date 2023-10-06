@@ -1,8 +1,8 @@
-"""init quote tables
+"""init quote table
 
-Revision ID: 7326e1d43375
+Revision ID: 704a10191acd
 Revises: 342ad69dcc32
-Create Date: 2023-09-28 18:55:19.784045
+Create Date: 2023-10-06 11:52:12.145749
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "7326e1d43375"
+revision: str = "704a10191acd"
 down_revision: Union[str, None] = "342ad69dcc32"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,6 +26,9 @@ def upgrade() -> None:
         sa.Column("quot_ref", sa.String(), nullable=False),
         sa.Column("quot_paymt_ref", sa.String(), nullable=True),
         sa.Column("quot_paymt_date", sa.DateTime(), nullable=True),
+        sa.Column("quot_assr_name", sa.String(), nullable=True),
+        sa.Column("quot_assr_nic", sa.String(), nullable=True),
+        sa.Column("quot_assr_pin", sa.String(), nullable=True),
         sa.Column("quot_assr_phone", sa.String(), nullable=True),
         sa.Column("quot_assr_email", sa.String(), nullable=True),
         sa.Column(

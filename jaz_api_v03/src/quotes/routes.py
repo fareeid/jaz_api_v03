@@ -193,5 +193,5 @@ def test_oracle(
     payload_in: schemas_.PartnerTransBase,
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
-    result = oracle_db.execute(text("select * from jick_t where rownum<=5"))
+    result = oracle_db.execute(text("select * from jick_t where rownum<=6"))
     return result.scalars().all()

@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED 1
 
 # install system dependencies
 RUN apt-get update \
-  && apt-get -y install netcat gcc tzdata \
+  && apt-get -y install netcat gcc tzdata net-tools iputils-ping \
   && apt-get clean
 
 ENV TZ Africa/Nairobi

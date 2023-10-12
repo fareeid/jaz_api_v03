@@ -66,7 +66,7 @@ def upgrade() -> None:
         sa.Column("pol_prod_code", sa.String(), nullable=False),
         sa.Column("pol_type", sa.String(), nullable=False),
         sa.Column("pol_cust_code", sa.String(), nullable=False),
-        sa.Column("pol_assr_code", sa.String(), nullable=False),
+        sa.Column("pol_assr_code", sa.String(), nullable=True),
         sa.Column("pol_fm_dt", sa.DateTime(), nullable=False),
         sa.Column("pol_to_dt", sa.DateTime(), nullable=False),
         sa.Column("pol_dflt_si_curr_code", sa.String(), nullable=False),

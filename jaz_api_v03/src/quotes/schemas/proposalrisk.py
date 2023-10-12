@@ -1,10 +1,16 @@
-from typing import Union
+from typing import Any, Union
 
 from pydantic import BaseModel
 
 # from . import ProposalCover, ProposalCoverCreate, ProposalSMI, ProposalSMICreate
 from .proposalcover import ProposalCover, ProposalCoverCreate
 from .proposalsmi import ProposalSMI, ProposalSMICreate
+
+
+class PraiFlexi(BaseModel):
+    prai_data_18: Union[str | None] = None
+    prai_code_03: Union[str | None] = None
+    prai_desc_09: Union[str | None] = None
 
 
 # ########## Risk Schema #########
@@ -14,7 +20,8 @@ class ProposalRiskBase(BaseModel):
     prai_data_18: Union[str | None] = None
     prai_code_03: Union[str | None] = None
     prai_desc_09: Union[str | None] = None
-    prai_flexi: Union[str | None] = None
+    # prai_flexi: Union[list[Any] | None] = None
+    prai_flexi: Union[dict[str, Any] | None] = None
 
 
 # Properties to receive on Proposal Risk creation
@@ -25,6 +32,8 @@ class ProposalRiskCreate(ProposalRiskBase):
     prai_desc_09: str
     proposalcovers: list[ProposalCoverCreate]
     proposalsmis: list[ProposalSMICreate] = []
+    # prai_flexi: list[Any] = []
+    prai_flexi: dict[str, Any] = {}
 
 
 # Properties to receive via API on update by User
@@ -50,4 +59,5 @@ class ProposalRisk(ProposalRiskInDBBase):
 
 # Properties properties stored in DB
 class ProposalRiskInDB(ProposalRiskInDBBase):
+    pass
     pass

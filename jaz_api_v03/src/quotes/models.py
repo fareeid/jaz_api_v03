@@ -50,7 +50,7 @@ class Proposal(Base):
     pol_prod_code: Mapped[str] = mapped_column(nullable=False)
     pol_type: Mapped[str] = mapped_column(nullable=False)
     pol_cust_code: Mapped[str] = mapped_column(nullable=False)
-    pol_assr_code: Mapped[str] = mapped_column(nullable=False)
+    pol_assr_code: Mapped[str] = mapped_column(nullable=True)
     pol_fm_dt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     pol_to_dt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     pol_dflt_si_curr_code: Mapped[str] = mapped_column(nullable=False)

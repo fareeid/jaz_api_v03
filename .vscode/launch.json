@@ -17,7 +17,7 @@
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/jaz_api_v03/src",
-                "POSTGRES_SERVER": "db:5432",
+                "POSTGRES_SERVER": "localhost:5432",
                 "POSTGRES_USER": "postgres",
                 "POSTGRES_PASSWORD": "changethis",
                 "POSTGRES_DB": "web_dev",

@@ -176,14 +176,16 @@ async def send_payload(
     return quote
 
 
-@router.post("/quote", response_model=dict[str, Any])  # schemas.Quote
+@router.post("/quote", response_model=schemas.Quote)  # dict[str, Any]
 async def quote(
     *,
     async_db: AsyncSession = Depends(get_session),
     payload_in: schemas.QuoteCreate,
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
-    return {"test_key": "test_value"}
+    quote = await crud.quote.create_v1(async_db, obj_in=payload_in)
+    return quote
+    # return {"test_key": "test_value"}
 
 
 @router.post("/test_ora_conn")  # dict[str, Any] , response_model=schemas.Quote

@@ -78,6 +78,11 @@ Logging construct
 ```
 {
    "quot_ref":"5773197888",
+   "quot_assr_name": "John Doe",
+   "quot_assr_nic": "3000211",
+   "quot_assr_pin": "P00892519Y",
+   "quot_assr_phone": "2547xxxxxxxx",
+   "quot_assr_email": "test@mfs.co.ke",
    "quot_paymt_ref":"RIS1VW7M7H",
    "quot_paymt_date":"2023-09-26T09:53:00",
    "proposals":[
@@ -95,17 +100,28 @@ Logging construct
          "pol_to_dt":"2024-09-27T00:00:00",
          "pol_dflt_si_curr_code":"KES",
          "pol_prem_curr_code":"KES",
-         "sections":[
+         "proposalsections":[
             {
                "sec_sr_no":1,
                "psec_sec_code":"500601",
-               "risks":[
+               "proposalrisks":[
                   {
                      "risk_sr_no":1,
                      "prai_data_18":"Kenya",
                      "prai_code_03":"503",
                      "prai_desc_09":"Residential",
-                     "covers":[
+                     "prai_flexi":{
+                        "premises":{
+                           "prai_data_18":"Kenya"
+                        },
+                        "all_risk_type_code":{
+                           "prai_code_03":"503"
+                        },
+                        "all_risk_type_desc":{
+                           "prai_desc_09":"Residential"
+                        }
+                     },
+                     "proposalcovers":[
                         {
                            "cvr_sr_no":1,
                            "prc_code":"3553",
@@ -117,7 +133,7 @@ Logging construct
                            "prc_prem_fc":875.0
                         }
                      ],
-                     "smis":[
+                     "proposalsmis":[
                         {
                            "smi_sr_no":1,
                            "prs_smi_code":"9000004",
@@ -141,29 +157,29 @@ Logging construct
                ]
             }
          ],
-         "charges":[
+         "proposalcharges":[
             {
                "chg_sr_no":1,
-               "pchg_code":"stamp_duty",
-               "pchg_type":"stamp_duty",
-               "pchg_perc":100.0,
+               "pchg_code":"2001",
+               "pchg_type":"002",
+               "pchg_perc":40,
                "pchg_chg_fc":40.0,
                "pchg_prem_curr_code":"KES",
-               "pchg_rate_per":100.0
+               "pchg_rate_per":1
             },
             {
-               "chg_sr_no":1,
-               "pchg_code":"pcf",
-               "pchg_type":"pcf",
+               "chg_sr_no":2,
+               "pchg_code":"1004",
+               "pchg_type":"005",
                "pchg_perc":0.25,
                "pchg_chg_fc":12.0,
                "pchg_prem_curr_code":"KES",
                "pchg_rate_per":100.0
             },
             {
-               "chg_sr_no":1,
-               "pchg_code":"itl",
-               "pchg_type":"itl",
+               "chg_sr_no":3,
+               "pchg_code":"2004",
+               "pchg_type":"002",
                "pchg_perc":0.2,
                "pchg_chg_fc":11.0,
                "pchg_prem_curr_code":"KES",

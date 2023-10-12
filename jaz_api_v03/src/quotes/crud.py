@@ -47,6 +47,10 @@ class CRUDQuote(CRUDBase[models.Quote, schemas.QuoteCreate, schemas.QuoteUpdate]
                     risk_dict = risk.dict(exclude_unset=True)
                     risk_dict["proposalcovers"] = covers_list_db
                     risk_dict["proposalsmis"] = smis_list_db
+                    # prai_flexi_field = risk_dict["prai_flexi"][0]
+                    # del risk_dict["prai_flexi"]
+                    # print(prai_flexi_field)
+                    # risk_dict["prai_flexi"] = prai_flexi_field
                     risk_db = models.ProposalRisk(**risk_dict)
                     risks_list_db.append(risk_db)
                 section_dict = section.dict(exclude_unset=True)

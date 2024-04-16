@@ -10,7 +10,7 @@ from .schemas import PersonCreate, PersonUpdate
 log = logging.getLogger("uvicorn")
 
 
-class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):  # type: ignore
+class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):
     async def create(
         self, async_db: AsyncSession, *, obj_in: Union[PersonCreate, dict[str, Any]]
     ) -> Person:

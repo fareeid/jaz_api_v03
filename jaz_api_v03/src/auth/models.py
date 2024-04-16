@@ -10,9 +10,10 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(30))
     email: Mapped[str] = mapped_column(unique=True, index=True)
     username: Mapped[str] = mapped_column(unique=True, index=True)
-    password: Mapped[str]
-    phone: Mapped[str]
-    client_code: Mapped[str] = mapped_column(String(10), nullable=True)
+    password: Mapped[str] = mapped_column(nullable=True)
+    phone: Mapped[str] = mapped_column(nullable=True)
+    nic: Mapped[str] = mapped_column(nullable=True)
+    pin: Mapped[str] = mapped_column(nullable=True)
     agent_code: Mapped[str] = mapped_column(String(10), nullable=True)
     agency_admin: Mapped[bool] = mapped_column(server_default="false")
     is_staff: Mapped[bool] = mapped_column(server_default="false")

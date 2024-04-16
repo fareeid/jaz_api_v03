@@ -12,5 +12,12 @@ oracledb_session_local = sessionmaker(
     autocommit=False, autoflush=False, bind=oracledb_engine
 )
 
+# conn_str = "postgresql://postgres:changethis@db:5432/web_dev"
+conn_str = "postgresql://postgres:changethis@localhost:5432/web_dev"
+postgres_engine = create_engine(conn_str, pool_pre_ping=True)  # type: ignore  # noqa: E501
+postgres_session_local = sessionmaker(
+    autocommit=False, autoflush=False, bind=postgres_engine
+)
+
 async_engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI)  # type: ignore
 async_session_local = async_sessionmaker(async_engine, expire_on_commit=False)

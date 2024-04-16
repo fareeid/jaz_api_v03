@@ -63,7 +63,7 @@ class CRUDQuote(CRUDBase[models.Quote, schemas.QuoteCreate, schemas.QuoteUpdate]
             proposal_db = models.Proposal(**proposal_dict)
             proposals_list_db.append(proposal_db)
 
-        quote_dict = obj_in.dict(exclude_unset=True)  # type: ignore
+        quote_dict = obj_in.dict(exclude_unset=True)
         quote_dict["proposals"] = proposals_list_db
         return await super().create_v1(async_db, obj_in=quote_dict)
 

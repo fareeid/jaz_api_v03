@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+# from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import sessionmaker
 
 from ..core.config import Settings, get_settings
@@ -11,6 +13,10 @@ oracledb_engine = create_engine(settings.PREMIA_DATABASE_URI, pool_pre_ping=True
 oracledb_session_local = sessionmaker(
     autocommit=False, autoflush=False, bind=oracledb_engine
 )
+
+# these two lines perform the "database reflection" to analyze tables and relationships
+# OBase = automap_base()
+# OBase.prepare(oracledb_engine, reflect=True)
 
 # conn_str = "postgresql://postgres:changethis@db:5432/web_dev"
 conn_str = "postgresql://postgres:changethis@localhost:5432/web_dev"

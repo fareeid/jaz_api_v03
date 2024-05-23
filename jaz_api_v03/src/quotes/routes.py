@@ -5,7 +5,7 @@ from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from ..core.dependencies import get_oracle_session, get_session
+from ..core.dependencies import get_oracle_session, get_session  # , orcl_base
 from ..customer import crud as customers_crud
 
 # from . import crud
@@ -37,9 +37,10 @@ async def quote_cust(
     payload_in: schemas.QuoteCreate,
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
-    customer = customers_crud.get_customer("152917x")  # noqa: F841
-    # quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
-    return customer
+    # customer = customers_crud.get_customer("152917x")  # noqa: F841
+    # return customer
+    policy = customers_crud.get_tables()
+    return policy
     # return {"test_key": "test_value"}
 
 
@@ -52,8 +53,10 @@ async def test_reflection(
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     proposal_table = customers_crud.get_proposal_table()  # noqa: F841
+    # Policy = orcl_base.classes.pgit_policy
     # quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
-    return proposal_table
+
+    return proposal_table.columns._all_columns
     # return {"test_key": "test_value"}
 
 

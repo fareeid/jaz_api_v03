@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # , field_serializer
 
 # from . import (  # ProposalCharge,; ProposalChargeCreate,
 #     ProposalSection,
@@ -29,6 +29,10 @@ class ProposalBase(BaseModel):
     pol_to_dt: Union[datetime | None] = None
     pol_dflt_si_curr_code: Union[str | None] = None
     pol_prem_curr_code: Union[str | None] = None
+
+    # @field_serializer("pol_fm_dt", "pol_to_dt")  # type: ignore
+    # def serialize_dt(self, dt: datetime, _info: str):
+    #     return dt.strftime("%d-%b-%Y %H:%M:%S")
 
 
 # Properties to receive on Proposal Risk creation

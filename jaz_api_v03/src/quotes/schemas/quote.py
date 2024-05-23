@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr  # , field_serializer
 
 from . import Proposal, ProposalCreate
 
@@ -17,6 +17,10 @@ class QuoteBase(BaseModel):
     quot_assr_pin: Union[str | None] = None
     quot_assr_phone: Union[str | None] = None
     quot_assr_email: Union[EmailStr | None] = None
+
+    # @field_serializer("quot_paymt_date")  # type: ignore
+    # def serialize_dt(self, dt: datetime, _info: str):
+    #     return dt.strftime("%d-%b-%Y %H:%M:%S")
 
 
 # Properties to receive on Proposal Cover creation

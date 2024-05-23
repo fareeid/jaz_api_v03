@@ -16,3 +16,6 @@ def get_oracle_session() -> Generator:  # type: ignore
         yield db
     finally:
         db.close()
+
+
+# orcl_base = OrclBase

@@ -2,11 +2,20 @@ from typing import Any
 
 from sqlalchemy import MetaData, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
+from sqlalchemy.ext.automap import automap_base
 
 from ..db.session import oracledb_engine, postgres_engine
 
 premia_metadata = MetaData()
 web_dev_metadata = MetaData()
+
+
+def get_tables() -> Any:
+    premia_metadata.reflect(oracledb_engine, only=["pgit_policy"])
+    OrclBase = automap_base(metadata=premia_metadata)
+    OrclBase.prepare()
+    Policy = OrclBase.classes.pgit_policy
+    return Policy
 
 
 def get_customer(nic: str) -> list[Any]:
@@ -37,12 +46,10 @@ def get_cust_by_nic(nic: str) -> list[Any]:
     return list(result.scalars().all())
 
 
-def get_cust_by_pin(pin: str) -> None:
-    ...
+def get_cust_by_pin(pin: str) -> None: ...
 
 
-def get_cust_by_email(email: str) -> None:
-    ...
+def get_cust_by_email(email: str) -> None: ...
 
 
 def get_proposal_table() -> Any:

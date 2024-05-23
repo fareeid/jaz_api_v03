@@ -10,7 +10,8 @@ on:
     - '**'
     - '.github/workflows/jazk-api-app2-AutoDeployTrigger-ae88a2dc-90a0-49b1-a236-f3e519702ca6.yml'
 
-  # Allow manual trigger 
+  # Allow manual trigger It can only run if the workflow is in the default branch. Yon need to change default
+  # branch back and forth between main and uat_branch
   workflow_dispatch:
       
 jobs:

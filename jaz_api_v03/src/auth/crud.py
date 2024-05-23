@@ -12,7 +12,7 @@ from .security import get_password_hash, verify_password
 log = logging.getLogger("uvicorn")
 
 
-class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):  # type: ignore
+class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     async def create(self, async_db: AsyncSession, *, obj_in: UserCreate) -> User:  # type: ignore  # noqa: E501
         user_dict = obj_in.dict(exclude_unset=True)
         if user_dict.get("password"):

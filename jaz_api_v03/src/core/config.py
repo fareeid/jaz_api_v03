@@ -1,5 +1,6 @@
 import logging
-import secrets
+
+# import secrets
 from functools import lru_cache
 from typing import Any, Union
 
@@ -12,7 +13,8 @@ log = logging.getLogger("uvicorn")
 class Settings(BaseSettings):
     # model_config = SettingsConfigDict(env_file=".env")
     API_V1_STR: str = ""
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    # SECRET_KEY: str = secrets.token_urlsafe(32)
+    SECRET_KEY: str = "0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A"
 
     POSTGRES_SERVER: str
     POSTGRES_USER: str
@@ -72,4 +74,5 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     log.info("Loading config settings from the .env...")
+    return Settings()
     return Settings()

@@ -1,10 +1,11 @@
 """Init - Ping Tables
 
 Revision ID: 079defacff37
-Revises: 
+Revises:
 Create Date: 2023-09-27 14:41:26.355815
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

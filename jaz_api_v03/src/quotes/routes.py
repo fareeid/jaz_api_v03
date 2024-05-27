@@ -1,18 +1,32 @@
+import json
+from base64 import b64decode, b64encode
 from typing import Any
 
+from Cryptodome.Cipher import AES
+from Cryptodome.Util.Padding import pad  # , unpad
 from fastapi import APIRouter, Depends
 from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from ..core.dependencies import get_oracle_session, get_session  # , orcl_base
+from ..core.dependencies import (  # , orcl_base
+    aes_decrypt,
+    aes_encrypt,
+    get_oracle_session,
+    get_session,
+)
 from ..customer import crud as customers_crud
 
 # from . import crud
 from . import crud as quotes_crud
-from . import models, schemas, schemas_  # noqa: F401
-
-# from . import schemas, schemas_
+from . import (  # noqa: F401
+    models,
+    schemas,
+    schemas_,
+    vendors_api,  # noqa: F401
+)
+from . import services as quote_services
+from .vendors_api import schemas as vendor_schemas
 
 router = APIRouter()
 
@@ -28,6 +42,60 @@ async def quote(
     quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
     return quote
     # return {"test_key": "test_value"}
+
+
+@router.post("/dyn_marine_payload", response_model=str)
+async def dyn_marine_payload(
+    *,
+    async_db: AsyncSession = Depends(get_session),
+    payload_in: str,  # vendor_schemas.QuoteMarineCreate,
+) -> Any:
+    obj_in = {"pl_data": payload_in}
+    payload = await quotes_crud.payload.create_v2(async_db, obj_in=obj_in)  # noqa: F841
+
+    data = aes_decrypt(payload_in)  # noqa: F841
+    # data_dict = eval(data)  # noqa: F841
+    data_dict = json.loads(data)
+    data_schema = vendor_schemas.QuoteMarineCreate(**data_dict)  # noqa: F841
+
+    quote = await quote_services.create_quote(async_db, data_schema)  # noqa: F841
+
+    resp = '{"status": "00", "reference":"' + data_dict["Reference"] + '"}'
+    # resp_json = json.dumps(resp)
+
+    return aes_encrypt(resp)
+    pass
+
+
+@router.post("/test_encrypt", response_model=str)
+async def test_encrypt(payload_in: str) -> Any:
+    # Encrypting...
+    data = payload_in.encode()
+    key = b"abcdefghijk23456"  # get_random_bytes(16)
+    cipher = AES.new(key, AES.MODE_ECB)
+    ct_bytes = cipher.encrypt(pad(data, AES.block_size))
+    # iv = b64encode(cipher.iv).decode("utf-8")
+    ct = b64encode(ct_bytes).decode("utf-8")
+    enc_result = json.dumps({"ciphertext": ct})
+    print(enc_result)
+    return ct
+
+
+@router.post("/test_decrypt", response_model=str)
+async def test_decrypt(payload_in: str) -> Any:
+    # Decrypting...
+    key = b"abcdefghijk23456"  # get_random_bytes(16)
+    # b64 = json.loads(payload_in)
+    # iv = b64decode(b64['iv'])
+    ct = b64decode(payload_in.encode())
+    cipher = AES.new(key, AES.MODE_ECB)
+    # pt = unpad(cipher.decrypt(ct), AES.block_size)
+    pt = cipher.decrypt(ct)
+    print(pt.decode().rstrip())
+    # return {"The payload is": pt.decode().rstrip()}
+    # return pt.decode().replace("\n", "")
+    # return pt.decode().replace("\n", "").strip()
+    return json.loads(pt.decode().replace("\n", ""))
 
 
 @router.post("/quote_cust")  # dict[str, Any] , response_model=schemas.Quote

@@ -27,9 +27,6 @@ class ProposalRiskBase(BaseModel):
 # Properties to receive on Proposal Risk creation
 class ProposalRiskCreate(ProposalRiskBase):
     risk_sr_no: int
-    prai_data_18: str
-    prai_code_03: str
-    prai_desc_09: str
     proposalcovers: list[ProposalCoverCreate]
     proposalsmis: list[ProposalSMICreate] = []
     # prai_flexi: list[Any] = []

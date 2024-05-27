@@ -13,8 +13,16 @@ log = logging.getLogger("uvicorn")
 class Settings(BaseSettings):
     # model_config = SettingsConfigDict(env_file=".env")
     API_V1_STR: str = ""
-    # SECRET_KEY: str = secrets.token_urlsafe(32)
-    SECRET_KEY: str = "0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A"
+    # SECRET_KEY: str = secrets.token_urlsafe(32) Use this to periodically generate secret at a python cli  # noqa: E501
+    # SECRET_KEY: str = "0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A"
+
+    SECRET_KEY: Union[str, None] = None
+
+    @field_validator("SECRET_KEY")
+    def create_test_env(cls, v: str, info: FieldValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        return info.data["SECRET_KEY"]
 
     POSTGRES_SERVER: str
     POSTGRES_USER: str
@@ -67,6 +75,22 @@ class Settings(BaseSettings):
         )
         return str(conn_url)
 
+    RUNNING_IN_PRODUCTION: Union[str, None] = None
+
+    @field_validator("RUNNING_IN_PRODUCTION")
+    def prod_flag(cls, v: str, info: FieldValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        return info.data["RUNNING_IN_PRODUCTION"]
+
+    DYN_MARINE_KEY: Union[str, None] = None
+
+    @field_validator("DYN_MARINE_KEY")
+    def create_dyn_key_env(cls, v: str, info: FieldValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        return info.data["DYN_MARINE_KEY"]
+
     USERS_OPEN_REGISTRATION: bool = True
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
@@ -74,5 +98,4 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     log.info("Loading config settings from the .env...")
-    return Settings()
     return Settings()

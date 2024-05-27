@@ -21,6 +21,7 @@ class ProposalBase(BaseModel):
     pol_quot_no: Union[str | None] = None
     pol_comp_code: Union[str | None] = None
     pol_divn_code: Union[str | None] = None
+    pol_dept_code: Union[str | None] = None
     pol_prod_code: Union[str | None] = None
     pol_type: Union[str | None] = None
     pol_cust_code: Union[str | None] = None
@@ -40,6 +41,7 @@ class ProposalCreate(ProposalBase):
     prop_sr_no: int
     pol_comp_code: str
     pol_divn_code: str
+    pol_dept_code: str
     pol_prod_code: str
     pol_type: str
     pol_fm_dt: datetime

@@ -53,13 +53,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await async_db.refresh(db_obj)
         return db_obj
 
-    # async def create_v2(
-    #     self, async_db: AsyncSession, *, obj_in: CreateSchemaType
-    # ) -> ModelType:
-    #     async_db.add(obj_in)
-    #     await async_db.commit()
-    #     await async_db.refresh(obj_in)
-    #     return obj_in
+    async def create_v2(
+        self, async_db: AsyncSession, *, obj_in: dict[str, Any]
+    ) -> ModelType:
+        db_obj = self.model(**obj_in)
+        async_db.add(db_obj)
+        await async_db.commit()
+        await async_db.refresh(db_obj)
+        return db_obj
 
     async def update(
         self,

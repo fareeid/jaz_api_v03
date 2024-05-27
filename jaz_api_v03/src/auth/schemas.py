@@ -7,15 +7,26 @@ from pydantic import BaseModel, EmailStr
 class UserBase(BaseModel):
     first_name: Union[str | None] = None
     last_name: Union[str | None] = None
+    name: Union[str | None] = None
     email: Union[EmailStr | None] = None
     username: Union[str | None] = None
     phone: Union[str | None] = None
+    nic: Union[str | None] = None
+    pin: Union[str | None] = None
 
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     first_name: str
-    last_name: str
+    name: str
+    email: EmailStr
+    pin: str
+
+
+# Properties to receive via API on creation
+class UserCreateStrict(UserCreate):
+    first_name: str
+    name: str
     email: EmailStr
     username: str
     phone: str

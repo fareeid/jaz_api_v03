@@ -25,6 +25,7 @@ from src.auth import models as auth_models  # noqa: E402, F401
 from src.db.base import Base  # noqa: E402
 from src.ping import models as ping_models  # noqa: E402, F401
 from src.quotes import models  # noqa: E402, F401
+from src.quotes.vendors_api import models  # noqa: F401, E402, F811
 
 # from jaz_api_v03.src.db import Base
 target_metadata = Base.metadata
@@ -112,6 +113,4 @@ def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
-    run_migrations_online()
     run_migrations_online()

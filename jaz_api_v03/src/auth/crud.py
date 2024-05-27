@@ -26,6 +26,10 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         )
         return list(result.scalars().all())
 
+    async def get_by_pin(self, async_db: AsyncSession, pin: str) -> list[User]:
+        result = await async_db.execute(select(self.model).where(self.model.pin == pin))
+        return list(result.scalars().all())
+
     async def get_by_username(
         self, async_db: AsyncSession, username: str
     ) -> list[User]:

@@ -47,6 +47,7 @@ class Proposal(Base):
     pol_quot_no: Mapped[str] = mapped_column(nullable=True)
     pol_comp_code: Mapped[str] = mapped_column(nullable=False)
     pol_divn_code: Mapped[str] = mapped_column(nullable=False)
+    pol_dept_code: Mapped[str] = mapped_column(nullable=True)
     pol_prod_code: Mapped[str] = mapped_column(nullable=False)
     pol_type: Mapped[str] = mapped_column(nullable=False)
     pol_cust_code: Mapped[str] = mapped_column(nullable=False)
@@ -123,9 +124,9 @@ class ProposalRisk(Base):
     risk_sr_no: Mapped[int]
 
     # Input fields mapped to premia pgit_pol_risk_addl_info fields
-    prai_data_18: Mapped[str]  # 'Kenya'
-    prai_code_03: Mapped[str]  # '503'
-    prai_desc_09: Mapped[str]  # 'Residential'
+    prai_data_18: Mapped[str] = mapped_column(nullable=True)  # 'Kenya'
+    prai_code_03: Mapped[str] = mapped_column(nullable=True)  # '503'
+    prai_desc_09: Mapped[str] = mapped_column(nullable=True)  # 'Residential'
     prai_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields

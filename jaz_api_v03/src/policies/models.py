@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..db.session import oracledb_engine  # , postgres_engine
+from ..db.session import oracledb_engine_sim as oracledb_engine  # , postgres_engine
 
 # web_dev_metadata = MetaData()
 # web_dev_metadata.reflect(postgres_engine, only=["user"])

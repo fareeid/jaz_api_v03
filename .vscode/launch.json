@@ -37,6 +37,10 @@
                 "RUNNING_IN_PRODUCTION":"0",
                 "SECRET_KEY":"0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A",
                 "DYN_MARINE_KEY":"abcdefghijk23456",
+                "P11_SERVER_SIM":"localhost:5432",
+                "P11_USER_SIM":"postgres",
+                "P11_PASSWORD_SIM":"changethis",
+                "P11_DB_SIM":"premia",
             },
         }
     ]

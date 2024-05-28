@@ -18,18 +18,17 @@ oracledb_session_local = sessionmaker(
 # OBase = automap_base()
 # OBase.prepare(oracledb_engine, reflect=True)
 
-# conn_str = "postgresql://postgres:changethis@db:5432/web_dev"
-conn_str = "postgresql://postgres:changethis@localhost:5432/web_dev"
+# conn_str = "postgresql://postgres:changethis@db:5432/web_dev" ---------Works only on debug  # noqa: E501
+conn_str = "postgresql://postgres:changethis@db:5432/web_dev"
 postgres_engine = create_engine(conn_str, pool_pre_ping=True)  # noqa: E501
 postgres_session_local = sessionmaker(
     autocommit=False, autoflush=False, bind=postgres_engine
 )
 
 
-# conn_str = "postgresql://postgres:changethis@db:5432/web_dev"
-oracle_conn_str_sim = "postgresql://postgres:changethis@localhost:5432/premia"
+# oracle_conn_str_sim = "postgresql://postgres:changethis@db:5432/premia" ---------Works only on debug  # noqa: E501
 oracledb_engine_sim = create_engine(
-    oracle_conn_str_sim, pool_pre_ping=True
+    settings.PREMIA_DATABASE_URI_SIM, pool_pre_ping=True  # type: ignore
 )  # noqa: E501
 oracledb_session_local_sim = sessionmaker(
     autocommit=False, autoflush=False, bind=oracledb_engine_sim

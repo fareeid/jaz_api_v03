@@ -94,6 +94,31 @@ class Settings(BaseSettings):
     USERS_OPEN_REGISTRATION: bool = True
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
+    P11_SERVER_SIM: str
+    P11_USER_SIM: str
+    P11_PASSWORD_SIM: str
+    P11_DB_SIM: str
+
+    PREMIA_DATABASE_URI_SIM: Union[str, None] = None
+
+    @field_validator("PREMIA_DATABASE_URI_SIM")
+    def assemble_premia_db_sim_connection(
+        cls, v: str, info: FieldValidationInfo
+    ) -> Any:
+        if isinstance(v, str):
+            return v
+        # return info.data["POSTGRES_PASSWORD"]
+        # postgresql+asyncpg://postgres:changethis@db:5432//app
+        conn_url = PostgresDsn.build(
+            scheme="postgresql",
+            username=info.data["P11_USER_SIM"],
+            password=info.data["P11_PASSWORD_SIM"],
+            host=info.data["P11_SERVER_SIM"],
+            path=f"{info.data['P11_DB_SIM'] or ''}",
+        )
+        print(conn_url)
+        return str(conn_url)
+
 
 @lru_cache()
 def get_settings() -> Settings:

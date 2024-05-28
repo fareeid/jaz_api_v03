@@ -3,7 +3,7 @@ from base64 import b64decode, b64encode
 from typing import Any
 
 from Cryptodome.Cipher import AES
-from Cryptodome.Util.Padding import pad  # , unpad
+from Cryptodome.Util.Padding import pad, unpad
 from fastapi import APIRouter, Depends
 from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,12 +21,8 @@ from ..customer import crud as customers_crud
 
 # from . import crud
 from . import crud as quotes_crud
-from . import (  # noqa: F401
-    models,
-    schemas,
-    schemas_,
-    vendors_api,  # noqa: F401
-)
+from . import vendors_api  # noqa: F401
+from . import models, schemas, schemas_  # noqa: F401
 from . import services as quote_services
 from .vendors_api import schemas as vendor_schemas
 
@@ -77,14 +73,16 @@ async def test_encrypt(payload_in: str) -> Any:
     key = b"abcdefghijk23456"  # get_random_bytes(16)
     cipher = AES.new(key, AES.MODE_ECB)
     ct_bytes = cipher.encrypt(pad(data, AES.block_size))
+    # ct_bytes = cipher.encrypt(data)
     # iv = b64encode(cipher.iv).decode("utf-8")
     ct = b64encode(ct_bytes).decode("utf-8")
-    enc_result = json.dumps({"ciphertext": ct})
-    print(enc_result)
+    # ct = ct_bytes.decode("utf-8")
+    # enc_result = json.dumps({"ciphertext": ct})
+    # print(enc_result)
     return ct
 
 
-@router.post("/test_decrypt", response_model=str)
+@router.post("/test_decrypt", response_model=dict[str, Any])
 async def test_decrypt(payload_in: str) -> Any:
     # Decrypting...
     key = b"abcdefghijk23456"  # get_random_bytes(16)
@@ -92,13 +90,15 @@ async def test_decrypt(payload_in: str) -> Any:
     # iv = b64decode(b64['iv'])
     ct = b64decode(payload_in.encode())
     cipher = AES.new(key, AES.MODE_ECB)
-    # pt = unpad(cipher.decrypt(ct), AES.block_size)
-    pt = cipher.decrypt(ct)
-    print(pt.decode().rstrip())
+    pt = unpad(cipher.decrypt(ct), AES.block_size)
+    # pt = cipher.decrypt(ct)
+    pt_str = "".join(c for c in pt.decode() if c.isprintable())
+    # print(pt_str)
+
     # return {"The payload is": pt.decode().rstrip()}
     # return pt.decode().replace("\n", "")
     # return pt.decode().replace("\n", "").strip()
-    return json.loads(pt.decode().replace("\n", ""))
+    return json.loads(pt_str)
 
 
 @router.post("/quote_cust")  # dict[str, Any] , response_model=schemas.Quote

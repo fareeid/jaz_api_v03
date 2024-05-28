@@ -29,7 +29,7 @@ def get_oracle_session() -> Generator:  # type: ignore
 def aes_encrypt(data_in: str) -> Any:
     data = data_in.encode()
     # key = b"abcdefghijk23456"  # get_random_bytes(16)
-    print("Encrypt:" + key.decode())
+    # print("Encrypt:" + key.decode())
     cipher = AES.new(key, AES.MODE_ECB)
     ct_bytes = cipher.encrypt(pad(data, AES.block_size))
     ct = b64encode(ct_bytes).decode("utf-8")
@@ -38,8 +38,9 @@ def aes_encrypt(data_in: str) -> Any:
 
 def aes_decrypt(data_in: str) -> Any:
     ct = b64decode(data_in.encode())
-    print("Decrypt:" + key.decode())
+    # print("Decrypt:" + key.decode())
     cipher = AES.new(key, AES.MODE_ECB)
     pt = unpad(cipher.decrypt(ct), AES.block_size)
+    pt_str = "".join(c for c in pt.decode() if c.isprintable())
     # pt = cipher.decrypt(ct)
-    return pt.decode()
+    return pt_str

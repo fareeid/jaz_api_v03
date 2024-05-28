@@ -60,7 +60,7 @@ async def create_user_open(
             status_code=400,
             detail="A user with this username already exists in the system",
         )
-    user = services.create_user(async_db, user_in)
+    user = await services.create_user(async_db, user_in)
     # user = await crud.user.create(async_db, obj_in=user_in)
     return user
 

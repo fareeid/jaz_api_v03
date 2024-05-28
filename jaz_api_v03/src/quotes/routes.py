@@ -9,6 +9,8 @@ from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from ..auth import dependencies as auth_dependecies
+from ..auth import models as auth_models
 from ..core.dependencies import (  # , orcl_base
     aes_decrypt,
     aes_encrypt,
@@ -47,6 +49,7 @@ async def quote(
 @router.post("/dyn_marine_payload", response_model=str)
 async def dyn_marine_payload(
     *,
+    current_user: auth_models.User = Depends(auth_dependecies.get_current_user),
     async_db: AsyncSession = Depends(get_session),
     payload_in: str,  # vendor_schemas.QuoteMarineCreate,
 ) -> Any:

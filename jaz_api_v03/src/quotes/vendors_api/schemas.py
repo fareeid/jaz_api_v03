@@ -3,6 +3,14 @@ from typing import Union
 from pydantic import BaseModel
 
 
+class QuoteMarineEnc(BaseModel):
+    MCINotification: Union[str | None] = None
+
+
+class QuoteMarineEncCreate(BaseModel):
+    MCINotification: str
+
+
 class QuoteMarineBase(BaseModel):
     Reference: Union[str | None] = None
     MCI_PaymentStatus: Union[str | None] = None

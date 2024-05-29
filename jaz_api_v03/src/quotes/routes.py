@@ -21,8 +21,12 @@ from ..customer import crud as customers_crud
 
 # from . import crud
 from . import crud as quotes_crud
-from . import vendors_api  # noqa: F401
-from . import models, schemas, schemas_  # noqa: F401
+from . import (  # noqa: F401
+    models,
+    schemas,
+    schemas_,
+    vendors_api,  # noqa: F401
+)
 from . import services as quote_services
 from .vendors_api import schemas as vendor_schemas
 
@@ -47,12 +51,14 @@ async def dyn_marine_payload(
     *,
     current_user: auth_models.User = Depends(auth_dependecies.get_current_user),
     async_db: AsyncSession = Depends(get_session),
-    payload_in: str,  # vendor_schemas.QuoteMarineCreate,
+    payload_in: vendor_schemas.QuoteMarineEncCreate,
 ) -> Any:
-    obj_in = {"pl_data": payload_in}
-    payload = await quotes_crud.payload.create_v2(async_db, obj_in=obj_in)  # noqa: F841
+    # obj_in = {"pl_data": payload_in}
+    payload = await quotes_crud.payload.create_v2(  # noqa: F841
+        async_db, obj_in=payload_in
+    )
 
-    data = aes_decrypt(payload_in)  # noqa: F841
+    data = aes_decrypt(payload_in.MCINotification)  # noqa: F841
     # data_dict = eval(data)  # noqa: F841
     data_dict = json.loads(data)
     data_schema = vendor_schemas.QuoteMarineCreate(**data_dict)  # noqa: F841

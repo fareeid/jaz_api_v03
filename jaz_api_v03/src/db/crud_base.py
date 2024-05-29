@@ -54,7 +54,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def create_v2(
-        self, async_db: AsyncSession, *, obj_in: dict[str, Any]
+        self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         db_obj = self.model(**obj_in)
         async_db.add(db_obj)

@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table(
         "payload",
         sa.Column("pl_sys_id", sa.Integer(), nullable=False),
-        sa.Column("pl_data", sa.String(), nullable=False),
+        sa.Column("MCINotification", sa.String(), nullable=False),
         sa.Column("payload", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False

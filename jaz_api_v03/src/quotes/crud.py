@@ -1,4 +1,4 @@
-from typing import Any
+# from typing import Any
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,17 +10,23 @@ from ..db.crud_base import CRUDBase
 # )
 from . import models, schemas
 from .vendors_api import models as vendor_models
+from .vendors_api import schemas as vendor_schemas
 
 # from .schemas import QuoteCreate, QuoteUpdate
 
 
 class CRUDPayload(
-    CRUDBase[vendor_models.Payload, schemas.QuoteCreate, schemas.QuoteUpdate]
+    CRUDBase[
+        vendor_models.Payload, vendor_schemas.QuoteMarineEncCreate, schemas.QuoteUpdate
+    ]
 ):
     async def create_v2(
-        self, async_db: AsyncSession, *, obj_in: dict[str, Any]
+        self, async_db: AsyncSession, *, obj_in: vendor_schemas.QuoteMarineEncCreate
     ) -> vendor_models.Payload:
-        return await super().create_v2(async_db, obj_in=obj_in)
+        quote_marine_dict = jsonable_encoder(obj_in.model_dump(exclude_unset=True))
+        # quote_marine_db = vendor_models.Payload(**quote_marine_dict)
+
+        return await super().create_v2(async_db, obj_in=quote_marine_dict)
 
 
 class CRUDQuote(

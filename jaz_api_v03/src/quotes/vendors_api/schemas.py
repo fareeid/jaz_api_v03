@@ -1,6 +1,12 @@
+# from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # , validator
+
+#     def empty_str_to_none(cls, v: str) -> Any:
+#         if v == "":
+#             return None
+#         return v
 
 
 class QuoteMarineEnc(BaseModel):

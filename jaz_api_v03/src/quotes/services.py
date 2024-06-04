@@ -1,6 +1,8 @@
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Any, Union
 
+from dateutil import parser
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import crud as user_crud
@@ -9,6 +11,20 @@ from ..auth import services as user_services
 from . import crud as quotes_crud
 from . import schemas as quote_schemas
 from .vendors_api import schemas as vendor_schemas
+
+
+def parse_datetime(date_string: str, default: Union[datetime | None] = None) -> Any:
+    try:
+        return parser.parse(date_string, dayfirst=True)
+    except (ValueError, TypeError):
+        return default
+
+
+def parse_float(float_string: str, default: Union[float | None] = 0) -> Any:
+    try:
+        return float(float_string)
+    except (ValueError, TypeError):
+        return default
 
 
 def create_covers_list(
@@ -22,8 +38,8 @@ def create_covers_list(
         prc_rate_per=1000,
         prc_si_curr_code="KES",
         prc_prem_curr_code="KES",
-        prc_si_fc=float(payload_in.MCI_Cargo_invoiceamount),
-        prc_prem_fc=float(payload_in.MCI_MPESAAmount),
+        prc_si_fc=parse_float(payload_in.MCI_Cargo_invoiceamount),
+        prc_prem_fc=parse_float(payload_in.MCI_MPESAAmount),
     )
     covers_list.append(proposal_cover_obj)
     return covers_list
@@ -38,8 +54,8 @@ def create_smis_list(
         prs_smi_code="23001",
         prs_rate=1.75,
         prs_rate_per=1000,
-        prs_si_fc=float(payload_in.MCI_Cargo_invoiceamount),
-        prs_prem_fc=float(payload_in.MCI_MPESAAmount),
+        prs_si_fc=parse_float(payload_in.MCI_Cargo_invoiceamount),
+        prs_prem_fc=parse_float(payload_in.MCI_MPESAAmount),
         prs_smi_desc="Finished Products",
     )
     smis_list.append(proposal_smi_obj)
@@ -60,12 +76,12 @@ def create_risks_list(
     flexi_dict["port_to_code"] = {"prai_code_08": payload_in.MCI_Cargo_destinationport}
     flexi_dict["final_dest"] = {"prai_data_01": payload_in.MCI_Cargo_destinationport}
     flexi_dict["voyage_desc"] = {"prai_data_05": "ENTIRE VOYAGE"}
-    flexi_dict["cargo_value"] = {"prai_num_01": payload_in.MCI_Cargo_invoiceamount}
+    flexi_dict["cargo_value"] = {"prai_num_01": str(payload_in.MCI_Cargo_invoiceamount)}
     flexi_dict["shipment_mode_code"] = {
         "prai_code_01": payload_in.MCI_Cargo_ModeofTransport
     }
     flexi_dict["valuation_basis_code"] = {"prai_code_04": "001"}
-    flexi_dict["shipment_si"] = {"prai_num_07": payload_in.MCI_Cargo_invoiceamount}
+    flexi_dict["shipment_si"] = {"prai_num_07": str(payload_in.MCI_Cargo_invoiceamount)}
     flexi_dict["cargo_type_code"] = {"prai_code_03": "300"}
     flexi_dict["idf_number"] = {"prai_data_06": payload_in.MCI_Cargo_IDF}
     proposal_risk_obj = quote_schemas.ProposalRiskCreate(
@@ -98,7 +114,7 @@ def create_charges_list(
         pchg_code="2003",
         pchg_type="002",
         pchg_perc=0.05,
-        pchg_chg_fc=float(payload_in.MCI_Cargo_invoiceamount) * 0.05 / 100,
+        pchg_chg_fc=parse_float(payload_in.MCI_Cargo_invoiceamount) * 0.05 / 100,
         pchg_prem_curr_code="KES",
         pchg_rate_per=100,
     )
@@ -107,7 +123,7 @@ def create_charges_list(
         pchg_code="1004",
         pchg_type="005",
         pchg_perc=0.25,
-        pchg_chg_fc=float(payload_in.MCI_MPESAAmount) * 0.25 / 100,
+        pchg_chg_fc=parse_float(payload_in.MCI_MPESAAmount) * 0.25 / 100,
         pchg_prem_curr_code="KES",
         pchg_rate_per=100,
     )
@@ -116,7 +132,7 @@ def create_charges_list(
         pchg_code="2004",
         pchg_type="002",
         pchg_perc=0.20,
-        pchg_chg_fc=float(payload_in.MCI_MPESAAmount) * 0.2 / 100,
+        pchg_chg_fc=parse_float(payload_in.MCI_MPESAAmount) * 0.2 / 100,
         pchg_prem_curr_code="KES",
         pchg_rate_per=100,
     )
@@ -135,9 +151,10 @@ def create_proposals_list(
     proposal_obj = quote_schemas.ProposalCreate(
         prop_sr_no=1,
         prop_paymt_ref=payload_in.MCI_MPESAReference,
-        prop_paymt_date=datetime.strptime(
-            payload_in.MCI_MPESAPayDate, "%Y-%m-%d %H:%M:%S"
-        ),
+        # prop_paymt_date=datetime.strptime(
+        #     payload_in.MCI_MPESAPayDate, "%Y-%m-%d %H:%M:%S"
+        # ),
+        prop_paymt_date=parse_datetime(payload_in.MCI_MPESAPayDate),
         pol_quot_no=payload_in.Reference,
         pol_comp_code="001",
         pol_divn_code="101",
@@ -146,8 +163,11 @@ def create_proposals_list(
         pol_type="5006",
         pol_cust_code="200396",
         pol_assr_code="K99999999",
-        pol_fm_dt=datetime.strptime(payload_in.MCI_Cargo_loadingdate, "%d/%m/%Y"),
-        pol_to_dt=datetime.strptime(payload_in.MCI_Cargo_dischargedate, "%d/%m/%Y"),
+        # pol_fm_dt=datetime.strptime(payload_in.MCI_Cargo_loadingdate, "%d/%m/%Y"),
+        # pol_to_dt=datetime.strptime(payload_in.MCI_Cargo_dischargedate, "%d/%m/%Y"),
+        pol_fm_dt=parse_datetime(payload_in.MCI_MPESAPayDate),
+        pol_to_dt=parse_datetime(payload_in.MCI_MPESAPayDate)
+        + timedelta(days=int(payload_in.MCI_Cargo_InsuranceCoverPeriodDays)),
         pol_prem_curr_code="KES",
         pol_dflt_si_curr_code="KES",
         proposalsections=sections_list,
@@ -164,6 +184,9 @@ def create_proposals_list(
 async def create_quote(
     async_db: AsyncSession, payload_in: vendor_schemas.QuoteMarineCreate
 ) -> Any:
+    quote_marine_dict = jsonable_encoder(  # noqa: F841
+        payload_in.model_dump(exclude_unset=True)
+    )
     # 1.  Create/Search User
     user_obj = user_schemas.UserCreate(
         first_name=payload_in.MCI_Cargo_ImporterName,
@@ -200,9 +223,10 @@ async def create_quote(
     quote_obj = quote_schemas.QuoteCreate(
         quot_ref=payload_in.Reference,
         quot_paymt_ref=payload_in.MCI_MPESAReference,
-        quot_paymt_date=datetime.strptime(
-            payload_in.MCI_MPESAPayDate, "%Y-%m-%d %H:%M:%S"
-        ),
+        # quot_paymt_date=datetime.strptime(
+        #     payload_in.MCI_MPESAPayDate, "%Y-%m-%d %H:%M:%S"
+        # ),
+        quot_paymt_date=parse_datetime(payload_in.MCI_MPESAPayDate),
         quot_assr_id=user.id,
         proposals=proposals_list,
     )

@@ -43,6 +43,7 @@ async def pong() -> dict[Any, Any]:
 
 @router.get("/env")
 async def pong_env(settings: Settings = Depends(get_settings)) -> dict[Any, Any]:
+    log.info("starting...")
     return {
         "ping_env": "pong_env",
         "POSTGRES_DB": settings.POSTGRES_DB,

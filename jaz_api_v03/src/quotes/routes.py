@@ -58,10 +58,9 @@ async def dyn_marine_payload(
         async_db, obj_in=payload_in
     )
 
-    data = aes_decrypt(payload_in.MCINotification)  # noqa: F841
-    # data_dict = eval(data)  # noqa: F841
+    data = aes_decrypt(payload_in.MCINotification)
     data_dict = json.loads(data)
-    data_schema = vendor_schemas.QuoteMarineCreate(**data_dict)  # noqa: F841
+    data_schema = vendor_schemas.QuoteMarineCreate(**data_dict)
 
     quote = await quote_services.create_quote(async_db, data_schema)  # noqa: F841
 

@@ -196,7 +196,7 @@ async def create_quote(
         pin=payload_in.MCI_Cargo_ImporterPIN,
     )
 
-    # Check customer by pin
+    # Check customer by pin ---
     user_list = await user_crud.user.get_by_pin(
         async_db, pin=payload_in.MCI_Cargo_ImporterPIN
     )

@@ -43,7 +43,7 @@ jobs:
           targetPort: 3100
           dockerfilePath: Dockerfile
           # imageToBuild: jazkprodregistry.azurecr.io/jazkprodcontainer:${{ github.sha }}  Automatic
-          imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest
+          imageToBuild: jazkprodregistry.azurecr.io/jazkprodcontainer:latest
           
             
 

@@ -2,10 +2,52 @@ version: '3.8'
 
 services:
   web:
-    build: ./jaz_api_v03
-    command: uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8001
-    #command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0'
+    env_file:
+      - web.env
+    build: 
+      context: ./jaz_api_v03
+      dockerfile: local.dockerfile
+    #command: uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 3100
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn src.main:app --reload --host 0.0.0.0 --port 3100'
     volumes:
       - ./jaz_api_v03:/usr/src/app
     ports:
-      - 8004:8001
+      - 3100:3100
+      # - 8004:8001
+    depends_on:
+      - db
+
+  db:
+    env_file:
+      - db.env
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - 5432:5432
+    # expose:
+    #   - 5432
+
+    # pgadmin:
+    #   image: dpage/pgadmin4
+    #   environment:
+    #     PGADMIN_DEFAULT_EMAIL: matthew.kimweli@allianz.com
+    #     PGADMIN_DEFAULT_PASSWORD: changethis
+    #   depends_on:
+    #     - db
+    #   ports:
+    #     - "5050:80"
+    #   restart: unless-stopped
+    # mysql-db:
+    #   image: mysql:8.1.0
+    #   command: --default-authentication-plugin=mysql_native_password
+    #   restart: always
+    #   env_file:
+    #     - mysql_db.env
+    #   ports:
+    #     - "3306:3306"
+
+volumes:
+  postgres_data:

@@ -24,5 +24,3 @@ RUN pip install -r requirements-dev.txt
 COPY . .
 
 EXPOSE 3100
-
-CMD ["gunicorn", "src.main:app"]

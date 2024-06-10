@@ -7,10 +7,12 @@ on:
     branches: 
       [ main ]
     paths:
-    - 'Dockerfile/**'
+    # - 'Dockerfile/**' # Automatic
+    - '**'
     - '.github/workflows/jazk-prod-container-app-AutoDeployTrigger-0ada4ff0-1f52-4c86-bb8f-c17a5e348326.yml'
 
-  # Allow manual trigger 
+  # Allow manual trigger It can only run if the workflow is in the default branch. Yon need to change default
+  # branch back and forth between main and uat_branch
   workflow_dispatch:
       
 jobs:
@@ -29,13 +31,19 @@ jobs:
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}Dockerfile 
+          # appSourcePath: ${{ github.workspace }}Dockerfile # Automatic
+          appSourcePath: ${{ github.workspace }}/jaz_api_v03
           registryUrl: jazkprodregistry.azurecr.io
           registryUsername: ${{ secrets.JAZKPRODCONTAINERAPP_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.JAZKPRODCONTAINERAPP_REGISTRY_PASSWORD }}
           containerAppName: jazk-prod-container-app
           resourceGroup: jazk-prod-rg
-          imageToBuild: jazkprodregistry.azurecr.io/jazkprodcontainer:${{ github.sha }}
+          containerAppEnvironment: jazk-prod-container-env # Added upto dockerfilepath after suffering for hours!!
+          ingress: external
+          targetPort: 3100
+          dockerfilePath: Dockerfile
+          # imageToBuild: jazkprodregistry.azurecr.io/jazkprodcontainer:${{ github.sha }}  Automatic
+          imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest
           
             
 

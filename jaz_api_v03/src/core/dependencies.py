@@ -5,7 +5,11 @@ from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 
 from ..core.config import Settings, get_settings
-from ..db.session import async_session_local, oracledb_session_local
+from ..db.session import (
+    async_session_local,
+    oracledb_session_local,
+    oracledb_session_local_sim,
+)
 
 settings: Settings = get_settings()
 key = settings.DYN_MARINE_KEY.encode()  # type: ignore # get_random_bytes(16)
@@ -21,6 +25,14 @@ async def get_session() -> AsyncGenerator[Any, Any]:
 def get_oracle_session() -> Generator:  # type: ignore
     try:
         db = oracledb_session_local()
+        yield db
+    finally:
+        db.close()
+
+
+def get_oracle_session_sim() -> Generator:  # type: ignore
+    try:
+        db = oracledb_session_local_sim()
         yield db
     finally:
         db.close()

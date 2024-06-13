@@ -23,13 +23,18 @@ from ..db.session import oracledb_engine_sim as oracledb_engine  # , postgres_en
 OrclBase = automap_base()
 
 
+class Customer(OrclBase):  # type: ignore
+    __tablename__ = "pcom_customer"
+    cust_code: Mapped[str] = mapped_column(primary_key=True)
+
+
 class Policy(OrclBase):  # type: ignore
     __tablename__ = "pgit_policy_apit"
     pol_sys_id: Mapped[int] = mapped_column(primary_key=True)
     pol_end_no_idx: Mapped[int] = mapped_column(primary_key=True)
     pol_end_sr_no: Mapped[int] = mapped_column(primary_key=True)
 
-    # Releation to PolicySection - down
+    # Relation to PolicySection - down
     policysection_collection: Mapped[list["PolicySection"]] = relationship(
         back_populates="policy",
         primaryjoin="and_(Policy.pol_sys_id==PolicySection.psec_pol_sys_id, Policy.pol_end_no_idx==PolicySection.psec_end_no_idx, Policy.pol_end_sr_no==PolicySection.psec_end_sr_no)",  # noqa: E501
@@ -62,7 +67,9 @@ class PolicySection(OrclBase):  # type: ignore
 
 OrclBase.prepare(
     autoload_with=oracledb_engine,
-    reflection_options={"only": ["pgit_policy_apit", "pgit_pol_section_apit"]},
+    reflection_options={
+        "only": ["pcom_customer", "pgit_policy_apit", "pgit_pol_section_apit"]
+    },
 )  # noqa: E501
 # OrclBase.prepare(
 #     oracledb_engine, reflect=True, only=["pgit_policy_apit", "pgit_pol_section_apit"]

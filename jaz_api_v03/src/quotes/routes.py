@@ -21,12 +21,8 @@ from ..customer import crud as customers_crud
 
 # from . import crud
 from . import crud as quotes_crud
-from . import (  # noqa: F401
-    models,
-    schemas,
-    schemas_,
-    vendors_api,  # noqa: F401
-)
+from . import vendors_api  # noqa: F401
+from . import models, schemas, schemas_  # noqa: F401
 from . import services as quote_services
 from .vendors_api import schemas as vendor_schemas
 
@@ -60,6 +56,11 @@ async def dyn_marine_payload(
 
     data = aes_decrypt(payload_in.MCINotification)
     data_dict = json.loads(data)
+
+    payload_updated = await quotes_crud.payload.update(  # noqa: F841
+        async_db, db_obj=payload, obj_in={"payload": data_dict}
+    )
+
     data_schema = vendor_schemas.QuoteMarineCreate(**data_dict)
 
     quote = await quote_services.create_quote(async_db, data_schema)  # noqa: F841

@@ -36,7 +36,9 @@ def upgrade() -> None:
         sa.Column("updated_by", sa.Integer(), nullable=True),
         sa.PrimaryKeyConstraint("pl_sys_id"),
     )
-    op.create_index(op.f("ix_payload_pl_data"), "payload", ["pl_data"], unique=False)
+    op.create_index(
+        op.f("ix_payload_MCINotification"), "payload", ["MCINotification"], unique=False
+    )
     op.create_index(
         op.f("ix_payload_pl_sys_id"), "payload", ["pl_sys_id"], unique=False
     )
@@ -409,6 +411,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_person_email"), table_name="person")
     op.drop_table("person")
     op.drop_index(op.f("ix_payload_pl_sys_id"), table_name="payload")
-    op.drop_index(op.f("ix_payload_pl_data"), table_name="payload")
+    op.drop_index(op.f("ix_payload_MCINotification"), table_name="payload")
     op.drop_table("payload")
     # ### end Alembic commands ###

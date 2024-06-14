@@ -6,7 +6,9 @@ from .. import models
 from . import schemas
 
 
-class CRUDQuoteMarine(CRUDBase[models.Quote, schemas.QuoteMarineCreate, schemas.QuoteMarineUpdate]):  # type: ignore  # noqa: E501
+class CRUDQuoteMarine(
+    CRUDBase[models.Quote, schemas.QuoteMarineCreate, schemas.QuoteMarineUpdate]
+):  # noqa: E501
     async def create_v1(
         self, async_db: AsyncSession, *, obj_in: schemas.QuoteMarineCreate
     ) -> models.Quote:

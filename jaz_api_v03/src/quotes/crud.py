@@ -17,7 +17,9 @@ from .vendors_api import schemas as vendor_schemas
 
 class CRUDPayload(
     CRUDBase[
-        vendor_models.Payload, vendor_schemas.QuoteMarineEncCreate, schemas.QuoteUpdate
+        vendor_models.Payload,
+        vendor_schemas.QuoteMarineEncCreate,
+        vendor_schemas.QuoteMarineUpdate,
     ]
 ):
     async def create_v2(

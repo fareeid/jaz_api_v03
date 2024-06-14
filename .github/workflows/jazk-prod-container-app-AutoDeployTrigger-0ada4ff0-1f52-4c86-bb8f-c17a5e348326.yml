@@ -44,3 +44,4 @@ jobs:
           dockerfilePath: Dockerfile
           # imageToBuild: jazkprodregistry.azurecr.io/jazkprodcontainer:${{ github.sha }}  Automatic
           imageToBuild: jazkprodregistry.azurecr.io/jazkprodcontainer:latest
+          ####

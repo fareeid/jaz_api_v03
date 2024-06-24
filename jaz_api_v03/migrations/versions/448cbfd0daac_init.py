@@ -70,7 +70,7 @@ def upgrade() -> None:
         sa.Column("last_name", sa.String(length=50), nullable=True),
         sa.Column("name", sa.String(length=128), nullable=False),
         sa.Column("email", sa.String(), nullable=False),
-        sa.Column("username", sa.String(), nullable=False),
+        sa.Column("username", sa.String(), nullable=True),
         sa.Column("password", sa.String(), nullable=True),
         sa.Column("phone", sa.String(), nullable=True),
         sa.Column("nic", sa.String(), nullable=True),
@@ -141,10 +141,10 @@ def upgrade() -> None:
             "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
         sa.Column("updated_by", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["quot_assr_id"],
-            ["user.id"],
-        ),
+        # sa.ForeignKeyConstraint(
+        #     ["quot_assr_id"],
+        #     ["user.id"],
+        # ),
         sa.PrimaryKeyConstraint("quot_sys_id"),
     )
     op.create_index(op.f("ix_quote_quot_ref"), "quote", ["quot_ref"], unique=False)

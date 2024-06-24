@@ -4,7 +4,7 @@ from fastapi.openapi.utils import get_openapi
 
 from .auth import routes as auth
 from .ping import routes as ping
-from .policies import routes as policies
+from .premia import routes as policies
 from .quotes import routes as quotes
 
 # xtype: ignore
@@ -42,4 +42,5 @@ async def get_redoc_documentation():  # type: ignore
 
 @app.get("/jazk_openapi.json", include_in_schema=False)
 async def openapi():  # type: ignore
-    return get_openapi(title=app.title, version=app.version, routes=app.routes)
+    # return get_openapi(title=app.title, version=app.version, routes=app.routes)
+    return get_openapi(title="Jazk APIx", version="0.1.0", routes=app.routes)

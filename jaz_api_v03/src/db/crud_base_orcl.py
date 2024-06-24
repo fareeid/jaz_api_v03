@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.orm import Session
 
-from ..policies.models import OrclBase
+from ..premia.models import OrclBase
 
 # Define custom types for SQLAlchemy model, and Pydantic schemas
 ModelType = TypeVar("ModelType", bound=OrclBase)

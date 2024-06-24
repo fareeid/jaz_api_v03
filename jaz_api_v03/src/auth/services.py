@@ -1,4 +1,5 @@
 from faker import Faker
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import crud, models, schemas
@@ -37,4 +38,33 @@ async def create_user(
     #     )
 
     user = await crud.user.create(async_db, obj_in=user_in)
+    return user
+
+
+async def get_user(
+    async_db: AsyncSession,
+    user_in: schemas.UserCreate,
+) -> models.User:
+    user_list = await crud.user.get_by_all(
+        async_db, email=user_in.email, pin=user_in.pin, nic=user_in.nic
+    )
+    if not user_list == []:
+        # if type(user_in) is schemas.UserCreateStrict:
+        if isinstance(user_in, schemas.UserCreateStrict):
+            raise HTTPException(
+                status_code=400,
+                detail="A user with these details already exists in the system",
+            )
+        if len(user_list) > 1:
+            user = user_list[0]
+            user.id = 0
+            return user
+            # raise HTTPException(
+            #     status_code=400,
+            #     detail="Mulitple users found. Contact your admin",
+            # )
+        user = user_list[0]
+    else:
+        user = await create_user(async_db, user_in)
+
     return user

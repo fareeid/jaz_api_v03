@@ -1,7 +1,7 @@
 import logging
-from typing import Union
+from typing import Any, Union
 
-from sqlalchemy import select
+from sqlalchemy import select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.crud_base import CRUDBase
@@ -37,6 +37,38 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             select(self.model).where(self.model.username == username)
         )
         return list(result.scalars().all())
+
+    async def get_by_all(
+        self,
+        async_db: AsyncSession,
+        email: Union[str | None] = None,
+        # username: Union[str | None] = None,
+        pin: Union[str | None] = None,
+        nic: Union[str | None] = None,
+    ) -> list[Any]:
+
+        # List to store individual queries
+        queries = []
+
+        # Check each parameter and create query if not None
+        if email:
+            # if email is not None or not email:
+            queries.append(select(self.model).where(self.model.email == email))
+        # if username is not None:
+        #     queries.append(select(self.model).where(self.model.username == username))
+        if pin:  # is not None or not pin:
+            queries.append(select(self.model).where(self.model.pin == pin))
+        if nic:  # is not None or not nic:
+            queries.append(select(self.model).where(self.model.nic == nic))
+
+        stmt = union(*queries)
+        print(stmt)
+
+        result = await async_db.execute(stmt)
+
+        user_list = result.all()
+        print(user_list)
+        return list(user_list)
 
     async def authenticate(
         self, async_db: AsyncSession, *, email: str, password: str

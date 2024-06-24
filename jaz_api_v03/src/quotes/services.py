@@ -2,12 +2,18 @@ from datetime import datetime, timedelta
 from typing import Any, Union
 
 from dateutil import parser
+
+
+# from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from ..auth import crud as user_crud
 from ..auth import schemas as user_schemas
 from ..auth import services as user_services
+from ..core.dependencies import get_oracle_session, get_oracle_session_sim  # noqa: F401
+from ..premia import services as premia_services
 from . import crud as quotes_crud
 from . import schemas as quote_schemas
 from .vendors_api import schemas as vendor_schemas
@@ -177,22 +183,35 @@ def create_proposals_list(
     return proposals_list
 
 
-# async def dump_payload(async_db: AsyncSession, payload_in: str) -> None:
-#     _ = await user_services
+# def get_cust_by_pin(
+#     *,
+#     # oracle_db: Session = Depends(get_oracle_session),
+#     oracle_db: Session = Depends(get_oracle_session_sim),
+#     pin: str,
+#     # current_user: models.User = Depends(deps.get_current_active_superuser),
+# ) -> Any:
+#     # customer = customers_crud.get_customer("152917")  # noqa: F841
+#     policy = premia_crud.customer.get_cust_by_pin(oracle_db, pin="A016034508E")
+#     return policy
+#     # return {"test_key": "test_value"}
+#     pass
 
 
 async def create_quote(
-    async_db: AsyncSession, payload_in: vendor_schemas.QuoteMarineCreate
+    async_db: AsyncSession,
+    oracle_db: Session,
+    payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> Any:
     quote_marine_dict = jsonable_encoder(  # noqa: F841
         payload_in.model_dump(exclude_unset=True)
     )
+
     # 1.  Create/Search User
     user_obj = user_schemas.UserCreate(
         first_name=payload_in.MCI_Cargo_ImporterName,
         name=payload_in.MCI_Cargo_ImporterName,
         email=payload_in.MCI_CAEmail,
-        username=payload_in.MCI_CAEmail,
+        # username=payload_in.MCI_CAEmail,
         pin=payload_in.MCI_Cargo_ImporterPIN,
     )
 
@@ -212,6 +231,9 @@ async def create_quote(
             user = await user_services.create_user(async_db, user_obj)  # noqa: F841
 
     # TO DO: Create/Fetch customer in/from Premia based on user
+    customer = premia_services.get_cust_by_pin(  # noqa: F841
+        oracle_db, payload_in.MCI_Cargo_ImporterPIN
+    )
 
     covers_list = create_covers_list(payload_in)
     smis_list = create_smis_list(payload_in)

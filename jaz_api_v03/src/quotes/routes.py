@@ -9,20 +9,28 @@ from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from ..auth import dependencies as auth_dependecies
-from ..auth import models as auth_models
+from .models import Quote
+from ..auth import dependencies as auth_dependencies
+from ..auth import models as user_models
+from ..auth import schemas as user_schemas
+from ..auth import services as user_services
 from ..core.dependencies import (  # , orcl_base
     aes_decrypt,
     aes_encrypt,
     get_oracle_session,
+    get_oracle_session_sim,
     get_session,
 )
 from ..customer import crud as customers_crud
 
 # from . import crud
 from . import crud as quotes_crud
-from . import vendors_api  # noqa: F401
-from . import models, schemas, schemas_  # noqa: F401
+from . import (  # noqa: F401
+    models,
+    schemas,
+    schemas_,
+    vendors_api,  # noqa: F401
+)
 from . import services as quote_services
 from .vendors_api import schemas as vendor_schemas
 
@@ -37,7 +45,21 @@ async def quote(
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     # customer = customers_crud.get_customer("152917")  # noqa: F841
-    quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
+
+    # Create User to attach to the quote. This is working. For now quotes will be
+    # created without bona fide users.
+    user_obj = user_schemas.UserCreate(
+        first_name=payload_in.quot_assr_name,
+        name=payload_in.quot_assr_name,
+        email=payload_in.quot_assr_email,
+        phone=payload_in.quot_assr_phone,
+        nic=payload_in.quot_assr_nic,
+        pin=payload_in.quot_assr_pin,
+    )
+    user = await user_services.get_user(async_db, user_obj)
+    payload_in.quot_assr_id = user.id
+    # noinspection PyShadowingNames
+    quote: Quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
     return quote
     # return {"test_key": "test_value"}
 
@@ -45,8 +67,9 @@ async def quote(
 @router.post("/dyn_marine_payload", response_model=str)
 async def dyn_marine_payload(
     *,
-    current_user: auth_models.User = Depends(auth_dependecies.get_current_user),
+    current_user: user_models.User = Depends(auth_dependencies.get_current_user),
     async_db: AsyncSession = Depends(get_session),
+    oracle_db: Session = Depends(get_oracle_session_sim),
     payload_in: vendor_schemas.QuoteMarineEncCreate,
 ) -> Any:
     # obj_in = {"pl_data": payload_in}
@@ -63,7 +86,10 @@ async def dyn_marine_payload(
 
     data_schema = vendor_schemas.QuoteMarineCreate(**data_dict)
 
-    quote = await quote_services.create_quote(async_db, data_schema)  # noqa: F841
+    # noinspection PyShadowingNames
+    quote: Quote = await quote_services.create_quote(  # noqa: F841
+        async_db, oracle_db, data_schema
+    )
 
     resp = '{"status": "00", "reference":"' + data_dict["Reference"] + '"}'
     # resp_json = json.dumps(resp)
@@ -141,7 +167,7 @@ async def test_reflection(
 def test_oracle(
     *,
     oracle_db: Session = Depends(get_oracle_session),
-    payload_in: schemas_.PartnerTransBase,
+    # payload_in: schemas_.PartnerTransBase,
     # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     result = oracle_db.execute(text("select * from jick_t where rownum<=6"))

@@ -31,7 +31,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
-        print(obj_in)
+        # print(obj_in)
         db_obj = self.model(**obj_in)
         async_db.add(db_obj)
         await async_db.commit()
@@ -45,8 +45,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             # insert_data = jsonable_encoder(obj_in, exclude_unset=True)
             insert_data = obj_in
         else:
-            insert_data = obj_in.dict(exclude_unset=True)
-        print(jsonable_encoder(insert_data))
+            insert_data = obj_in.model_dump(exclude_unset=True)
+        # print(jsonable_encoder(insert_data))
         db_obj = self.model(**insert_data)
         async_db.add(db_obj)
         await async_db.commit()
@@ -73,7 +73,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])

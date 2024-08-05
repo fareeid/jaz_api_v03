@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel  # , field_serializer
+from pydantic import BaseModel, ConfigDict  # , field_serializer
 
 # from . import (  # ProposalCharge,; ProposalChargeCreate,
 #     ProposalSection,
@@ -59,13 +59,15 @@ class ProposalUpdate(ProposalBase):
 
 # Properties shared by models stored in DB
 class ProposalInDBBase(ProposalBase):
+    model_config = ConfigDict(from_attributes=True)
+
     prop_sys_id: int
     prop_quot_sys_id: int
     proposalsections: list[ProposalSection] = []
     proposalcharges: list[ProposalCharge] = []
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

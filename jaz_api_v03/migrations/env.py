@@ -22,10 +22,15 @@ if config.config_file_name is not None:
 
 
 from src.auth import models as auth_models  # noqa: E402, F401
-from src.db.base import Base  # noqa: E402
+from src.db.base import Base  # noqa: E402, F401
 from src.ping import models as ping_models  # noqa: E402, F401
 from src.quotes import models  # noqa: E402, F401
 from src.quotes.vendors_api import models  # noqa: F401, E402, F811
+# from src.masters.models import Product, Charge, ProductChargeAssociation # noqa: F401, E402, F811
+from src.masters import models as masters_models  # noqa: E402, F401
+# from src.masters.models import Division, Department, UwClass    # noqa: E402, F401
+# from src.masters.models import Product, Charge, Condition, Section, Cover    # noqa: E402, F401
+# from src.masters.models import ProductChargeAssociation, ProductConditionAssociation, ProductSectionAssociation, SectionCoverAssociation    # noqa: E402, F401
 
 # from jaz_api_v03.src.db import Base
 target_metadata = Base.metadata
@@ -36,7 +41,7 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 def get_url():  # type: ignore
-    from src.core.config import Settings, get_settings
+    from src.core.config import Settings, get_settings   # noqa: E402, F401
 
     settings: Settings = get_settings()
 

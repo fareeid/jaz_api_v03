@@ -1,7 +1,7 @@
 # from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .policysection import PolicySection, PolicySectionCreate
 
@@ -31,10 +31,12 @@ class PolicyUpdate(PolicyBase):
 
 # Properties shared by models stored in DB
 class PolicyInDBBase(PolicyBase):
+    model_config = ConfigDict(from_attributes=True)
+
     policysection_collection: list[PolicySection] = []
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

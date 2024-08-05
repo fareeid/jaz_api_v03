@@ -3,14 +3,14 @@
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.crud_base import CRUDBase
-
 # from ..quotes.models import (
 #     Quote, ProposalCharge, ProposalCover, ProposalRisk, ProposalSection, ProposalSMI,
 # )
 from . import models, schemas
 from .vendors_api import models as vendor_models
 from .vendors_api import schemas as vendor_schemas
+from ..db.crud_base import CRUDBase
+
 
 # from .schemas import QuoteCreate, QuoteUpdate
 
@@ -44,6 +44,10 @@ class CRUDQuote(
         proposals_list_db = []
         for proposal in proposals_list:
             charges_list = proposal.proposalcharges
+            # for charge in charges_list:
+            #     charge_dict = jsonable_encoder(**charge.model_dump(exclude_unset=True))
+            #     charge.pchg_flexi = charge_dict
+            #     charges_list_db.append(charge_dict)
             charges_list_db = [
                 models.ProposalCharge(**charge.model_dump(exclude_unset=True))
                 for charge in charges_list

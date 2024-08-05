@@ -14,6 +14,7 @@
       <env name="POSTGRES_DB" value="web_dev" />
       <env name="POSTGRES_PASSWORD" value="changethis" />
       <env name="POSTGRES_SERVER" value="localhost:5432" />
+      <env name="POSTGRES_TEST_DB" value="web_test" />
       <env name="POSTGRES_USER" value="postgres" />
       <env name="PREMIA_DB" value="p11ke" />
       <env name="PREMIA_PASSWORD" value="p11_ke_live" />
@@ -22,6 +23,9 @@
       <env name="PREMIA_USER" value="P11_KE_LIVE" />
       <env name="RUNNING_IN_PRODUCTION" value="0" />
       <env name="SECRET_KEY" value="0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A" />
+      <env name="TESTING" value="1" />
+      <env name="STAFF_ADMIN_EMAIL" value="matthew.kimweli@allianz.com" />
+      <env name="AGENT_ADMIN_EMAIL" value="nancy.nyanchogo@allianz.com" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.conda/envs/jaz_api_v03/python.exe" />
     <option name="SDK_NAME" value="jaz_api_v03" />

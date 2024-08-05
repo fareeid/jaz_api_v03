@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, TIMESTAMP
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,20 +10,21 @@ from ..db.base import Base
 class Quote(Base):
     quot_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
     quot_ref: Mapped[str] = mapped_column(index=True)
-    quot_paymt_ref: Mapped[str] = mapped_column(nullable=True)
-    quot_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    quot_assr_id: Mapped[int] = mapped_column(nullable=True)
     quot_assr_name: Mapped[str] = mapped_column(nullable=True)
     quot_assr_nic: Mapped[str] = mapped_column(nullable=True)
     quot_assr_pin: Mapped[str] = mapped_column(nullable=True)
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
     quot_assr_email: Mapped[str] = mapped_column(nullable=True)
+    quot_paymt_ref: Mapped[str] = mapped_column(nullable=True)
+    quot_paymt_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     quot_payload: Mapped[str] = mapped_column(JSONB, nullable=True)
 
-    # Relation to Quote - up
-    quot_assr_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id"),
-        nullable=True,
-    )
+    # Relation to Quote - up - Not neccesary at quote creation. But you can have it as null until client is ready to bind cover
+    # quot_assr_id: Mapped[int] = mapped_column(
+    #     ForeignKey("user.id"),
+    #     nullable=True,
+    # )
 
     # Releation to Proposal - down
     proposals: Mapped[list["Proposal"]] = relationship(

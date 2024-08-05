@@ -1,11 +1,18 @@
 # from typing import Any
 # from sqlalchemy import MetaData
-from sqlalchemy import ForeignKeyConstraint  # , inspect
+from typing import Type, Dict, Any
+
+from pydantic import BaseModel, create_model, ConfigDict
+from sqlalchemy import ForeignKeyConstraint, inspect  # , inspect
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeMeta
 
-from ..db.session import oracledb_engine_sim as oracledb_engine  # , postgres_engine
+from ..db.session import oracledb_engine_sim as oracledb_engine  # , simulation postgres_engine
+
+# from ..db.session import oracledb_engine  # , Real engine
+
+# from ..db.session import async_oracledb_engine  # , postgres_engine
 
 # web_dev_metadata = MetaData()
 # web_dev_metadata.reflect(postgres_engine, only=["user"])
@@ -28,6 +35,12 @@ class Customer(OrclBase):  # type: ignore
     cust_code: Mapped[str] = mapped_column(primary_key=True)
 
 
+class DocNumberRange(OrclBase):
+    __tablename__ = "pgim_doc_number_range"
+    dnr_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    dnr_curr_no: Mapped[int] = mapped_column()
+
+
 class Policy(OrclBase):  # type: ignore
     __tablename__ = "pgit_policy_apit"
     pol_sys_id: Mapped[int] = mapped_column(primary_key=True)
@@ -37,7 +50,8 @@ class Policy(OrclBase):  # type: ignore
     # Relation to PolicySection - down
     policysection_collection: Mapped[list["PolicySection"]] = relationship(
         back_populates="policy",
-        primaryjoin="and_(Policy.pol_sys_id==PolicySection.psec_pol_sys_id, Policy.pol_end_no_idx==PolicySection.psec_end_no_idx, Policy.pol_end_sr_no==PolicySection.psec_end_sr_no)",  # noqa: E501
+        primaryjoin="and_(Policy.pol_sys_id==PolicySection.psec_pol_sys_id, Policy.pol_end_no_idx==PolicySection.psec_end_no_idx, Policy.pol_end_sr_no==PolicySection.psec_end_sr_no)",
+        # noqa: E501
         cascade="all, delete-orphan",
         lazy="subquery",
     )
@@ -67,10 +81,65 @@ class PolicySection(OrclBase):  # type: ignore
 
 OrclBase.prepare(
     autoload_with=oracledb_engine,
+    # autoload_with=async_oracledb_engine,
     reflection_options={
-        "only": ["pcom_customer", "pgit_policy_apit", "pgit_pol_section_apit"]
+        "only": ["pcom_customer", "pgit_policy_apit", "pgit_pol_section_apit", "pgim_doc_number_range"]
     },
 )  # noqa: E501
+
+
+# Define the to_dict method in a mixin class
+class ToDictMixin:
+    def to_dict(self):
+        return {column.key: getattr(self, column.key) for column in self.__table__.columns}
+
+
+# Extend the reflected Base to include the mixin
+# class ExtendedBase(OrclBase, ToDictMixin):
+#     __abstract__ = True
+
+
+Customer.to_dict = ToDictMixin.to_dict
+
+
+# mapper = inspect(Policy)
+# mapper_section = inspect(PolicySection)
+
+
+def create_pydantic_model(name: str, sqlalchemy_model: Type[DeclarativeMeta]) -> Type[BaseModel]:
+    mapper = inspect(sqlalchemy_model)
+    if mapper is None:
+        raise ValueError(f"Could not inspect model {sqlalchemy_model}")
+
+    fields: Dict[str, Any] = {}  # Initializes an empty dictionary to store the fields of the Pydantic model.
+    for column in mapper.columns:
+        python_type = column.type.python_type if hasattr(column.type, 'python_type') else str
+        fields[column.key] = (python_type, None)
+
+    return create_model(name, **fields)
+
+
+# Create Pydantic models dynamically
+PolicyBase = create_pydantic_model("PolicyBase", Policy)
+PolicySectionBase = create_pydantic_model("PolicySectionBase", PolicySection)
+CustomerBase = create_pydantic_model("CustomerBase", Customer)
+CustomerBase.model_config = ConfigDict(from_attributes=True)
+
+
+# print(type(PolicyBase) is BaseModel)
+
+# Verification step
+def verify_pydantic_model(pydantic_model: Type[BaseModel]) -> None:
+    instance = pydantic_model()
+    print(f"Model: {pydantic_model.__name__}")
+    print(f"Fields: {list(instance.model_fields.keys())}")
+    print(f"Is instance {type(instance).__name__} a Pydantic Basemodel? {isinstance(instance, BaseModel)}")
+
+
+# Verify the created Pydantic models
+verify_pydantic_model(PolicyBase)
+verify_pydantic_model(PolicySectionBase)
+
 # OrclBase.prepare(
 #     oracledb_engine, reflect=True, only=["pgit_policy_apit", "pgit_pol_section_apit"]
 # )  # noqa: E501

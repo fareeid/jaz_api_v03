@@ -2,21 +2,17 @@ from datetime import datetime, timedelta
 from typing import Any, Union
 
 from dateutil import parser
-
-
 # from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from ..auth import crud as user_crud
-from ..auth import schemas as user_schemas
-from ..auth import services as user_services
-from ..core.dependencies import get_oracle_session, get_oracle_session_sim  # noqa: F401
-from ..premia import services as premia_services
 from . import crud as quotes_crud
 from . import schemas as quote_schemas
 from .vendors_api import schemas as vendor_schemas
+from ..auth import schemas as user_schemas
+from ..auth import services as user_services
+from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
 
 
 def parse_datetime(date_string: str, default: Union[datetime | None] = None) -> Any:
@@ -215,25 +211,12 @@ async def create_quote(
         pin=payload_in.MCI_Cargo_ImporterPIN,
     )
 
-    # Check customer by pin ---
-    user_list = await user_crud.user.get_by_pin(
-        async_db, pin=payload_in.MCI_Cargo_ImporterPIN
-    )
-    if not user_list == []:
-        user = user_list[0]
-    else:
-        user_list = await user_crud.user.get_by_email(
-            async_db, email=payload_in.MCI_CAEmail
-        )
-        if not user_list == []:
-            user = user_list[0]
-        else:
-            user = await user_services.create_user(async_db, user_obj)  # noqa: F841
+    user = await user_services.get_user(async_db, user_obj)
 
     # TO DO: Create/Fetch customer in/from Premia based on user
-    customer = premia_services.get_cust_by_pin(  # noqa: F841
-        oracle_db, payload_in.MCI_Cargo_ImporterPIN
-    )
+    # customer = premia_services.get_cust_by_pin(  # noqa: F841
+    #     oracle_db, payload_in.MCI_Cargo_ImporterPIN
+    # )
 
     covers_list = create_covers_list(payload_in)
     smis_list = create_smis_list(payload_in)

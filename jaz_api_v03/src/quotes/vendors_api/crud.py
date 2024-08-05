@@ -1,9 +1,9 @@
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...db.crud_base import CRUDBase
-from .. import models
 from . import schemas
+from .. import models
+from ...db.crud_base import CRUDBase
 
 
 class CRUDQuoteMarine(
@@ -13,7 +13,7 @@ class CRUDQuoteMarine(
         self, async_db: AsyncSession, *, obj_in: schemas.QuoteMarineCreate
     ) -> models.Quote:
 
-        marine_dict = jsonable_encoder(obj_in.dict(exclude_unset=True))
+        marine_dict = jsonable_encoder(obj_in.model_dump(exclude_unset=True))
 
         data = {
             "quot_payload": marine_dict,

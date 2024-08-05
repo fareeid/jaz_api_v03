@@ -1,7 +1,7 @@
 # from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel  # , validator
+from pydantic import BaseModel, ConfigDict  # , validator
 
 #     def empty_str_to_none(cls, v: str) -> Any:
 #         if v == "":
@@ -67,9 +67,9 @@ class QuoteMarineUpdate(QuoteMarineBase):
 
 # Properties shared by models stored in DB
 class QuoteMarineInDBBase(QuoteMarineBase):
-
-    class config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+    # class config:
+    #     orm_mode = True
 
 
 # Properties to return to client

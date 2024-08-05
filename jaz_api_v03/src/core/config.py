@@ -1,10 +1,9 @@
 import logging
-
 # import secrets
 from functools import lru_cache
 from typing import Any, Union
 
-from pydantic import FieldValidationInfo, PostgresDsn, field_validator
+from pydantic import PostgresDsn, field_validator, ValidationInfo, EmailStr
 from pydantic_settings import BaseSettings
 
 log = logging.getLogger("uvicorn")
@@ -19,7 +18,7 @@ class Settings(BaseSettings):
     SECRET_KEY: Union[str, None] = None
 
     @field_validator("SECRET_KEY")
-    def create_test_env(cls, v: str, info: FieldValidationInfo) -> Any:
+    def create_test_env(cls, v: str, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         return info.data["SECRET_KEY"]
@@ -28,11 +27,12 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
+    POSTGRES_TEST_DB: str
 
     SQLALCHEMY_DATABASE_URI: Union[str, None] = None
 
     @field_validator("SQLALCHEMY_DATABASE_URI")
-    def assemble_db_connection(cls, v: str, info: FieldValidationInfo) -> Any:
+    def assemble_db_connection(cls, v: str, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         # return info.data["POSTGRES_PASSWORD"]
@@ -43,6 +43,40 @@ class Settings(BaseSettings):
             password=info.data["POSTGRES_PASSWORD"],
             host=info.data["POSTGRES_SERVER"],
             path=f"{info.data['POSTGRES_DB'] or ''}",
+        )
+        return str(conn_url)
+
+    NON_ASYNC_SQLALCHEMY_DATABASE_URI: Union[str, None] = None
+
+    @field_validator("NON_ASYNC_SQLALCHEMY_DATABASE_URI")
+    def assemble_non_async_db_connection(cls, v: str, info: ValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        # return info.data["POSTGRES_PASSWORD"]
+        # postgresql+asyncpg://postgres:changethis@db:5432//app
+        conn_url = PostgresDsn.build(
+            scheme="postgresql",
+            username=info.data["POSTGRES_USER"],
+            password=info.data["POSTGRES_PASSWORD"],
+            host=info.data["POSTGRES_SERVER"],
+            path=f"{info.data['POSTGRES_TEST_DB'] or ''}",
+        )
+        return str(conn_url)
+
+    SQLALCHEMY_TEST_DATABASE_URI: Union[str, None] = None
+
+    @field_validator("SQLALCHEMY_TEST_DATABASE_URI")
+    def assemble_test_db_connection(cls, v: str, info: ValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        # return info.data["POSTGRES_PASSWORD"]
+        # postgresql+asyncpg://postgres:changethis@db:5432//app
+        conn_url = PostgresDsn.build(
+            scheme="postgresql+asyncpg",
+            username=info.data["POSTGRES_USER"],
+            password=info.data["POSTGRES_PASSWORD"],
+            host=info.data["POSTGRES_SERVER"],
+            path=f"{info.data['POSTGRES_TEST_DB'] or ''}",
         )
         return str(conn_url)
 
@@ -59,10 +93,10 @@ class Settings(BaseSettings):
     #     str, None
     # ] = f"oracle+oracledb://{PREMIA_USER}:{PREMIA_PASSWORD}@{PREMIA_SERVER}:{PREMIA_PORT}/?service_name={PREMIA_DB}"
 
-    PREMIA_DATABASE_URI: Union[str, None] = None
+    NON_ASYNC_PREMIA_DATABASE_URI: Union[str, None] = None
 
-    @field_validator("PREMIA_DATABASE_URI")
-    def assemble_premiadb_connection(cls, v: str, info: FieldValidationInfo) -> Any:
+    @field_validator("NON_ASYNC_PREMIA_DATABASE_URI")
+    def assemble_non_async_premiadb_connection(cls, v: str, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         username = info.data["PREMIA_USER"]
@@ -78,21 +112,31 @@ class Settings(BaseSettings):
     RUNNING_IN_PRODUCTION: Union[str, None] = None
 
     @field_validator("RUNNING_IN_PRODUCTION")
-    def prod_flag(cls, v: str, info: FieldValidationInfo) -> Any:
+    def prod_flag(cls, v: str, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         return info.data["RUNNING_IN_PRODUCTION"]
 
+    TESTING: Union[str, None] = None
+
+    @field_validator("TESTING")
+    def test_flag(cls, v: str, info: ValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        return info.data["TESTING"]
+
     DYN_MARINE_KEY: Union[str, None] = None
 
     @field_validator("DYN_MARINE_KEY")
-    def create_dyn_key_env(cls, v: str, info: FieldValidationInfo) -> Any:
+    def create_dyn_key_env(cls, v: str, info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         return info.data["DYN_MARINE_KEY"]
 
     USERS_OPEN_REGISTRATION: bool = True
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 3
+    ACTIVATION_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
 
     P11_SERVER_SIM: str
     P11_USER_SIM: str
@@ -103,7 +147,7 @@ class Settings(BaseSettings):
 
     @field_validator("PREMIA_DATABASE_URI_SIM")
     def assemble_premia_db_sim_connection(
-        cls, v: str, info: FieldValidationInfo
+            cls, v: str, info: ValidationInfo
     ) -> Any:
         if isinstance(v, str):
             return v
@@ -116,8 +160,17 @@ class Settings(BaseSettings):
             host=info.data["P11_SERVER_SIM"],
             path=f"{info.data['P11_DB_SIM'] or ''}",
         )
-        print(conn_url)
+        # print(conn_url)
         return str(conn_url)
+
+    # MailTrap
+    SMTP_PORT_MT: Union[int, None] = 2525
+    SMTP_HOST_MT: Union[str, None] = "sandbox.smtp.mailtrap.io"
+    SMTP_USER_MT: Union[str, None] = "cced7a4e6b257e"
+    SMTP_PASSWORD_MT: Union[str, None] = "2e8aecbb528b86"
+
+    EMAILS_FROM_EMAIL: Union[EmailStr, None] = "jazk.api.test@gmail.com"
+    EMAILS_FROM_NAME: Union[str, None] = "Test APIs"
 
 
 @lru_cache()

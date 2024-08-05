@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel, EmailStr  # , field_serializer
+from pydantic import BaseModel, EmailStr, ConfigDict  # , field_serializer
 
 from . import Proposal, ProposalCreate
 
@@ -37,11 +37,13 @@ class QuoteUpdate(QuoteBase):
 
 # Properties shared by models stored in DB
 class QuoteInDBBase(QuoteBase):
+    model_config = ConfigDict(from_attributes=True)
+
     quot_sys_id: int
     proposals: list[Proposal] = []
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # from . import ProposalCover, ProposalCoverCreate, ProposalSMI, ProposalSMICreate
 from .proposalcover import ProposalCover, ProposalCoverCreate
@@ -40,13 +40,15 @@ class ProposalRiskUpdate(ProposalRiskBase):
 
 # Properties shared by models stored in DB
 class ProposalRiskInDBBase(ProposalRiskBase):
+    model_config = ConfigDict(from_attributes=True)
+
     risk_sys_id: int
     risk_sec_sys_id: int
     proposalcovers: list[ProposalCover] = []
     proposalsmis: list[ProposalSMI] = []
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

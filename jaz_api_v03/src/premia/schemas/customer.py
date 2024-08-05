@@ -1,7 +1,7 @@
 # from datetime import datetime
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ########## Customer Schema #########
@@ -30,9 +30,9 @@ class CustomerUpdate(CustomerBase):
 
 # Properties shared by models stored in DB
 class CustomerInDBBase(CustomerBase):
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

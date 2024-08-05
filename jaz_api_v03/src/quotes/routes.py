@@ -9,20 +9,6 @@ from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from .models import Quote
-from ..auth import dependencies as auth_dependencies
-from ..auth import models as user_models
-from ..auth import schemas as user_schemas
-from ..auth import services as user_services
-from ..core.dependencies import (  # , orcl_base
-    aes_decrypt,
-    aes_encrypt,
-    get_oracle_session,
-    get_oracle_session_sim,
-    get_session,
-)
-from ..customer import crud as customers_crud
-
 # from . import crud
 from . import crud as quotes_crud
 from . import (  # noqa: F401
@@ -32,20 +18,35 @@ from . import (  # noqa: F401
     vendors_api,  # noqa: F401
 )
 from . import services as quote_services
+from .models import Quote
 from .vendors_api import schemas as vendor_schemas
+from ..auth import dependencies as auth_dependencies
+from ..auth import models as user_models
+from ..auth import schemas as user_schemas
+from ..auth import services as user_services
+from ..core.dependencies import (  # , orcl_base
+    aes_decrypt,
+    aes_encrypt,
+    get_non_async_oracle_session,
+    get_oracle_session_sim,
+    get_session,
+)
+from ..customer import crud as customers_crud
 
 router = APIRouter()
 
 
+# @router.get("/branch", response_model=schemas.Branch)
+
 @router.post("/quote", response_model=schemas.Quote)  # dict[str, Any]
 async def quote(
-    *,
-    async_db: AsyncSession = Depends(get_session),
-    payload_in: schemas.QuoteCreate,
-    # current_user: models.User = Depends(deps.get_current_active_superuser),
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        payload_in: schemas.QuoteCreate,
+        # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     # customer = customers_crud.get_customer("152917")  # noqa: F841
-
+    # TODO Functionality to add checks for corporate/individual flags while creating user as customer
     # Create User to attach to the quote. This is working. For now quotes will be
     # created without bona fide users.
     user_obj = user_schemas.UserCreate(
@@ -66,11 +67,11 @@ async def quote(
 
 @router.post("/dyn_marine_payload", response_model=str)
 async def dyn_marine_payload(
-    *,
-    current_user: user_models.User = Depends(auth_dependencies.get_current_user),
-    async_db: AsyncSession = Depends(get_session),
-    oracle_db: Session = Depends(get_oracle_session_sim),
-    payload_in: vendor_schemas.QuoteMarineEncCreate,
+        *,
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+        async_db: AsyncSession = Depends(get_session),
+        oracle_db: Session = Depends(get_oracle_session_sim),
+        payload_in: vendor_schemas.QuoteMarineEncCreate,
 ) -> Any:
     # obj_in = {"pl_data": payload_in}
     payload = await quotes_crud.payload.create_v2(  # noqa: F841
@@ -102,7 +103,8 @@ async def dyn_marine_payload(
 async def test_encrypt(payload_in: str) -> Any:
     # Encrypting...
     data = payload_in.encode()
-    key = b"abcdefghijk23456"  # get_random_bytes(16)
+    # key = b"abcdefghijk23456"  # get_random_bytes(16)
+    key = b"gr9lj7i1f4vpck1a"  # livewire
     cipher = AES.new(key, AES.MODE_ECB)
     ct_bytes = cipher.encrypt(pad(data, AES.block_size))
     # ct_bytes = cipher.encrypt(data)
@@ -117,7 +119,8 @@ async def test_encrypt(payload_in: str) -> Any:
 @router.post("/test_decrypt", response_model=dict[str, Any])
 async def test_decrypt(payload_in: str) -> Any:
     # Decrypting...
-    key = b"abcdefghijk23456"  # get_random_bytes(16)
+    # key = b"abcdefghijk23456"  # get_random_bytes(16)
+    key = b"gr9lj7i1f4vpck1a"  # livewire
     # b64 = json.loads(payload_in)
     # iv = b64decode(b64['iv'])
     ct = b64decode(payload_in.encode())
@@ -135,10 +138,10 @@ async def test_decrypt(payload_in: str) -> Any:
 
 @router.post("/quote_cust")  # dict[str, Any] , response_model=schemas.Quote
 async def quote_cust(
-    *,
-    oracle_db: Session = Depends(get_oracle_session),
-    payload_in: schemas.QuoteCreate,
-    # current_user: models.User = Depends(deps.get_current_active_superuser),
+        *,
+        oracle_db: Session = Depends(get_non_async_oracle_session),
+        payload_in: schemas.QuoteCreate,
+        # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     # customer = customers_crud.get_customer("152917x")  # noqa: F841
     # return customer
@@ -149,11 +152,11 @@ async def quote_cust(
 
 @router.post("/test_reflection")  # dict[str, Any] , response_model=schemas.Quote
 async def test_reflection(
-    *,
-    oracle_db: Session = Depends(get_oracle_session),
-    async_db: AsyncSession = Depends(get_session),
-    payload_in: schemas.QuoteCreate,
-    # current_user: models.User = Depends(deps.get_current_active_superuser),
+        *,
+        oracle_db: Session = Depends(get_non_async_oracle_session),
+        async_db: AsyncSession = Depends(get_session),
+        payload_in: schemas.QuoteCreate,
+        # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     proposal_table = customers_crud.get_proposal_table()  # noqa: F841
     # Policy = orcl_base.classes.pgit_policy
@@ -165,10 +168,10 @@ async def test_reflection(
 
 @router.post("/test_ora_conn")  # dict[str, Any] , response_model=schemas.Quote
 def test_oracle(
-    *,
-    oracle_db: Session = Depends(get_oracle_session),
-    # payload_in: schemas_.PartnerTransBase,
-    # current_user: models.User = Depends(deps.get_current_active_superuser),
+        *,
+        oracle_db: Session = Depends(get_non_async_oracle_session),
+        # payload_in: schemas_.PartnerTransBase,
+        # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
     result = oracle_db.execute(text("select * from jick_t where rownum<=6"))
     return result.scalars().all()

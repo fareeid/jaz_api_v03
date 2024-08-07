@@ -125,6 +125,14 @@ class Settings(BaseSettings):
             return v
         return info.data["TESTING"]
 
+    DEV_STATUS: Union[str, None] = None
+
+    @field_validator("DEV_STATUS")
+    def dev_status_flag(cls, v: str, info: ValidationInfo) -> Any:
+        if isinstance(v, str):
+            return v
+        return info.data["DEV_STATUS"]
+
     DYN_MARINE_KEY: Union[str, None] = None
 
     @field_validator("DYN_MARINE_KEY")

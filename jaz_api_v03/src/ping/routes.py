@@ -48,6 +48,15 @@ async def pong() -> dict[Any, Any]:
             "TESTING": 0, }
 
 
+@router.get("/dev_status")
+async def dev_status(settings: Settings = Depends(get_settings)) -> dict[Any, Any]:
+    log.info("starting...")
+    return {
+        "ping_dev": "pong_dev",
+        "DEV_STATUS": settings.DEV_STATUS,
+    }
+
+
 @router.get("/env_test")
 async def pong_env(settings: Settings = Depends(get_settings)) -> dict[Any, Any]:
     log.info("starting...")

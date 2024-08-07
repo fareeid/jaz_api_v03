@@ -53,8 +53,14 @@ async def create_user_open(
     Create new user without the need to be logged in.
     """
 
-    if settings.RUNNING_IN_PRODUCTION == "0":
+    if settings.DEV_STATUS == "API_DEV":
         user_in = await services.sample_user()
+
+    if settings.DEV_STATUS == "WEB_DEV":
+        pass
+
+    if settings.DEV_STATUS == "NO_DEV":
+        pass
 
     if not settings.USERS_OPEN_REGISTRATION:
         raise HTTPException(

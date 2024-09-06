@@ -31,6 +31,7 @@ from src.masters import models as masters_models  # noqa: E402, F401
 # from src.masters.models import Division, Department, UwClass    # noqa: E402, F401
 # from src.masters.models import Product, Charge, Condition, Section, Cover    # noqa: E402, F401
 # from src.masters.models import ProductChargeAssociation, ProductConditionAssociation, ProductSectionAssociation, SectionCoverAssociation    # noqa: E402, F401
+from src.external_apis import models as external_apis_models  # noqa: E402, F401
 
 # from jaz_api_v03.src.db import Base
 target_metadata = Base.metadata

@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from .auth import routes as auth
+from .external_apis.safaricom import routes as safaricom
 from .gwt_poc import routes as gwt_poc
 from .html_poc import routes as html_poc
 from .masters import routes as masters
@@ -33,6 +34,8 @@ def create_application() -> FastAPI:
     fastapi_app.include_router(auth.router, prefix="/auth", tags=["auth"])
     fastapi_app.include_router(quotes.router, prefix="/quotes", tags=["quotes"])
     fastapi_app.include_router(policies.router, prefix="/policies", tags=["policies"])
+    fastapi_app.include_router(safaricom.router, prefix="/extern", tags=["external_apis"])
+
     fastapi_app.include_router(masters.router, prefix="/masters", tags=["masters"])
     fastapi_app.include_router(html_poc.router, prefix="/portalx", tags=["portal"])
     fastapi_app.include_router(gwt_poc.router, tags=["stockwatcher"])

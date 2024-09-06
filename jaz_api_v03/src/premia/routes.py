@@ -29,7 +29,7 @@ def customer(
         *,
         oracle_db: Session = Depends(get_oracle_session_sim),
         search_criteria: premia_models.CustomerBase,
-) -> str:
+) -> list[dict[str, Any]]:
     customer_model_list = premia_services.get_customer(oracle_db, search_criteria=search_criteria.model_dump(exclude_unset=True))
     # custtomer_dict_list = [cust.to_dict() for cust in customer_model_list]
     return [cust.to_dict() for cust in customer_model_list]

@@ -8,10 +8,9 @@ on:
       [ uat_branch ]
     paths:
     - '**'
-    - '.github/workflows/jazk-api-app2-AutoDeployTrigger-ae88a2dc-90a0-49b1-a236-f3e519702ca6.yml'
+    - '.github/workflows/jazk-api-app2-AutoDeployTrigger-f194d340-c548-44f4-beba-7bbdb08eb986.yml'
 
-  # Allow manual trigger It can only run if the workflow is in the default branch. Yon need to change default
-  # branch back and forth between main and uat_branch
+  # Allow manual trigger 
   workflow_dispatch:
       
 jobs:
@@ -28,22 +27,18 @@ jobs:
           creds: ${{ secrets.JAZKAPIAPP2_AZURE_CREDENTIALS }}
 
       - name: Build and push container image to registry
-        uses: azure/container-apps-deploy-action@v1
+        uses: azure/container-apps-deploy-action@v2
         with:
-          # appSourcePath: ${{ github.workspace }} 
-          appSourcePath: ${{ github.workspace }}/jaz_api_v03 
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
           registryUrl: jazkapiregistry.azurecr.io
           registryUsername: ${{ secrets.JAZKAPIAPP2_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.JAZKAPIAPP2_REGISTRY_PASSWORD }}
           containerAppName: jazk-api-app2
           resourceGroup: jazk-api-rg
-          containerAppEnvironment: jazk-api-env2
-          ingress: external
-          targetPort: 3100
-          dockerfilePath: Dockerfile
-          # imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:${{ github.sha }}
-          imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest
+          imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app2:${{ github.sha }}
           
+            
 
      
 

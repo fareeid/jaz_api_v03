@@ -43,8 +43,6 @@ jobs:
           dockerfilePath: Dockerfile
           # imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:${{ github.sha }}
           imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest
-
-          
             
 
      

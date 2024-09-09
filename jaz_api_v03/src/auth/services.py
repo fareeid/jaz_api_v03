@@ -83,7 +83,10 @@ async def get_user(
             #     detail="Mulitple users found. Contact your admin",
             # )
         # Happens while creating user via quotation. Since single user is returned, attach the user to the quote
-        user = user_list[0]
+        user_list_db = [
+            models.User(**user) for user in user_list
+        ]
+        user = user_list_db[0]
     else:
         # Happens through both Open Registration and Quotation. User does not exist. Create the user (whether strict or via quotation)
         user = await create_user(async_db, user_in)

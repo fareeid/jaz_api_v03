@@ -162,6 +162,39 @@ class ProposalRisk(Base):
         lazy="subquery",
     )
 
+    # Relation to ProposalMotorCert - down
+    proposalmotorcerts: Mapped[list["ProposalMotorCert"]] = relationship(
+        back_populates="proposalrisk",
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+
+class ProposalMotorCert(Base):
+    motor_cert_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    motor_cert_sr_no: Mapped[int]
+
+    # Input fields mapped to premia pgit_pol_risk_addl_info fields
+    prai_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
+
+    # Output fields mapped to premia pgit_pol_risk_addl_info fields
+    prai_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prai_risk_lvl_no: Mapped[int] = mapped_column(nullable=True)
+    prai_risk_id: Mapped[int] = mapped_column(nullable=True)
+    prai_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    prai_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+
+    # Relation to ProposalRisk - up
+    motor_cert_risk_sys_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "proposalrisk.risk_sys_id",
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+        ),
+        nullable=False,
+    )
+    proposalrisk: Mapped["ProposalRisk"] = relationship(back_populates="proposalmotorcerts")
+
 
 class ProposalSMI(Base):
     smi_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -248,7 +281,6 @@ class ProposalCharge(Base):
         nullable=False,
     )
     proposal: Mapped["Proposal"] = relationship(back_populates="proposalcharges")
-
 
 # Proposal backup_fields
 # # input fields mapped to premia pgit_policy fields

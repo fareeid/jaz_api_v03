@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 # from . import ProposalCover, ProposalCoverCreate, ProposalSMI, ProposalSMICreate
 from .proposalcover import ProposalCover, ProposalCoverCreate
+from .proposalmotorcert import ProposalMotorCertCreate
 from .proposalsmi import ProposalSMI, ProposalSMICreate
 
 
@@ -16,12 +17,12 @@ class PraiFlexi(BaseModel):
 # ########## Risk Schema #########
 # Shared properties
 class ProposalRiskBase(BaseModel):
-    risk_sr_no: Union[int | None] = None
-    prai_data_18: Union[str | None] = None
-    prai_code_03: Union[str | None] = None
-    prai_desc_09: Union[str | None] = None
+    risk_sr_no: Union[int, None] = None
+    # prai_data_18: Union[str | None] = None
+    # prai_code_03: Union[str | None] = None
+    # prai_desc_09: Union[str | None] = None
     # prai_flexi: Union[list[Any] | None] = None
-    prai_flexi: Union[dict[str, Any] | None] = None
+    prai_flexi: Union[dict[str, Any], None] = None
 
 
 # Properties to receive on Proposal Risk creation
@@ -31,6 +32,7 @@ class ProposalRiskCreate(ProposalRiskBase):
     proposalsmis: list[ProposalSMICreate] = []
     # prai_flexi: list[Any] = []
     prai_flexi: dict[str, Any] = {}
+    proposalmotorcerts: list[ProposalMotorCertCreate] = []
 
 
 # Properties to receive via API on update by User

@@ -69,9 +69,17 @@ class CRUDQuote(
                         models.ProposalSMI(**smi.model_dump(exclude_unset=True))
                         for smi in smis_list
                     ]
+                    motor_cert_list = risk.proposalmotorcerts
+                    motor_cert_list_db = [
+                        models.ProposalMotorCert(
+                            **motor_cert.model_dump(exclude_unset=True)
+                        )
+                        for motor_cert in motor_cert_list
+                    ]
                     risk_dict = risk.model_dump(exclude_unset=True)
                     risk_dict["proposalcovers"] = covers_list_db
                     risk_dict["proposalsmis"] = smis_list_db
+                    risk_dict["proposalmotorcerts"] = motor_cert_list_db
                     # prai_flexi_field = risk_dict["prai_flexi"][0]
                     # del risk_dict["prai_flexi"]
                     # print(prai_flexi_field)

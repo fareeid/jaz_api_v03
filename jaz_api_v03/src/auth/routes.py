@@ -1,3 +1,4 @@
+import copy
 import json
 from datetime import timedelta, datetime
 from typing import Any
@@ -42,7 +43,7 @@ async def sample_user() -> Any:
 async def create_user_open(
         *,
         async_db: AsyncSession = Depends(get_session),
-        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),   # Real Premia
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
         # async_oracle_db: Session = Depends(get_async_oracle_session),
         # non_async_oracle_db: Session = Depends(get_oracle_session_sim),       # Simulation Premia
         user_in: schemas.UserCreateStrict,
@@ -107,12 +108,14 @@ async def create_user_open(
                                   "PREMIA Customer Required")
         # TODO: Create Customer code in Premia
         cust_code = premia_services.get_cust_code(non_async_oracle_db, cust_in=user)
-        premia_cust_payload = user.premia_cust_payload
-        premia_cust_payload["cust_code"] = cust_code
-        premia_cust_payload["cust_cr_uid"] = "PORTAL-REG"
-        premia_cust_payload["cust_cr_dt"] = user.created_at
-        user = await crud.user.update(async_db, db_obj=user, obj_in={"cust_code": cust_code, "premia_cust_payload": premia_cust_payload})
-        customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=premia_cust_payload)
+        cust_payload = copy.deepcopy(user.premia_cust_payload)
+        cust_payload["cust_code"] = cust_code
+        cust_payload["cust_cr_uid"] = "PORTAL-REG"
+        cust_payload["cust_cr_dt"] = user.created_at.isoformat()
+        # premia_cust_payload = {"cust_name": "JOHN WILLIAMS", "cust_email1": "john.williams@example.com"}
+        user = await crud.user.update(async_db, db_obj=user,
+                                      obj_in={"cust_code": cust_code, "premia_cust_payload": cust_payload})
+        customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=cust_payload)
     # TODO: This path not tested yet
     elif len(customer_model_list) >= 2:
         # TODO: Create a txt file for duplicate premia customer
@@ -123,7 +126,6 @@ async def create_user_open(
         background_tasks.add_task(services.send_user_email, html_content, plain_text_content,
                                   settings.EMAILS_FROM_EMAIL, ["nancy.nyanchogo@allianz.com"],
                                   "PREMIA Customer Duplicated")
-
 
     elif len(customer_model_list) == 1:
         user = await crud.user.update(async_db, db_obj=user, obj_in={"cust_code": customer_model_list[0].cust_code,

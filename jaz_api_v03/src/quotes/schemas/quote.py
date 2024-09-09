@@ -10,14 +10,14 @@ from . import Proposal, ProposalCreate
 # Shared properties
 class QuoteBase(BaseModel):
     quot_ref: Union[str | None] = None
-    quot_paymt_ref: Union[str | None] = None
-    quot_paymt_date: Union[datetime | None] = None
     quot_assr_id: Union[int | None] = None
     quot_assr_name: Union[str | None] = None
     quot_assr_nic: Union[str | None] = None
     quot_assr_pin: Union[str | None] = None
     quot_assr_phone: Union[str | None] = None
     quot_assr_email: Union[EmailStr | None] = None
+    quot_paymt_ref: Union[str | None] = None
+    quot_paymt_date: Union[datetime | None] = None
 
     # @field_serializer("quot_paymt_date")  # type: ignore
     # def serialize_dt(self, dt: datetime, _info: str):

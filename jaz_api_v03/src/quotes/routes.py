@@ -1,3 +1,4 @@
+import copy
 import json
 from base64 import b64decode, b64encode
 from typing import Any
@@ -20,6 +21,7 @@ from . import (  # noqa: F401
 from . import services as quote_services
 from .models import Quote
 from .vendors_api import schemas as vendor_schemas
+from ..auth import crud as user_crud
 from ..auth import dependencies as auth_dependencies
 from ..auth import models as user_models
 from ..auth import schemas as user_schemas
@@ -32,6 +34,7 @@ from ..core.dependencies import (  # , orcl_base
     get_session,
 )
 from ..customer import crud as customers_crud
+from ..premia import services as premia_services
 
 router = APIRouter()
 
@@ -42,6 +45,8 @@ router = APIRouter()
 async def quote(
         *,
         async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        # non_async_oracle_db: Session = Depends(get_oracle_session_sim),  # Simulation Premia
         payload_in: schemas.QuoteCreate,
         # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
@@ -60,7 +65,28 @@ async def quote(
     user = await user_services.get_user(async_db, user_obj)
     payload_in.quot_assr_id = user.id
     # noinspection PyShadowingNames
+    # TODO Refactor to use quote services
     quote: Quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
+
+    premia_cust_search_criteria = {"cust_email1": user.email, "cust_civil_id": user.pin, "cust_ref_no": user.nic}
+    # TODO: Convert from Premia simulation DB to real Premia DB. This works well
+    customer_model_list = premia_services.get_customer(non_async_oracle_db, search_criteria=premia_cust_search_criteria)
+    # customer_model_list = premia_services.get_customer(oracle_db, search_criteria=search_criteria)
+
+    # user = await async_db.get(user_models.User, user.id)
+    if len(customer_model_list) == 0:
+        cust_code = premia_services.get_cust_code(non_async_oracle_db, cust_in=user)
+        cust_payload = copy.deepcopy(user.premia_cust_payload)
+        cust_payload["cust_code"] = cust_code
+        cust_payload["cust_cr_uid"] = "PORTAL-REG"
+        # cust_payload["cust_cr_dt"] = datetime.strptime(user.created_at, '%d-%b-%Y')
+        # cust_payload["cust_cr_dt"] = user.created_at.strftime("%d-%b-%Y %H:%M")
+        cust_payload["cust_cr_dt"] = user.created_at.strftime("%Y-%m-%d %H:%M")
+
+        user = await user_crud.user.update(async_db, db_obj=user,
+                                           obj_in={"cust_code": cust_code, "premia_cust_payload": cust_payload})
+        customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=cust_payload)
+
     return quote
     # return {"test_key": "test_value"}
 

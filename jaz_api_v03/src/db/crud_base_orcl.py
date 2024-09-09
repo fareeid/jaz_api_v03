@@ -35,7 +35,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj = self.model(**obj_in)
         oracle_db.add(db_obj)
 
-        # # Construct the Insert statement
+        # Construct the Insert statement
         # stmt = insert(self.model).values(**obj_in)
         # # Compile the statement with bound parameters
         # compiled_stmt = stmt.compile(dialect=oracle.dialect(), compile_kwargs={"literal_binds": True})

@@ -66,9 +66,10 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
         result = await async_db.execute(stmt)
 
-        user_list = result.all()
+        # user_list = result.all()
+        user_model_list = result.mappings().all()
         # print(user_list)
-        return list(user_list)
+        return user_model_list
 
     async def authenticate(
             self, async_db: AsyncSession, *, email: str, password: str

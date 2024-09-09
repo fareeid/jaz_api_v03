@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union
+from typing import Union, Any
 
 from pydantic import BaseModel, ConfigDict  # , field_serializer
 
@@ -30,6 +30,7 @@ class ProposalBase(BaseModel):
     pol_to_dt: Union[datetime | None] = None
     pol_dflt_si_curr_code: Union[str | None] = None
     pol_prem_curr_code: Union[str | None] = None
+    pol_flexi: Union[dict[str, Any] | None] = None
 
     # @field_serializer("pol_fm_dt", "pol_to_dt")  # type: ignore
     # def serialize_dt(self, dt: datetime, _info: str):
@@ -50,6 +51,7 @@ class ProposalCreate(ProposalBase):
     pol_prem_curr_code: str
     proposalsections: list[ProposalSectionCreate]
     proposalcharges: list[ProposalChargeCreate]
+    pol_flexi: dict[str, Any] = {}
 
 
 # Properties to receive via API on update by User

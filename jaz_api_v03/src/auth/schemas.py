@@ -32,22 +32,11 @@ class UserCreate(UserBase):
     pin: str
     email: EmailStr
 
-
-# Properties to receive via API on creation
-class UserCreateStrict(UserCreate):
-    last_name: str
-    phone: str
-    password: str
-
     @model_validator(mode="before")
     @classmethod
-    def validate_customer_type(cls, values: dict):
+    def create_cust_payload(cls, values: dict):
         nic = values.get("nic")
         lic_no = values.get("lic_no")
-        if nic and lic_no:
-            raise ValueError("National ID and License No are mutually exclusive")
-        if not nic and not lic_no:
-            raise ValueError("You must provide either a National ID No. or Corporate License No. but not both")
         if nic and not lic_no:
             values["cust_customer_type"] = "02"
             values["cust_cc_code"] = "01"
@@ -56,8 +45,8 @@ class UserCreateStrict(UserCreate):
             values["cust_cc_code"] = "10"
 
         cust_payload = {
-            "cust_first_name": values.get("first_name").upper(),
-            "cust_last_name": values.get("last_name").upper(),
+            "cust_first_name": (values.get("first_name") or values.get("name")).upper(),
+            "cust_last_name": (values.get("last_name") or "").upper(),
             "cust_name": values.get("name").upper(),
             "cust_email1": values.get("email"),
             "cust_mobile_no": values.get("phone"),
@@ -86,6 +75,24 @@ class UserCreateStrict(UserCreate):
         cust_payload["cust_cc_type"] = "001"
 
         values["premia_cust_payload"] = cust_payload
+
+        return values
+
+# Properties to receive via API on creation
+class UserCreateStrict(UserCreate):
+    last_name: str
+    phone: str
+    password: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_customer_type(cls, values: dict):
+        nic = values.get("nic")
+        lic_no = values.get("lic_no")
+        if nic and lic_no:
+            raise ValueError("National ID and License No are mutually exclusive")
+        if not nic and not lic_no:
+            raise ValueError("You must provide either a National ID No. or Corporate License No. but not both")
 
         return values
 

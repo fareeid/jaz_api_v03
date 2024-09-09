@@ -69,19 +69,23 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_obj: ModelType,
         obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
-        obj_data = jsonable_encoder(db_obj)
+        # refreshed_db_obj = await async_db.execute(select(self.model).where(self.model.id == db_obj.id))
+        refreshed_db_obj = await async_db.get(self.model, db_obj.id)
+        obj_data = jsonable_encoder(refreshed_db_obj)
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
             update_data = obj_in.model_dump(exclude_unset=True)
         for field in obj_data:
             if field in update_data:
-                setattr(db_obj, field, update_data[field])
-        async_db.add(db_obj)
+                setattr(refreshed_db_obj, field, update_data[field])
+
+        async_db.add(refreshed_db_obj)
+        # merged_obj = await async_db.merge(refreshed_db_obj)
 
         await async_db.commit()
-        await async_db.refresh(db_obj)
-        return db_obj
+        await async_db.refresh(refreshed_db_obj)
+        return refreshed_db_obj
 
     async def get(self, async_db: AsyncSession, id: int) -> list[ModelType]:
         result = await async_db.execute(select(self.model).where(self.model.id == id))

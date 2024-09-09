@@ -1,0 +1,44 @@
+name: Trigger auto deployment for jazk-api-app2
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ uat_branch ]
+    paths:
+    - '**'
+    - '.github/workflows/jazk-api-app2-AutoDeployTrigger-f194d340-c548-44f4-beba-7bbdb08eb986.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:
+      
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.JAZKAPIAPP2_AZURE_CREDENTIALS }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          registryUrl: jazkapiregistry.azurecr.io
+          registryUsername: ${{ secrets.JAZKAPIAPP2_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.JAZKAPIAPP2_REGISTRY_PASSWORD }}
+          containerAppName: jazk-api-app2
+          resourceGroup: jazk-api-rg
+          imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app2:${{ github.sha }}
+          
+            
+
+     
+

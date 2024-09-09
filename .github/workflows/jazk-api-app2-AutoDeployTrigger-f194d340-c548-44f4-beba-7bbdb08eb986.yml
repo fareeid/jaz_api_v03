@@ -29,14 +29,20 @@ jobs:
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
+#          appSourcePath: ${{ github.workspace }}
+          appSourcePath: ${{ github.workspace }}/jaz_api_v03
+#          _dockerfilePathKey_: _dockerfilePath_
           registryUrl: jazkapiregistry.azurecr.io
           registryUsername: ${{ secrets.JAZKAPIAPP2_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.JAZKAPIAPP2_REGISTRY_PASSWORD }}
           containerAppName: jazk-api-app2
           resourceGroup: jazk-api-rg
-          imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app2:${{ github.sha }}
+          containerAppEnvironment: jazk-api-env2
+          ingress: external
+          targetPort: 3100
+          dockerfilePath: Dockerfile
+          # imageToBuild: jazkapiregistry.azurecr.io/jazk-api-app2:${{ github.sha }}
+          imageToBuild: jazkapiregistry.azurecr.io/jaz_api_v03:latest
           
             
 

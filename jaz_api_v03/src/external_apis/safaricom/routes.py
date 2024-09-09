@@ -7,8 +7,8 @@ from fastapi.encoders import jsonable_encoder
 from requests.auth import HTTPBasicAuth
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from jaz_api_v03.src.core.dependencies import get_session
 from .. import crud as external_apis_crud
+from ...core.dependencies import get_session
 
 router = APIRouter()
 

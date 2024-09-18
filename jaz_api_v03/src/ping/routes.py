@@ -74,6 +74,10 @@ async def read_current_time(db: AsyncSession = Depends(get_session)):
     return {"utc_time": utc_now.isoformat(), "local_time": local_now.isoformat()}
 
 
+@router.get("/test_error_loggin")
+async def test_error_loggin():
+    raise ValueError("This is an intentional error for testing error logging!")
+
 @router.get("/stock_data")
 async def stock_data(q: Union[str, None] = None, callback: Union[str, None] = None) -> Any:
     form = {}

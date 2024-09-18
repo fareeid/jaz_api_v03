@@ -1,0 +1,110 @@
+2024-09-13 14:49:01,633 Unhandled exception: This is an intentional error for testing error logging!
+2024-09-13 14:49:40,365 Unhandled exception: This is an intentional error for testing error logging!
+2024-09-13 14:49:55,708 Unhandled exception: This is an intentional error for testing error logging!
+2024-09-13 14:50:15,743 Unhandled exception: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $3: datetime.datetime(2024, 9, 13, 11, 50, 1... (can't subtract offset-naive and offset-aware datetimes)
+[SQL: INSERT INTO proposal (prop_sr_no, prop_paymt_ref, prop_paymt_date, pol_quot_sys_id, pol_quot_no, pol_comp_code, pol_divn_code, pol_dept_code, pol_prod_code, pol_type, pol_cust_code, pol_assr_code, pol_fm_dt, pol_to_dt, pol_dflt_si_curr_code, pol_prem_curr_code, pol_flexi, pol_sys_id, pol_end_no_idx, pol_no, pol_cr_dt, pol_appr_dt, pol_sts, prop_quot_sys_id, created_by, updated_at, updated_by) VALUES ($1::INTEGER, $2::VARCHAR, $3::TIMESTAMP WITHOUT TIME ZONE, $4::INTEGER, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::TIMESTAMP WITHOUT TIME ZONE, $14::TIMESTAMP WITHOUT TIME ZONE, $15::VARCHAR, $16::VARCHAR, $17::JSONB, $18::INTEGER, $19::INTEGER, $20::VARCHAR, $21::TIMESTAMP WITHOUT TIME ZONE, $22::TIMESTAMP WITHOUT TIME ZONE, $23::VARCHAR, $24::INTEGER, $25::INTEGER, $26::TIMESTAMP WITHOUT TIME ZONE, $27::INTEGER) RETURNING proposal.prop_sys_id, proposal.created_at]
+[parameters: (0, 'string', datetime.datetime(2024, 9, 13, 11, 50, 13, 339000, tzinfo=TzInfo(UTC)), 0, 'string', 'string', 'string', 'string', 'string', 'string', 'string', 'string', datetime.datetime(2024, 9, 13, 11, 50, 13, 339000, tzinfo=TzInfo(UTC)), datetime.datetime(2024, 9, 13, 11, 50, 13, 339000, tzinfo=TzInfo(UTC)), 'string', 'string', '{}', None, None, None, None, None, None, 75, None, None, None)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-09-15 11:35:50,040 Unhandled exception: This is an intentional error for testing error logging!
+2024-09-15 11:56:44,312 Unhandled exception: This is an intentional error for testing error logging!
+2024-09-15 12:05:36,286 Unhandled exception: This is an intentional error for testing error logging!
+2024-09-15 12:06:18,125 Unhandled exception: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $3: datetime.datetime(2024, 9, 13, 11, 50, 1... (can't subtract offset-naive and offset-aware datetimes)
+[SQL: INSERT INTO proposal (prop_sr_no, prop_paymt_ref, prop_paymt_date, pol_quot_sys_id, pol_quot_no, pol_comp_code, pol_divn_code, pol_dept_code, pol_prod_code, pol_type, pol_cust_code, pol_assr_code, pol_fm_dt, pol_to_dt, pol_dflt_si_curr_code, pol_prem_curr_code, pol_flexi, pol_sys_id, pol_end_no_idx, pol_no, pol_cr_dt, pol_appr_dt, pol_sts, prop_quot_sys_id, created_by, updated_at, updated_by) VALUES ($1::INTEGER, $2::VARCHAR, $3::TIMESTAMP WITHOUT TIME ZONE, $4::INTEGER, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::TIMESTAMP WITHOUT TIME ZONE, $14::TIMESTAMP WITHOUT TIME ZONE, $15::VARCHAR, $16::VARCHAR, $17::JSONB, $18::INTEGER, $19::INTEGER, $20::VARCHAR, $21::TIMESTAMP WITHOUT TIME ZONE, $22::TIMESTAMP WITHOUT TIME ZONE, $23::VARCHAR, $24::INTEGER, $25::INTEGER, $26::TIMESTAMP WITHOUT TIME ZONE, $27::INTEGER) RETURNING proposal.prop_sys_id, proposal.created_at]
+[parameters: (0, 'string', datetime.datetime(2024, 9, 13, 11, 50, 13, 339000, tzinfo=TzInfo(UTC)), 0, 'string', 'string', 'string', 'string', 'string', 'string', 'string', 'string', datetime.datetime(2024, 9, 13, 11, 50, 13, 339000, tzinfo=TzInfo(UTC)), datetime.datetime(2024, 9, 13, 11, 50, 13, 339000, tzinfo=TzInfo(UTC)), 'string', 'string', '{}', None, None, None, None, None, None, 76, None, None, None)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)
+2024-09-15 12:10:18,899 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x00000281E7FE9380>>
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\pool\base.py", line 377, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1084, in do_terminate
+    dbapi_connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 878, in terminate
+    self._connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1344, in terminate
+    self._abort()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1371, in _abort
+    self._protocol.abort()
+  File "asyncpg\protocol\protocol.pyx", line 571, in asyncpg.protocol.protocol.BaseProtocol.abort
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 821, in abort
+    self._force_close(None)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 891, in _force_close
+    self._loop.call_soon(self._call_connection_lost, exc)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 761, in call_soon
+    self._check_closed()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 519, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+2024-09-15 12:10:18,992 The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x00000281E7FE9380>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+2024-09-15 12:10:18,992 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x00000281E800ACE0>>
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\pool\base.py", line 377, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1084, in do_terminate
+    dbapi_connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 878, in terminate
+    self._connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1344, in terminate
+    self._abort()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1371, in _abort
+    self._protocol.abort()
+  File "asyncpg\protocol\protocol.pyx", line 571, in asyncpg.protocol.protocol.BaseProtocol.abort
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 821, in abort
+    self._force_close(None)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 891, in _force_close
+    self._loop.call_soon(self._call_connection_lost, exc)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 761, in call_soon
+    self._check_closed()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 519, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+2024-09-15 12:10:18,993 The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x00000281E800ACE0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+2024-09-15 13:44:51,327 Unhandled exception: (oracledb.exceptions.OperationalError) DPY-6005: cannot connect to database (CONNECTION_ID=rbRDq14ZhSKPAST9p8MNAg==).
+[WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2024-09-15 13:47:14,366 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E30C4F26C0>>
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\pool\base.py", line 377, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1084, in do_terminate
+    dbapi_connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 878, in terminate
+    self._connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1344, in terminate
+    self._abort()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1371, in _abort
+    self._protocol.abort()
+  File "asyncpg\protocol\protocol.pyx", line 571, in asyncpg.protocol.protocol.BaseProtocol.abort
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 821, in abort
+    self._force_close(None)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 891, in _force_close
+    self._loop.call_soon(self._call_connection_lost, exc)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 761, in call_soon
+    self._check_closed()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 519, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+2024-09-15 13:47:14,501 The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E30C4F26C0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+2024-09-15 13:48:36,422 Unhandled exception: module 'jaz_api_v03.src.masters.crud' has no attribute 'jsonattribute'
+2024-09-15 13:51:09,619 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001FFE6FC33E0>>
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\pool\base.py", line 377, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1084, in do_terminate
+    dbapi_connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 878, in terminate
+    self._connection.terminate()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1344, in terminate
+    self._abort()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\asyncpg\connection.py", line 1371, in _abort
+    self._protocol.abort()
+  File "asyncpg\protocol\protocol.pyx", line 571, in asyncpg.protocol.protocol.BaseProtocol.abort
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 821, in abort
+    self._force_close(None)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\selector_events.py", line 891, in _force_close
+    self._loop.call_soon(self._call_connection_lost, exc)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 761, in call_soon
+    self._check_closed()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py", line 519, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+2024-09-15 13:51:09,625 The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001FFE6FC33E0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.

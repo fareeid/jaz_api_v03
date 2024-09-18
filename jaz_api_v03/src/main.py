@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import FastAPI, status
@@ -8,18 +9,53 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from .auth import routes as auth
+from .db.session import async_session_local
 from .external_apis.safaricom import routes as safaricom
 from .gwt_poc import routes as gwt_poc
 from .html_poc import routes as html_poc
+from .masters import models as master_models
 from .masters import routes as masters
 from .ping import routes as ping
 from .premia import routes as policies
 from .quotes import routes as quotes
 
-
 # xtype: ignore
+
+# Setup basic logging configuration
+logging.basicConfig(filename="middleware_errors.log", level=logging.ERROR, format='%(asctime)s %(message)s')
+
+
+# Custom middleware class to catch all exceptions globally
+class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        try:
+            # Call the next middleware or endpoint in the request chain
+            response = await call_next(request)
+            return response
+        except Exception as exc:
+            # Log the exception
+            logging.error(f"Unhandled exception: {exc}")
+
+            # Optionally save to a database here (pseudo-code):
+            # db_session.add(LogEntry(error_message=str(exc), path=request.url.path))
+            # db_session.commit()
+            error_log = master_models.ErrorLog(
+                path=str(request.url.path), error_log=str(exc)
+            )
+            async_db = async_session_local()
+            async_db.add(error_log)
+            await async_db.commit()
+            await async_db.refresh(error_log)
+            # await self.log_error(error_log)
+
+            # Return a custom error response
+            return JSONResponse(
+                status_code=500,
+                content={"message": "An internal server error occurred. Please try again later."},
+            )
 
 
 def create_application() -> FastAPI:
@@ -30,6 +66,10 @@ def create_application() -> FastAPI:
         redoc_url=None,
         openapi_url=None,
     )
+
+    # Add middleware
+    # fastapi_app.add_middleware(ExceptionHandlingMiddleware)
+
     fastapi_app.include_router(ping.router, prefix="/ping", tags=["ping"])
     fastapi_app.include_router(auth.router, prefix="/auth", tags=["auth"])
     fastapi_app.include_router(quotes.router, prefix="/quotes", tags=["quotes"])

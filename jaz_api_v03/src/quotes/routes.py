@@ -6,6 +6,7 @@ from typing import Any
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 from fastapi import APIRouter, Depends
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text  # Column, Integer, MetaData, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -34,6 +35,8 @@ from ..core.dependencies import (  # , orcl_base
     get_session,
 )
 from ..customer import crud as customers_crud
+from ..external_apis import crud as external_apis_crud
+from ..masters import crud as attr_crud
 from ..premia import services as premia_services
 
 router = APIRouter()
@@ -45,11 +48,25 @@ router = APIRouter()
 async def quote(
         *,
         async_db: AsyncSession = Depends(get_session),
-        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
-        # non_async_oracle_db: Session = Depends(get_oracle_session_sim),  # Simulation Premia
+        # non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        non_async_oracle_db: Session = Depends(get_oracle_session_sim),  # Simulation Premia
         payload_in: schemas.QuoteCreate,
         # current_user: models.User = Depends(deps.get_current_active_superuser),
 ) -> Any:
+    data = {
+        "external_party": "jazk-web",
+        "transaction_type": "Quote",
+        "notification": "json",
+        "payload": jsonable_encoder(payload_in.model_dump(exclude_unset=True))
+    }
+    payload = await external_apis_crud.external_payload.create_v2(
+        async_db, obj_in=data
+    )
+
+    # background_tasks.add_task(services.send_user_email,
+    #                           html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,
+    #                           [user.email], "Activate Account")
+
     # customer = customers_crud.get_customer("152917")  # noqa: F841
     # TODO Functionality to add checks for corporate/individual flags while creating user as customer
     # Create User to attach to the quote. This is working. For now quotes will be
@@ -68,27 +85,77 @@ async def quote(
     # TODO Refactor to use quote services
     quote: Quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
 
-    premia_cust_search_criteria = {"cust_email1": user.email, "cust_civil_id": user.pin, "cust_ref_no": user.nic}
-    # TODO: Convert from Premia simulation DB to real Premia DB. This works well
-    customer_model_list = premia_services.get_customer(non_async_oracle_db, search_criteria=premia_cust_search_criteria)
-    # customer_model_list = premia_services.get_customer(oracle_db, search_criteria=search_criteria)
+    if user.cust_code is None:
+        premia_cust_search_criteria = {"cust_email1": user.email, "cust_civil_id": user.pin, "cust_ref_no": user.nic}
+        # TODO: Convert from Premia simulation DB to real Premia DB. This works well
+        customer_model_list = premia_services.get_customer(non_async_oracle_db,
+                                                           search_criteria=premia_cust_search_criteria)
+        # customer_model_list = premia_services.get_customer(oracle_db, search_criteria=search_criteria)
 
-    # user = await async_db.get(user_models.User, user.id)
-    if len(customer_model_list) == 0:
-        cust_code = premia_services.get_cust_code(non_async_oracle_db, cust_in=user)
-        cust_payload = copy.deepcopy(user.premia_cust_payload)
-        cust_payload["cust_code"] = cust_code
-        cust_payload["cust_cr_uid"] = "PORTAL-REG"
-        # cust_payload["cust_cr_dt"] = datetime.strptime(user.created_at, '%d-%b-%Y')
-        # cust_payload["cust_cr_dt"] = user.created_at.strftime("%d-%b-%Y %H:%M")
-        cust_payload["cust_cr_dt"] = user.created_at.strftime("%Y-%m-%d %H:%M")
+        # user = await async_db.get(user_models.User, user.id)
+        if len(customer_model_list) == 0:
+            cust_code = premia_services.get_cust_code(non_async_oracle_db, cust_in=user)
+            cust_payload = copy.deepcopy(user.premia_cust_payload)
+            cust_payload["cust_code"] = cust_code
+            cust_payload["cust_cr_uid"] = "PORTAL-REG"
+            cust_payload["cust_cr_dt"] = user.created_at.strftime("%Y-%m-%d %H:%M")  # "%d-%b-%Y %H:%M"
 
-        user = await user_crud.user.update(async_db, db_obj=user,
-                                           obj_in={"cust_code": cust_code, "premia_cust_payload": cust_payload})
-        customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=cust_payload)
+            user = await user_crud.user.update(async_db, db_obj=user,
+                                               obj_in={"cust_code": cust_code, "premia_cust_payload": cust_payload})
+            customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=cust_payload)
+
+        if len(customer_model_list) == 1:
+            user = await user_crud.user.update(async_db, db_obj=user,
+                                               obj_in={"cust_code": customer_model_list[0].cust_code,
+                                                       "premia_cust_payload": {}})
+
+    # TODO: Create PGIT_POLICY payload
+    # TODO: Get PGIT_POLICY template from jsonattribute
+    pgit_policy_template = await attr_crud.attrs.get_table_template(async_db, attr_name="PGIT_POLICY")
+    pgit_policy_payload = copy.deepcopy(pgit_policy_template["json_value"])
+    proposals = flatten_proposals(quote.proposals)
+
+    for proposal in proposals:
+        pgit_policy_payload.update(proposals[0])
+
+    # TODO: Get Proposal from quote
 
     return quote
     # return {"test_key": "test_value"}
+
+
+# Function to flatten a single Proposal object
+def flatten_proposal(proposal: models.Proposal) -> dict:
+    # Extract the basic fields from the model and convert them to a dictionary
+    proposal_dict = {
+        "pol_quot_sys_id": proposal.pol_quot_sys_id,
+        "pol_quot_no": proposal.pol_quot_no,
+        "pol_comp_code": proposal.pol_comp_code,
+        "pol_divn_code": proposal.pol_divn_code,
+        "pol_dept_code": proposal.pol_dept_code,
+        "pol_prod_code": proposal.pol_prod_code,
+        "pol_type": proposal.pol_type,
+        "pol_cust_code": proposal.pol_cust_code,
+        "pol_assr_code": proposal.pol_assr_code,
+        "pol_fm_dt": proposal.pol_fm_dt.isoformat(),  # Convert datetime to ISO format
+        "pol_to_dt": proposal.pol_to_dt.isoformat(),  # Convert datetime to ISO format
+        "pol_dflt_si_curr_code": proposal.pol_dflt_si_curr_code,
+        "pol_prem_curr_code": proposal.pol_prem_curr_code,
+    }
+
+    # Flatten the pol_flexi (JSONB) field if it exists
+    if proposal.pol_flexi:
+        for outer_key, inner_dict in proposal.pol_flexi.items():
+            if isinstance(inner_dict, dict):
+                proposal_dict.update(inner_dict)
+
+    return proposal_dict
+
+
+# Function to flatten a list of Proposal objects
+def flatten_proposals(proposals: list[models.Proposal]) -> list[dict]:
+    # Use list comprehension to flatten each proposal
+    return [flatten_proposal(proposal) for proposal in proposals]
 
 
 @router.post("/dyn_marine_payload", response_model=str)

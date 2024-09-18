@@ -1,15 +1,23 @@
-from typing import Union
+from typing import Union, Any
 
 from pydantic import BaseModel, ConfigDict
 
 
-class StringAttributeBase(BaseModel):
+class TypeAttributeBase(BaseModel):
+    value: Union[Any, None] = None
+    value_code: Union[str, None] = None
+
+
+class StringAttributeBase(TypeAttributeBase):
     # model_config = ConfigDict(from_attributes=True)
-    #
     # entity_id: int
     # attr_sys_id: int
     value: str
     value_code: str
+
+
+class JsonAttributeBase(TypeAttributeBase):
+    value: dict[str, Any]
 
 
 class AttributeDefinitionBase(BaseModel):

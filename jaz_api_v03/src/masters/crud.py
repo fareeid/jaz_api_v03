@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +12,10 @@ from ..db.crud_base import CRUDBase
 
 class CRUDAttributeDefinition(
     CRUDBase[
-        master_models.AttributeDefinition, product_schema.AttributeDefinitionBase, product_schema.StringAttributeBase]
+        master_models.AttributeDefinition, product_schema.AttributeDefinitionBase, product_schema.TypeAttributeBase]
 ):
     string_attribute_alias = aliased(master_models.StringAttribute)
+    json_attribute_alias = aliased(master_models.JsonAttribute)
 
     async def get_attrs_lovs(self, async_db: AsyncSession, id: int) -> list[master_models.AttributeDefinition]:
         # Aliasing the StringAttribute to avoid any ambiguity in case of multiple joins
@@ -105,6 +107,28 @@ class CRUDAttributeDefinition(
             grouped_data[attr_name].append(product_schema.StringAttributeBase(value=value, value_code=value_code))
 
         return grouped_data
+
+    async def get_table_template(self, async_db: AsyncSession, attr_name: str) -> dict[str, Any]: # list[master_models.AttributeDefinition]:
+        stmt = (
+            select(self.model.attr_name, self.model.data_type, self.model.entity_type, self.json_attribute_alias.value)
+            .join(self.json_attribute_alias, self.model.jsonattributes)
+            .filter(self.model.attr_name == attr_name)
+        )
+        result = await async_db.execute(stmt)
+
+        # Fetch the first row, if any
+        row = result.fetchone()
+
+        # Return a dictionary if a row is found, otherwise an empty dictionary
+        if row:
+            attr_name, data_type, entity_type, json_value = row
+            return {
+                "attr_name": attr_name,
+                "data_type": data_type,
+                "entity_type": entity_type,
+                "json_value": json_value
+            }
+        return {}
 
 
 attrs = CRUDAttributeDefinition(master_models.AttributeDefinition)

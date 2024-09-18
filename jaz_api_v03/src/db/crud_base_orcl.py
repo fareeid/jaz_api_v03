@@ -1,9 +1,11 @@
 import logging
+from datetime import datetime
 from typing import Generic, Type, TypeVar, Union, Any
 
 from fastapi.encoders import jsonable_encoder
 # from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
+from sqlalchemy import func
 # from sqlalchemy import delete, select
 # from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.orm import Session
@@ -29,10 +31,27 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
+    def is_date(self, value: str) -> bool:
+        try:
+            datetime.strptime(value, '%Y-%m-%d %H:%M')
+            return True
+        except ValueError:
+            return False
+
     def create_v1(self, oracle_db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
         # print(obj_in)
-        db_obj = self.model(**obj_in)
+        obj_in_with_date = {}
+        for key, value in obj_in.items():
+            if isinstance(value, str) and self.is_date(value):
+                obj_in_with_date[key] = func.to_date(value, 'YYYY-MM-DD HH24:MI')
+            else:
+                obj_in_with_date[key] = value
+
+        # obj_in_with_date = {**obj_in}
+        # obj_in_with_date['cust_cr_dt'] = func.to_date(obj_in_with_date['cust_cr_dt'], 'YYYY-MM-DD HH24:MI')
+
+        db_obj = self.model(**obj_in_with_date)
         oracle_db.add(db_obj)
 
         # Construct the Insert statement

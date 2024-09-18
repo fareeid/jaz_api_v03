@@ -42,7 +42,7 @@ class DocNumberRange(OrclBase):
 
 
 class Policy(OrclBase):  # type: ignore
-    __tablename__ = "pgit_policy_apit"
+    __tablename__ = "pgit_policy"
     pol_sys_id: Mapped[int] = mapped_column(primary_key=True)
     pol_end_no_idx: Mapped[int] = mapped_column(primary_key=True)
     pol_end_sr_no: Mapped[int] = mapped_column(primary_key=True)
@@ -58,7 +58,8 @@ class Policy(OrclBase):  # type: ignore
 
 
 class PolicySection(OrclBase):  # type: ignore
-    __tablename__ = "pgit_pol_section_apit"
+    __tablename__ = "pgit_pol_section"
+    psec_sys_id: Mapped[int] = mapped_column(primary_key=True)
     psec_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
     psec_end_no_idx: Mapped[int] = mapped_column(nullable=False)
     psec_end_sr_no: Mapped[int] = mapped_column(nullable=False)
@@ -83,7 +84,7 @@ OrclBase.prepare(
     autoload_with=oracledb_engine,
     # autoload_with=async_oracledb_engine,
     reflection_options={
-        "only": ["pcom_customer", "pgit_policy_apit", "pgit_pol_section_apit", "pgim_doc_number_range"]
+        "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section"]
     },
 )  # noqa: E501
 

@@ -1,4 +1,5 @@
 from sqlalchemy import ForeignKey, CheckConstraint, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base import Base
@@ -138,6 +139,14 @@ class AttributeDefinition(Base):
         cascade="all, delete-orphan",
         lazy="subquery",
     )
+
+    # Relation to JsonAttribute - down
+    jsonattributes: Mapped[list["JsonAttribute"]] = relationship(
+        back_populates="attributedefinition",
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
     # parent_attr_sys_id: Mapped[int] = mapped_column(ForeignKey("attributedefinition.attr_sys_id"), nullable=True)
     # children_attr: Mapped[list["AttributeDefinition"]] = relationship("AttributeDefinition",
     #                                                                   back_populates="parent_attr")
@@ -167,6 +176,28 @@ class StringAttribute(Base):
     )
 
 
+class JsonAttribute(Base):
+    json_attr_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    entity_type: Mapped[str] = mapped_column(CheckConstraint("entity_type IN ('PGIT_POLICY', 'PGIT_POL_SECTION')"))
+    entity_id: Mapped[int] = mapped_column()
+
+    # Relation to AttributeDefinition - up
+    attr_sys_id: Mapped[int] = mapped_column(ForeignKey("attributedefinition.attr_sys_id"))
+    attributedefinition: Mapped["AttributeDefinition"] = relationship(back_populates="jsonattributes")
+
+    value: Mapped[str] = mapped_column(JSONB, nullable=True)
+    value_code: Mapped[str] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('entity_type', 'entity_id', 'attr_sys_id'),
+    )
+
+
+class ErrorLog(Base):
+    error_log_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    path: Mapped[str] = mapped_column()
+    error_log: Mapped[str] = mapped_column()
+
 # data_dict = {
 #     "Motor Private": {
 #         "Policy Type": [
@@ -189,7 +220,6 @@ class StringAttribute(Base):
 #         ]
 #     }
 # }
-
 
 
 # class IntegerAttribute(Base):

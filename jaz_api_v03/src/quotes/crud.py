@@ -1,6 +1,8 @@
 # from typing import Any
+from typing import Any
 
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # from ..quotes.models import (
@@ -101,5 +103,34 @@ class CRUDQuote(
         return await super().create_v1(async_db, obj_in=quote_dict)
 
 
+class CRUDProposal(
+    CRUDBase[models.Proposal, schemas.ProposalCreate, schemas.ProposalUpdate]
+):
+    async def get_proposal_fields(self, async_db: AsyncSession, attr_name: str) -> dict[str, Any]: # list[master_models.AttributeDefinition]:
+        stmt = (
+            select(self.model.pol_quot_sys_id, self.model.pol_quot_no, self.model.pol_comp_code, self.model.pol_divn_code, self.model.pol_dept_code,
+                   self.model.pol_prod_code, self.model.pol_type, self.model.pol_cust_code, self.model.pol_assr_code, self.model.pol_fm_dt,
+                   self.model.pol_to_dt, self.model.pol_dflt_si_curr_code, self.model.pol_prem_curr_code, self.model.pol_flexi)
+            # .join(self.json_attribute_alias, self.model.jsonattributes)
+            .filter(self.model.attr_name == attr_name)
+        )
+        result = await async_db.execute(stmt)
+
+        # Fetch the first row, if any
+        row = result.fetchone()
+
+        # Return a dictionary if a row is found, otherwise an empty dictionary
+        if row:
+            attr_name, data_type, entity_type, json_value = row
+            return {
+                "attr_name": attr_name,
+                "data_type": data_type,
+                "entity_type": entity_type,
+                "json_value": json_value
+            }
+        return {}
+
+
 payload = CRUDPayload(vendor_models.Payload)
 quote = CRUDQuote(models.Quote)
+proposal = CRUDProposal(models.Proposal)

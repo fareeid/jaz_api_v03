@@ -132,8 +132,9 @@ async def quote(
 
     policy_quote_data = quote_to_policy(quote_data)
 
+    # print("Before product template")
     policy_template = await masters_crud.product.get_product_by_id(async_db, prod_code='1002')
-
+    # print("After product template")
     ###########
     pgit_policy_template = {k: v for k, v in policy_template.pol_trans_dflt.items() if v != ''}
     policy_template_charges_list = [{k: v for k, v in charge.chg_trans_dflt.items() if v != ''} for charge in

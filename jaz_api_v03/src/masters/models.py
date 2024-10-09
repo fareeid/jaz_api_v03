@@ -59,7 +59,7 @@ class Product(Base):
     conditions: Mapped[list["Condition"]] = relationship("ProductConditionAssociation", back_populates="product")
 
     # Many-to-Many Relation to Section - down
-    sections: Mapped[list["Section"]] = relationship("ProductSectionAssociation", back_populates="product")
+    sections: Mapped[list["Section"]] = relationship("ProductSectionAssociation", back_populates="product", lazy="select")
 
 
 class ProductChargeAssociation(Base):
@@ -82,7 +82,7 @@ class ProductSectionAssociation(Base):
     sec_sys_id: Mapped[int] = mapped_column(ForeignKey("section.sec_sys_id"), primary_key=True)
     sec_trans_dflt: Mapped[str] = mapped_column(JSONB, nullable=True)
     product: Mapped["Product"] = relationship("Product", back_populates="sections")
-    section: Mapped["Section"] = relationship("Section", back_populates="products")
+    section: Mapped["Section"] = relationship("Section", back_populates="products", lazy="select")
 
 
 class Charge(Base):
@@ -117,7 +117,7 @@ class Section(Base):
     products: Mapped[list[Product]] = relationship("ProductSectionAssociation", back_populates="section")
 
     # Many-to-Many Relation to Risk - down
-    risks: Mapped[list["Risk"]] = relationship("SectionRiskAssociation", back_populates="section")
+    risks: Mapped[list["Risk"]] = relationship("SectionRiskAssociation", back_populates="section", lazy="select")
 
 
 class SectionRiskAssociation(Base):

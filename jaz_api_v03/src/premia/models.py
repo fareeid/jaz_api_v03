@@ -266,7 +266,7 @@ def verify_pydantic_model(pydantic_model: Type[BaseModel]) -> None:
 
 # Verify the created Pydantic models
 # verify_pydantic_model(PolicyBase)
-verify_pydantic_model(CustomerBase)
+# verify_pydantic_model(CustomerBase)
 # verify_pydantic_model(PolicySectionBase)
 
 # OrclBase.prepare(

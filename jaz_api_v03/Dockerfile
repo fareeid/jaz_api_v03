@@ -9,6 +9,8 @@ ENV PYTHONUNBUFFERED 1
 # Set the environment variable to non-interactive mode for automated installations
 ENV DEBIAN_FRONTEND=noninteractive
 
+RUN mkdir -p /root/.postgresql
+
 # install system dependencies
 RUN apt-get update \
   && apt-get -y install netcat gcc tzdata net-tools iputils-ping curl ca-certificates \
@@ -25,6 +27,10 @@ RUN curl -o /usr/local/share/ca-certificates/digicert_global_root_ca.crt https:/
 
 # Update the CA certificates in the container
 RUN update-ca-certificates
+
+RUN cp /etc/ssl/certs/ca-certificates.crt /root/.postgresql/root.crt
+
+RUN chmod 644 /root/.postgresql/root.crt
 
 ENV TZ Africa/Nairobi
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

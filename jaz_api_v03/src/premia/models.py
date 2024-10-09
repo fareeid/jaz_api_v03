@@ -139,7 +139,7 @@ class PolicySection(OrclBase):  # type: ignore
 
     # Relation to PolicyRisk - down
     policyrisk_collection: Mapped[list["PolicyRisk"]] = relationship(
-        back_populates="policy_section",
+        back_populates="policysection",
         primaryjoin="and_(PolicySection.psec_pol_sys_id==PolicyRisk.prai_pol_sys_id, PolicySection.psec_end_no_idx==PolicyRisk.prai_end_no_idx, PolicySection.psec_end_sr_no==PolicyRisk.prai_end_sr_no)",
         # noqa: E501
         cascade="all, delete-orphan",
@@ -163,13 +163,13 @@ class PolicyRisk(OrclBase):  # type: ignore
             PolicySection.psec_end_sr_no,
         ],
     )
-    policy_section: Mapped["PolicySection"] = relationship(
+    policysection: Mapped["PolicySection"] = relationship(
         back_populates="policyrisk_collection",
     )
 
     # Relation to PolicyCover - down
     policycover_collection: Mapped[list["PolicyCover"]] = relationship(
-        back_populates="policy_risk",
+        back_populates="policyrisk",
         primaryjoin="and_(PolicyRisk.prai_pol_sys_id==PolicyCover.prc_pol_sys_id, PolicyRisk.prai_end_no_idx==PolicyCover.prc_end_no_idx, PolicyRisk.prai_end_sr_no==PolicyCover.prc_end_sr_no)",
         # noqa: E501
         cascade="all, delete-orphan",
@@ -193,7 +193,7 @@ class PolicyCover(OrclBase):  # type: ignore
             PolicyRisk.prai_end_sr_no,
         ],
     )
-    policy_risk: Mapped["PolicyRisk"] = relationship(
+    policyrisk: Mapped["PolicyRisk"] = relationship(
         back_populates="policycover_collection",
     )
 

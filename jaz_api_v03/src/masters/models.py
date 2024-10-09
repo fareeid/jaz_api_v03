@@ -38,28 +38,14 @@ class UwClass(Base):
         return f"Class(class_code={self.class_code!r}, quot_ref={self.class_name!r})"
 
 
-class ProductChargeAssociation(Base):
-    prod_sys_id: Mapped[int] = mapped_column(ForeignKey("product.prod_sys_id"), primary_key=True)
-    chg_sys_id: Mapped[int] = mapped_column(ForeignKey("charge.chg_sys_id"), primary_key=True)
-
-
-class ProductConditionAssociation(Base):
-    prod_sys_id: Mapped[int] = mapped_column(ForeignKey("product.prod_sys_id"), primary_key=True)
-    cond_sys_id: Mapped[int] = mapped_column(ForeignKey("condition.cond_sys_id"), primary_key=True)
-
-
-class ProductSectionAssociation(Base):
-    prod_sys_id: Mapped[int] = mapped_column(ForeignKey("product.prod_sys_id"), primary_key=True)
-    sec_sys_id: Mapped[int] = mapped_column(ForeignKey("section.sec_sys_id"), primary_key=True)
-
-
 class Product(Base):
     prod_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
     prod_code: Mapped[str] = mapped_column(index=True)
     prod_desc: Mapped[str] = mapped_column(index=True)
     prod_frz_flag: Mapped[bool] = mapped_column()
+    pol_trans_dflt: Mapped[str] = mapped_column(JSONB, nullable=True)
 
-    # Relation to Quote - up
+    # Relation to UwClass - up
     prod_class_sys_id: Mapped[int] = mapped_column(
         ForeignKey("uwclass.class_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False,
@@ -67,14 +53,36 @@ class Product(Base):
     uwclass: Mapped["UwClass"] = relationship(back_populates="products")
 
     # Many-to-Many Relation to Charge - down
-    charges: Mapped[list["Charge"]] = relationship(secondary="productchargeassociation", back_populates="products")
+    charges: Mapped[list["Charge"]] = relationship("ProductChargeAssociation", back_populates="product")
 
     # Many-to-Many Relation to Condition - down
-    conditions: Mapped[list["Condition"]] = relationship(secondary="productconditionassociation",
-                                                         back_populates="products")
+    conditions: Mapped[list["Condition"]] = relationship("ProductConditionAssociation", back_populates="product")
 
     # Many-to-Many Relation to Section - down
-    sections: Mapped[list["Section"]] = relationship(secondary="productsectionassociation", back_populates="products")
+    sections: Mapped[list["Section"]] = relationship("ProductSectionAssociation", back_populates="product")
+
+
+class ProductChargeAssociation(Base):
+    prod_sys_id: Mapped[int] = mapped_column(ForeignKey("product.prod_sys_id"), primary_key=True)
+    chg_sys_id: Mapped[int] = mapped_column(ForeignKey("charge.chg_sys_id"), primary_key=True)
+    chg_trans_dflt: Mapped[str] = mapped_column(JSONB, nullable=True)
+    product: Mapped["Product"] = relationship("Product", back_populates="charges")
+    charge: Mapped["Charge"] = relationship("Charge", back_populates="products")
+
+
+class ProductConditionAssociation(Base):
+    prod_sys_id: Mapped[int] = mapped_column(ForeignKey("product.prod_sys_id"), primary_key=True)
+    cond_sys_id: Mapped[int] = mapped_column(ForeignKey("condition.cond_sys_id"), primary_key=True)
+    product: Mapped["Product"] = relationship("Product", back_populates="conditions")
+    condition: Mapped["Condition"] = relationship("Condition", back_populates="products")
+
+
+class ProductSectionAssociation(Base):
+    prod_sys_id: Mapped[int] = mapped_column(ForeignKey("product.prod_sys_id"), primary_key=True)
+    sec_sys_id: Mapped[int] = mapped_column(ForeignKey("section.sec_sys_id"), primary_key=True)
+    sec_trans_dflt: Mapped[str] = mapped_column(JSONB, nullable=True)
+    product: Mapped["Product"] = relationship("Product", back_populates="sections")
+    section: Mapped["Section"] = relationship("Section", back_populates="products")
 
 
 class Charge(Base):
@@ -86,7 +94,7 @@ class Charge(Base):
     chg_frz_flag: Mapped[bool] = mapped_column()
 
     # Many-to-Many Relation to Product - up
-    products: Mapped[list[Product]] = relationship(secondary="productchargeassociation", back_populates="charges")
+    products: Mapped[list[Product]] = relationship("ProductChargeAssociation", back_populates="charge")
 
 
 class Condition(Base):
@@ -96,12 +104,7 @@ class Condition(Base):
     cond_frz_flag: Mapped[bool] = mapped_column()
 
     # Many-to-Many Relation to Product - up
-    products: Mapped[list[Product]] = relationship(secondary="productconditionassociation", back_populates="conditions")
-
-
-class SectionCoverAssociation(Base):
-    sec_sys_id: Mapped[int] = mapped_column(ForeignKey("section.sec_sys_id"), primary_key=True)
-    cvr_sys_id: Mapped[int] = mapped_column(ForeignKey("cover.cvr_sys_id"), primary_key=True)
+    products: Mapped[list[Product]] = relationship("ProductConditionAssociation", back_populates="condition")
 
 
 class Section(Base):
@@ -111,10 +114,39 @@ class Section(Base):
     sec_frz_flag: Mapped[bool] = mapped_column()
 
     # Many-to-Many Relation to Product - up
-    products: Mapped[list[Product]] = relationship(secondary="productsectionassociation", back_populates="sections")
+    products: Mapped[list[Product]] = relationship("ProductSectionAssociation", back_populates="section")
+
+    # Many-to-Many Relation to Risk - down
+    risks: Mapped[list["Risk"]] = relationship("SectionRiskAssociation", back_populates="section")
+
+
+class SectionRiskAssociation(Base):
+    sec_sys_id: Mapped[int] = mapped_column(ForeignKey("section.sec_sys_id"), primary_key=True)
+    risk_sys_id: Mapped[int] = mapped_column(ForeignKey("risk.risk_sys_id"), primary_key=True)
+    risk_trans_dflt: Mapped[str] = mapped_column(JSONB, nullable=True)
+    section: Mapped["Section"] = relationship("Section", back_populates="risks")
+    risk: Mapped["Risk"] = relationship("Risk", back_populates="sections")
+
+
+class Risk(Base):
+    risk_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    risk_code: Mapped[str] = mapped_column(index=True)
+    risk_desc: Mapped[str] = mapped_column(index=True)
+    risk_frz_flag: Mapped[bool] = mapped_column()
+
+    # Many-to-Many Relation to Section - up
+    sections: Mapped[list[Section]] = relationship("SectionRiskAssociation", back_populates="risk")
 
     # Many-to-Many Relation to Cover - down
-    covers: Mapped[list["Cover"]] = relationship(secondary="sectioncoverassociation", back_populates="sections")
+    covers: Mapped[list["Cover"]] = relationship("RiskCoverAssociation", back_populates="risk")
+
+
+class RiskCoverAssociation(Base):
+    risk_sys_id: Mapped[int] = mapped_column(ForeignKey("risk.risk_sys_id"), primary_key=True)
+    cvr_sys_id: Mapped[int] = mapped_column(ForeignKey("cover.cvr_sys_id"), primary_key=True)
+    cvr_trans_dflt: Mapped[str] = mapped_column(JSONB, nullable=True)
+    risk: Mapped["Risk"] = relationship("Risk", back_populates="covers")
+    cover: Mapped["Cover"] = relationship("Cover", back_populates="risks")
 
 
 class Cover(Base):
@@ -123,8 +155,8 @@ class Cover(Base):
     cvr_desc: Mapped[str] = mapped_column(index=True)
     cvr_frz_flag: Mapped[bool] = mapped_column()
 
-    # Many-to-Many Relation to Section - up
-    sections: Mapped[list[Section]] = relationship(secondary="sectioncoverassociation", back_populates="covers")
+    # Many-to-Many Relation to Risk - up
+    risks: Mapped[list[Risk]] = relationship("RiskCoverAssociation", back_populates="cover")
 
 
 class AttributeDefinition(Base):

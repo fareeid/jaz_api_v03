@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 # Shared properties
 class ProposalSMIBase(BaseModel):
     smi_sr_no: Union[int | None] = None
+    prs_sr_no: Union[int | None] = None
     prs_smi_code: Union[str | None] = None
     prs_rate: Union[float | None] = None
     prs_rate_per: Union[float | None] = None

@@ -1,18 +1,9 @@
 # from datetime import datetime
-from typing import Union
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import ConfigDict
 
-from .policysection import PolicySection, PolicySectionCreate
-
-
-# ########## Policy Schema #########
-# Shared properties
-class PolicyBase(BaseModel):
-    pol_sys_id: Union[int | None] = None
-    pol_end_no_idx: Union[int | None] = None
-    pol_end_sr_no: Union[int | None] = None
-    pol_comp_code: Union[str | None] = None
+from .policysection import PolicySection
+from ..models import PolicyBase
 
 
 # Properties to receive on Proposal Risk creation
@@ -21,7 +12,9 @@ class PolicyCreate(PolicyBase):
     pol_end_no_idx: int
     pol_end_sr_no: int
     pol_comp_code: str
-    policysection_collection: list[PolicySectionCreate]
+    policycurrency_collection: list = []
+    policycharge_collection: list = []
+    policysection_collection: list = []
 
 
 # Properties to receive via API on update by User
@@ -44,6 +37,6 @@ class Policy(PolicyInDBBase):
     pass
 
 
-# Properties properties stored in DB
+# Properties stored in DB
 class PolicyInDB(PolicyInDBBase):
     pass

@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 
 from . import crud, dependencies, models, schemas, security, services
 from ..core.config import Settings, get_settings
-# from ..core.dependencies import get_session, get_non_async_oracle_session                              # Real database
-from ..core.dependencies import get_session, \
-    get_oracle_session_sim as get_non_async_oracle_session  # simulation postgres_session
+from ..core.dependencies import get_session, get_non_async_oracle_session  # Real database
+# from ..core.dependencies import get_session, \
+#     get_oracle_session_sim as get_non_async_oracle_session  # simulation postgres_session
 from ..premia import services as premia_services
 
 # sample = Faker()
@@ -37,6 +37,71 @@ settings: Settings = get_settings()
 @router.get("/sample_user", response_model=schemas.User)  #
 async def sample_user() -> Any:
     return await services.sample_user()
+
+
+@router.post("/register_agent", response_model=dict[str, Any])  # list[schemas.User] schemas.User
+async def register_agent(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        agent_in: schemas.UserRegisterAgent,
+        background_tasks: BackgroundTasks,
+        request: Request,
+) -> Any:
+    search_criteria = {"cust_code": agent_in.cust_code, "email": agent_in.email, "phone": agent_in.phone}
+    agent_list = await services.get_agent(async_db, search_criteria=search_criteria)
+
+    if len(agent_list) == 0:
+        premia_cust_search_criteria = {"cust_code": agent_in.cust_code, "cust_email1": agent_in.email, "cust_mobile_no": agent_in.phone}
+        customer_model_list = premia_services.get_customer(non_async_oracle_db,
+                                                           search_criteria=premia_cust_search_criteria)
+        if len(customer_model_list) == 0:
+            raise HTTPException(status_code=500, detail="Your details do not match any of our records. Please contact the Agents Administrator")
+        elif len(customer_model_list) == 1:
+            agent_in.first_name = customer_model_list[0].cust_first_name
+            agent_in.last_name = customer_model_list[0].cust_last_name
+            agent_in.name = customer_model_list[0].cust_name
+            agent_in.username = customer_model_list[0].cust_email1
+            agent_in.pin = customer_model_list[0].cust_civil_id
+            agent_in.nic = customer_model_list[0].cust_ref_no
+            agent_in.cust_cc_code = customer_model_list[0].cust_cc_code
+            agent_in.cust_customer_type = customer_model_list[0].cust_customer_type
+            # agent_in.lic_no = customer_model_list[0].cust_ref_no
+            user = await services.create_user(async_db, agent_in)
+        else:
+            raise HTTPException(status_code=500, detail="Multiple records found. Please contact the Agents Administrator")
+    elif len(agent_list) == 1:
+        agent = agent_list[0]
+        raise HTTPException(status_code=500, detail="Agent already registered as portal user. Please log in")
+    else:
+        raise HTTPException(status_code=500, detail="Multiple records found. Please contact the Agents Administrator")
+
+    activation_token_expires = timedelta(minutes=settings.ACTIVATION_TOKEN_EXPIRE_MINUTES)
+    user_activation_token = security.create_token(user.username, expires_delta=activation_token_expires)
+    base_url = str(request.base_url).rstrip("/")
+    activation_url = f"{base_url}/auth/activate?token={user_activation_token}"
+
+    # TODO: Create a txt file for new user registration
+    html_content, plain_text_content = services.generate_content(action_url=activation_url,
+                                                                 html_template="new_user_activation.html",
+                                                                 txt_template="", user=user)
+
+    background_tasks.add_task(services.send_user_email,
+                              html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,
+                              [user.email], "Activate Account")
+
+    # TODO Add functionality to approve agent & staff requests
+    # TODO Create environment variable for send_from email
+
+    # return f"{base_url}/activate?token={user_activation_token}"
+    # print(activation_url)
+    # return {"activation_url": json.dumps(activation_url), "username": user.username}
+    # return user
+    return {"message": "Portal user registered Please send activation email",
+            "activation_url": activation_url,
+            # "html_content": html_content,
+            }
+
 
 
 @router.post("/open", response_model=dict[str, Any])  # list[schemas.User] schemas.User

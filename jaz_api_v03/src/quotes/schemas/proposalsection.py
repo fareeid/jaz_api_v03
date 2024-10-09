@@ -10,6 +10,7 @@ from .proposalrisk import ProposalRisk, ProposalRiskCreate
 # Shared properties
 class ProposalSectionBase(BaseModel):
     sec_sr_no: Union[int | None] = None
+    psec_sr_no: Union[int | None] = None
     psec_sec_code: Union[str | None] = None
 
 

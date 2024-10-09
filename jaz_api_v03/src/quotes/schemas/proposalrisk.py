@@ -18,10 +18,7 @@ class PraiFlexi(BaseModel):
 # Shared properties
 class ProposalRiskBase(BaseModel):
     risk_sr_no: Union[int, None] = None
-    # prai_data_18: Union[str | None] = None
-    # prai_code_03: Union[str | None] = None
-    # prai_desc_09: Union[str | None] = None
-    # prai_flexi: Union[list[Any] | None] = None
+    prai_risk_sr_no: Union[int, None] = None
     prai_flexi: Union[dict[str, Any], None] = None
 
 
@@ -30,7 +27,6 @@ class ProposalRiskCreate(ProposalRiskBase):
     risk_sr_no: int
     proposalcovers: list[ProposalCoverCreate]
     proposalsmis: list[ProposalSMICreate] = []
-    # prai_flexi: list[Any] = []
     prai_flexi: dict[str, Any] = {}
     proposalmotorcerts: list[ProposalMotorCertCreate] = []
 

@@ -1,29 +1,16 @@
-from typing import Union, Any
+from typing import Union
 
-from pydantic import BaseModel, ConfigDict
-
-
-class TypeAttributeBase(BaseModel):
-    value: Union[Any, None] = None
-    value_code: Union[str, None] = None
+from pydantic import BaseModel
 
 
-class StringAttributeBase(TypeAttributeBase):
-    # model_config = ConfigDict(from_attributes=True)
-    # entity_id: int
-    # attr_sys_id: int
-    value: str
-    value_code: str
+class ProductBase(BaseModel):
+    prod_sys_id: int
+    prod_code: str
+    prod_desc: str
+    prod_frz_flag: bool
+    pol_trans_dflt: Union[dict, None] = None # JSONB is mapped as dict
 
-
-class JsonAttributeBase(TypeAttributeBase):
-    value: dict[str, Any]
-
-
-class AttributeDefinitionBase(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    attr_name: Union[str, None] = None
-    data_type: Union[str, None] = None
-    entity_type: Union[str, None] = None
-
-    stringattributes: list[StringAttributeBase] = []
+    # Many-to-many relationships
+    charges: list = []
+    conditions: list = []
+    sections: list = []

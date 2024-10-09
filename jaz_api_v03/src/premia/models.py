@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeMeta
 
-from ..db.session import oracledb_engine_sim as oracledb_engine  # , simulation postgres_engine
+from ..db.session import oracledb_engine  # , Real engine
 
-# from ..db.session import oracledb_engine  # , Real engine
+# from ..db.session import oracledb_engine_sim as oracledb_engine  # , simulation postgres_engine
 
 # from ..db.session import async_oracledb_engine  # , postgres_engine
 
@@ -56,6 +56,66 @@ class Policy(OrclBase):  # type: ignore
         lazy="subquery",
     )
 
+    # Relation to PolicyCharge - down
+    policycharge_collection: Mapped[list["PolicyCharge"]] = relationship(
+        back_populates="policy",
+        primaryjoin="and_(Policy.pol_sys_id==PolicyCharge.pchg_pol_sys_id, Policy.pol_end_no_idx==PolicyCharge.pchg_end_no_idx, Policy.pol_end_sr_no==PolicyCharge.pchg_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+    # Relation to PolicyCurrency - down
+    policycurrency_collection: Mapped[list["PolicyCurrency"]] = relationship(
+        back_populates="policy",
+        primaryjoin="and_(Policy.pol_sys_id==PolicyCurrency.pac_pol_sys_id, Policy.pol_end_no_idx==PolicyCurrency.pac_end_no_idx, Policy.pol_end_sr_no==PolicyCurrency.pac_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+
+class PolicyCharge(OrclBase):  # type: ignore
+    __tablename__ = "pgit_pol_charge"
+    pchg_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    pchg_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    pchg_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    pchg_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Policy - up
+    ForeignKeyConstraint(
+        [pchg_pol_sys_id, pchg_end_no_idx, pchg_end_sr_no],
+        [
+            Policy.pol_sys_id,
+            Policy.pol_end_no_idx,
+            Policy.pol_end_sr_no,
+        ],
+    )
+    policy: Mapped["Policy"] = relationship(
+        back_populates="policycharge_collection",
+    )
+
+
+class PolicyCurrency(OrclBase):  # type: ignore
+    __tablename__ = "pgit_pol_appl_curr"
+    pac_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    pac_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    pac_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    pac_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Policy - up
+    ForeignKeyConstraint(
+        [pac_pol_sys_id, pac_end_no_idx, pac_end_sr_no],
+        [
+            Policy.pol_sys_id,
+            Policy.pol_end_no_idx,
+            Policy.pol_end_sr_no,
+        ],
+    )
+    policy: Mapped["Policy"] = relationship(
+        back_populates="policycurrency_collection",
+    )
+
 
 class PolicySection(OrclBase):  # type: ignore
     __tablename__ = "pgit_pol_section"
@@ -75,8 +135,66 @@ class PolicySection(OrclBase):  # type: ignore
     )
     policy: Mapped["Policy"] = relationship(
         back_populates="policysection_collection",
-        # primaryjoin="and_(Policy.pol_sys_id==PolicySection.psec_pol_sys_id, Policy.pol_end_no_idx==PolicySection.psec_end_no_idx, Policy.pol_end_sr_no==PolicySection.psec_end_sr_no)",  # noqa: E501
-        # foreign_keys=[psec_pol_sys_id, psec_end_no_idx, psec_end_sr_no],
+    )
+
+    # Relation to PolicyRisk - down
+    policyrisk_collection: Mapped[list["PolicyRisk"]] = relationship(
+        back_populates="policy_section",
+        primaryjoin="and_(PolicySection.psec_pol_sys_id==PolicyRisk.prai_pol_sys_id, PolicySection.psec_end_no_idx==PolicyRisk.prai_end_no_idx, PolicySection.psec_end_sr_no==PolicyRisk.prai_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+
+class PolicyRisk(OrclBase):  # type: ignore
+    __tablename__ = "pgit_pol_risk_addl_info"
+    prai_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    prai_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    prai_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    prai_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Section - up
+    ForeignKeyConstraint(
+        [prai_pol_sys_id, prai_end_no_idx, prai_end_sr_no],
+        [
+            PolicySection.psec_pol_sys_id,
+            PolicySection.psec_end_no_idx,
+            PolicySection.psec_end_sr_no,
+        ],
+    )
+    policy_section: Mapped["PolicySection"] = relationship(
+        back_populates="policyrisk_collection",
+    )
+
+    # Relation to PolicyCover - down
+    policycover_collection: Mapped[list["PolicyCover"]] = relationship(
+        back_populates="policy_risk",
+        primaryjoin="and_(PolicyRisk.prai_pol_sys_id==PolicyCover.prc_pol_sys_id, PolicyRisk.prai_end_no_idx==PolicyCover.prc_end_no_idx, PolicyRisk.prai_end_sr_no==PolicyCover.prc_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+
+class PolicyCover(OrclBase):  # type: ignore
+    __tablename__ = "pgit_pol_risk_cover"
+    prc_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    prc_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    prc_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    prc_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Section - up
+    ForeignKeyConstraint(
+        [prc_pol_sys_id, prc_end_no_idx, prc_end_sr_no],
+        [
+            PolicyRisk.prai_pol_sys_id,
+            PolicyRisk.prai_end_no_idx,
+            PolicyRisk.prai_end_sr_no,
+        ],
+    )
+    policy_risk: Mapped["PolicyRisk"] = relationship(
+        back_populates="policycover_collection",
     )
 
 
@@ -84,7 +202,8 @@ OrclBase.prepare(
     autoload_with=oracledb_engine,
     # autoload_with=async_oracledb_engine,
     reflection_options={
-        "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section"]
+        "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section", "pgit_pol_risk_addl_info",
+                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr"]
     },
 )  # noqa: E501
 
@@ -122,7 +241,11 @@ def create_pydantic_model(name: str, sqlalchemy_model: Type[DeclarativeMeta]) ->
 
 # Create Pydantic models dynamically
 PolicyBase = create_pydantic_model("PolicyBase", Policy)
+PolicyChargeBase = create_pydantic_model("PolicyChargeBase", PolicyCharge)
+PolicyCurrencyBase = create_pydantic_model("PolicyCurrencyBase", PolicyCurrency)
 PolicySectionBase = create_pydantic_model("PolicySectionBase", PolicySection)
+PolicyRiskBase = create_pydantic_model("PolicyRiskBase", PolicyRisk)
+PolicyCoverBase = create_pydantic_model("PolicyCoverBase", PolicyCover)
 CustomerBase = create_pydantic_model("CustomerBase", Customer)
 CustomerBase.model_config = ConfigDict(from_attributes=True)
 
@@ -133,13 +256,18 @@ CustomerBase.model_config = ConfigDict(from_attributes=True)
 def verify_pydantic_model(pydantic_model: Type[BaseModel]) -> None:
     instance = pydantic_model()
     print(f"Model: {pydantic_model.__name__}")
-    print(f"Fields: {list(instance.model_fields.keys())}")
+    # print(f"Fields: {list(instance.model_fields.keys())}")
+    # fields_dict = {field_name: field.type_.__name__ for field_name, field in pydantic_model.__fields__.items()}
+    fields_dict = {field_name: field.annotation.__name__ for field_name, field in pydantic_model.model_fields.items()}
+    print(f"Fields: {fields_dict}")
+    print(instance.model_fields.items())
     print(f"Is instance {type(instance).__name__} a Pydantic Basemodel? {isinstance(instance, BaseModel)}")
 
 
 # Verify the created Pydantic models
-verify_pydantic_model(PolicyBase)
-verify_pydantic_model(PolicySectionBase)
+# verify_pydantic_model(PolicyBase)
+verify_pydantic_model(CustomerBase)
+# verify_pydantic_model(PolicySectionBase)
 
 # OrclBase.prepare(
 #     oracledb_engine, reflect=True, only=["pgit_policy_apit", "pgit_pol_section_apit"]

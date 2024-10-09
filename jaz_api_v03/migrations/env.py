@@ -28,6 +28,7 @@ from src.quotes import models  # noqa: E402, F401
 from src.quotes.vendors_api import models  # noqa: F401, E402, F811
 # from src.masters.models import Product, Charge, ProductChargeAssociation # noqa: F401, E402, F811
 from src.masters import models as masters_models  # noqa: E402, F401
+from src.masters import models1 as masters_models1  # noqa: E402, F401
 # from src.masters.models import Division, Department, UwClass    # noqa: E402, F401
 # from src.masters.models import Product, Charge, Condition, Section, Cover    # noqa: E402, F401
 # from src.masters.models import ProductChargeAssociation, ProductConditionAssociation, ProductSectionAssociation, SectionCoverAssociation    # noqa: E402, F401

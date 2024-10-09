@@ -78,6 +78,14 @@ class UserCreate(UserBase):
 
         return values
 
+
+class UserRegisterAgent(UserBase):
+    cust_code: str
+    email: EmailStr
+    phone: str
+    password: str
+
+
 # Properties to receive via API on creation
 class UserCreateStrict(UserCreate):
     last_name: str

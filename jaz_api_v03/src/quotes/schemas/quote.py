@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union
+from typing import Union, Any
 
 from pydantic import BaseModel, EmailStr, ConfigDict  # , field_serializer
 
@@ -16,6 +16,9 @@ class QuoteBase(BaseModel):
     quot_assr_pin: Union[str | None] = None
     quot_assr_phone: Union[str | None] = None
     quot_assr_email: Union[EmailStr | None] = None
+    quot_assr_gender: Union[str | None] = None
+    quot_assr_dob: Union[datetime | None] = None
+    quot_assr_flexi: Union[dict[str, Any] | None] = None
     quot_paymt_ref: Union[str | None] = None
     quot_paymt_date: Union[datetime | None] = None
 

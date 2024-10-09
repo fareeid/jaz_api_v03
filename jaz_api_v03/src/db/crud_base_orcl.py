@@ -2,10 +2,11 @@ import logging
 from datetime import datetime
 from typing import Generic, Type, TypeVar, Union, Any
 
+from dateutil import parser
 from fastapi.encoders import jsonable_encoder
 # from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import insert
 # from sqlalchemy import delete, select
 # from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.orm import Session
@@ -38,26 +39,35 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         except ValueError:
             return False
 
+    def parse_datetime(self, date_string: str, default: Union[datetime | None] = None) -> Any:
+        try:
+            return parser.parse(date_string, dayfirst=True)
+        except (ValueError, TypeError):
+            return default
+
     def create_v1(self, oracle_db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
         # print(obj_in)
-        obj_in_with_date = {}
-        for key, value in obj_in.items():
-            if isinstance(value, str) and self.is_date(value):
-                obj_in_with_date[key] = func.to_date(value, 'YYYY-MM-DD HH24:MI')
-            else:
-                obj_in_with_date[key] = value
+        # obj_in_with_date = {}
+        # for key, value in obj_in.items():
+        #     if key == 'pol_fm_dt' or key == 'pol_to_dt' or key == 'cust_cr_dt':
+        #         ...
+        #     if isinstance(value, str) and self.is_date(value):
+        #         obj_in_data[key] = func.to_date(value, 'YYYY-MM-DD HH24:MI')
+        #     else:
+        #         obj_in_data[key] = value
 
         # obj_in_with_date = {**obj_in}
         # obj_in_with_date['cust_cr_dt'] = func.to_date(obj_in_with_date['cust_cr_dt'], 'YYYY-MM-DD HH24:MI')
 
-        db_obj = self.model(**obj_in_with_date)
+        # db_obj = self.model(**obj_in_with_date)
+        db_obj = self.model(**obj_in)
         oracle_db.add(db_obj)
 
         # Construct the Insert statement
-        # stmt = insert(self.model).values(**obj_in)
-        # # Compile the statement with bound parameters
-        # compiled_stmt = stmt.compile(dialect=oracle.dialect(), compile_kwargs={"literal_binds": True})
+        stmt = insert(self.model).values(**obj_in)
+        # #Compile the statement with bound parameters
+        # compiled_stmt = stmt.compile(dialect=oracle.dialect())  #, compile_kwargs={"literal_binds": True}
         # sql_statement = str(compiled_stmt)
         # print(sql_statement)  # This will print the SQL with bound parameters
 
@@ -66,13 +76,20 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     def update(
-        self,
-        non_async_oracle_db: Session,
-        *,
-        db_obj: ModelType,
-        obj_in: Union[UpdateSchemaType, dict[str, Any]]
+            self,
+            non_async_oracle_db: Session,
+            *,
+            db_obj: ModelType,
+            obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
-        obj_data = jsonable_encoder(db_obj)
+        primary_key = (db_obj.pol_sys_id, db_obj.pol_end_no_idx, db_obj.pol_end_sr_no)
+        refreshed_db_obj = non_async_oracle_db.get(self.model, primary_key)
+
+        obj_data = jsonable_encoder(db_obj, exclude_none=True)
+        if obj_data is None:
+            jsonable_encoder(db_obj, exclude_none=True)
+        # obj_data = jsonable_encoder(db_obj, by_alias=True, exclude_unset=True, exclude_defaults=True, exclude=None,
+        #                             exclude_none=True)
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:

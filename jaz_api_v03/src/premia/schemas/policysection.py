@@ -1,45 +1,25 @@
-# from datetime import datetime
-from typing import Union
+from pydantic import ConfigDict
 
-from pydantic import BaseModel, ConfigDict
-
-
-# ########## Policy Schema #########
-# Shared properties
-class PolicySectionBase(BaseModel):
-    psec_sys_id: Union[int | None] = None
-    # psec_pol_sys_id: Union[int | None] = None
-    # psec_end_no_idx: Union[int | None] = None
-    # psec_end_sr_no: Union[int | None] = None
-    psec_sec_code: Union[str | None] = None
+from ..models import PolicySectionBase
 
 
-# Properties to receive on Proposal Risk creation
 class PolicySectionCreate(PolicySectionBase):
-    psec_sys_id: int
-    # psec_pol_sys_id: int
-    # psec_end_no_idx: int
-    # psec_end_sr_no: int
-    psec_sec_code: str
+    policyrisk_collection: list = []
 
 
-# Properties to receive via API on update by User
 class PolicySectionUpdate(PolicySectionBase):
-    pass
+    ...
 
 
-# Properties shared by models stored in DB
 class PolicySectionInDBBase(PolicySectionBase):
     model_config = ConfigDict(from_attributes=True)
-    # class Config:
-    #     from_attributes = True
 
 
 # Properties to return to client
 class PolicySection(PolicySectionInDBBase):
-    pass
+    ...
 
 
-# Properties properties stored in DB
+# Properties stored in DB
 class PolicySectionInDB(PolicySectionInDBBase):
-    pass
+    ...

@@ -16,9 +16,11 @@ class Quote(Base):
     quot_assr_pin: Mapped[str] = mapped_column(nullable=True)
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
     quot_assr_email: Mapped[str] = mapped_column(nullable=True)
+    quot_assr_gender: Mapped[str] = mapped_column(nullable=True)
+    quot_assr_dob: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     quot_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     quot_paymt_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
-    quot_payload: Mapped[str] = mapped_column(JSONB, nullable=True)
+    quot_assr_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Relation to Quote - up - Not neccesary at quote creation. But you can have it as null until client is ready to bind cover
     # quot_assr_id: Mapped[int] = mapped_column(
@@ -98,6 +100,7 @@ class ProposalSection(Base):
 
     # Input fields mapped to premia pgit_pol_section fields
     psec_sec_code: Mapped[str] = mapped_column(nullable=False)
+    psec_srno: Mapped[int]
     psec_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
@@ -125,6 +128,7 @@ class ProposalRisk(Base):
     risk_sr_no: Mapped[int]
 
     # Input fields mapped to premia pgit_pol_risk_addl_info fields
+    prai_risk_sr_no: Mapped[int]
     prai_data_18: Mapped[str] = mapped_column(nullable=True)  # 'Kenya'
     prai_code_03: Mapped[str] = mapped_column(nullable=True)  # '503'
     prai_desc_09: Mapped[str] = mapped_column(nullable=True)  # 'Residential'
@@ -175,6 +179,7 @@ class ProposalMotorCert(Base):
     motor_cert_sr_no: Mapped[int]
 
     # Input fields mapped to premia pgit_pol_risk_addl_info fields
+    prai_risk_sr_no: Mapped[int]
     prai_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
@@ -202,6 +207,7 @@ class ProposalSMI(Base):
 
     # Input fields mapped to premia pgit_pol_risk_smi fields
     prs_smi_code: Mapped[str] = mapped_column(nullable=False)
+    prs_sr_no: Mapped[int]
     prs_rate: Mapped[float] = mapped_column(nullable=True)
     prs_rate_per: Mapped[float] = mapped_column(nullable=True)
     prs_si_fc: Mapped[float] = mapped_column(nullable=True)
@@ -234,6 +240,7 @@ class ProposalCover(Base):
 
     # Input fields mapped to premia pgit_pol_risk_cover fields
     prc_code: Mapped[str] = mapped_column(nullable=False)
+    prc_sr_no: Mapped[int]
     prc_rate: Mapped[float] = mapped_column(nullable=True)
     prc_rate_per: Mapped[float] = mapped_column(nullable=True)
     prc_si_curr_code: Mapped[str] = mapped_column(nullable=False)
@@ -244,7 +251,6 @@ class ProposalCover(Base):
 
     # Output fields mapped to premia pgit_policy_risk_cover fields
     prc_sys_id: Mapped[int] = mapped_column(nullable=True)
-    prc_sr_no: Mapped[int] = mapped_column(nullable=True)
     prc_lvl1_sys_id: Mapped[int] = mapped_column(nullable=True)
     prc_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
     prc_end_no_idx: Mapped[int] = mapped_column(nullable=True)
@@ -263,6 +269,7 @@ class ProposalCharge(Base):
 
     # Input fields mapped to premia pgit_pol_charge fields
     pchg_code: Mapped[str]
+    pchg_sr_no: Mapped[int]
     pchg_type: Mapped[str]
     pchg_perc: Mapped[float] = mapped_column(nullable=True)
     pchg_chg_fc: Mapped[float] = mapped_column(nullable=True)

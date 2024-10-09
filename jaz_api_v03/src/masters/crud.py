@@ -3,16 +3,52 @@ from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 
 from . import models as master_models
-from .schemas import product as product_schema
+from .models import ProductChargeAssociation, ProductSectionAssociation, SectionRiskAssociation, RiskCoverAssociation, \
+    Section, Risk
+from .schemas import attribute as attribute_schema, product as product_schema
 from ..db.crud_base import CRUDBase
+
+
+class CRUDProduct(
+    CRUDBase[
+        master_models.Product,
+        product_schema.ProductBase,
+        product_schema.ProductBase
+    ]
+):
+    async def get_product_by_id(
+            self, async_db: AsyncSession, *, prod_code: str
+    ) -> master_models.Product:
+        # stmt = (select(self.model)
+        #         .options(
+        #     selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+        # ).filter(self.model.prod_code == prod_code))
+        # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+
+        stmt = (select(self.model)
+        .where(self.model.prod_code == prod_code)
+        .options(
+            selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+            selectinload(self.model.sections)
+            .selectinload(ProductSectionAssociation.section)
+            .selectinload(Section.risks)
+            .selectinload(SectionRiskAssociation.risk)
+            .selectinload(Risk.covers)
+            .selectinload(RiskCoverAssociation.cover)
+        ))
+
+        # result = await async_db.execute(compiled_stmt)
+        result = await async_db.execute(stmt)
+        policy_template = result.scalars().first()
+        return policy_template
 
 
 class CRUDAttributeDefinition(
     CRUDBase[
-        master_models.AttributeDefinition, product_schema.AttributeDefinitionBase, product_schema.TypeAttributeBase]
+        master_models.AttributeDefinition, attribute_schema.AttributeDefinitionBase, attribute_schema.TypeAttributeBase]
 ):
     string_attribute_alias = aliased(master_models.StringAttribute)
     json_attribute_alias = aliased(master_models.JsonAttribute)
@@ -46,7 +82,7 @@ class CRUDAttributeDefinition(
             value = row[2]
             value_code = row[3]
             grouped_data[entity_id][attr_name].append(
-                product_schema.StringAttributeBase(value=value, value_code=value_code))
+                attribute_schema.StringAttributeBase(value=value, value_code=value_code))
 
         return dict(grouped_data)
 
@@ -82,7 +118,7 @@ class CRUDAttributeDefinition(
             attr_name = row[0]
             value = row[1]
             value_code = row[2]
-            grouped_data[attr_name].append(product_schema.StringAttributeBase(value=value, value_code=value_code))
+            grouped_data[attr_name].append(attribute_schema.StringAttributeBase(value=value, value_code=value_code))
 
         return grouped_data
 
@@ -104,11 +140,12 @@ class CRUDAttributeDefinition(
             attr_name = row[0]
             value = row[1]
             value_code = row[2]
-            grouped_data[attr_name].append(product_schema.StringAttributeBase(value=value, value_code=value_code))
+            grouped_data[attr_name].append(attribute_schema.StringAttributeBase(value=value, value_code=value_code))
 
         return grouped_data
 
-    async def get_table_template(self, async_db: AsyncSession, attr_name: str) -> dict[str, Any]: # list[master_models.AttributeDefinition]:
+    async def get_table_template(self, async_db: AsyncSession, attr_name: str) -> dict[
+        str, Any]:  # list[master_models.AttributeDefinition]:
         stmt = (
             select(self.model.attr_name, self.model.data_type, self.model.entity_type, self.json_attribute_alias.value)
             .join(self.json_attribute_alias, self.model.jsonattributes)
@@ -132,3 +169,4 @@ class CRUDAttributeDefinition(
 
 
 attrs = CRUDAttributeDefinition(master_models.AttributeDefinition)
+product = CRUDProduct(master_models.Product)

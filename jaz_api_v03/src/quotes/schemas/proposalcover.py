@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 # Shared properties
 class ProposalCoverBase(BaseModel):
     cvr_sr_no: Union[int | None] = None
+    prc_sr_no: Union[int | None] = None
     prc_code: Union[str | None] = None
     prc_rate: Union[float | None] = None
     prc_rate_per: Union[float | None] = None

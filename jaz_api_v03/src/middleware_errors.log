@@ -108,3 +108,15 @@ Traceback (most recent call last):
     raise RuntimeError('Event loop is closed')
 RuntimeError: Event loop is closed
 2024-09-15 13:51:09,625 The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001FFE6FC33E0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+2024-09-28 10:02:52,412 Exception in callback Task.task_wakeup(<Future finished result=None>)
+handle: <Handle Task.task_wakeup(<Future finished result=None>)>
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+RuntimeError: Cannot enter into task <Task pending name='Task-1' coro=<Server.serve() running at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\uvicorn\server.py:81> wait_for=<Future finished result=None> cb=[_run_until_complete_cb() at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py:180, WorkerThread.stop()]> while another task <Task pending name='Task-4' coro=<RequestResponseCycle.run_asgi() running at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py:426> cb=[set.discard()]> is being executed.
+2024-09-28 13:07:40,621 Exception in callback Task.task_wakeup(<Future finished result=None>)
+handle: <Handle Task.task_wakeup(<Future finished result=None>)>
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+RuntimeError: Cannot enter into task <Task pending name='Task-1' coro=<Server.serve() running at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\uvicorn\server.py:82> wait_for=<Future finished result=None> cb=[_run_until_complete_cb() at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py:180, WorkerThread.stop()]> while another task <Task pending name='Task-4' coro=<RequestResponseCycle.run_asgi() running at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py:426> cb=[set.discard()]> is being executed.

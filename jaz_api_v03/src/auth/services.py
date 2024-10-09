@@ -4,6 +4,7 @@ import string
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Any
 
 import aiosmtplib
 from faker import Faker
@@ -57,6 +58,13 @@ async def create_user(
     user = await crud.user.create(async_db, obj_in=user_in)
     return user
 
+
+async def get_agent(
+        async_db: AsyncSession,
+        search_criteria: dict[str, Any],
+) -> models.User:
+    agent_list = await crud.user.get_agent(async_db, search_criteria=search_criteria)
+    return agent_list
 
 async def get_user(
         async_db: AsyncSession,

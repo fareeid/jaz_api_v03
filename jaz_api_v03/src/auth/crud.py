@@ -71,6 +71,21 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         # print(user_list)
         return user_model_list
 
+    async def get_agent(self, async_db: AsyncSession, search_criteria: dict[str, str]) -> list[User]:
+        query = select(self.model)
+        where_criteria = conditions = [getattr(self.model, attr) == value for attr, value in search_criteria.items()]
+
+        if where_criteria:
+            query = query.where(*where_criteria)
+
+        compiled_query = query.compile(compile_kwargs={"literal_binds": True})
+        query_str = str(compiled_query)
+        result = await async_db.execute(query)
+        agent_list = result.scalars().all()
+
+        return agent_list
+
+
     async def authenticate(
             self, async_db: AsyncSession, *, email: str, password: str
     ) -> Union[User | None]:

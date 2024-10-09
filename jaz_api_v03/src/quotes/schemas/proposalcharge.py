@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 # Shared properties
 class ProposalChargeBase(BaseModel):
     chg_sr_no: Union[int, None] = None
+    pchg_sr_no: Union[int, None] = None
     pchg_code: Union[str | None] = None
     pchg_type: Union[str | None] = None
     pchg_perc: Union[float | None] = None

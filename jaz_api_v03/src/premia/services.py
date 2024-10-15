@@ -47,6 +47,11 @@ def update_policy(non_async_oracle_db: Session, db_obj: premia_models.Policy,
     return policy
 
 
+def create_receipt_stage(non_async_oracle_db: Session, payload_in: premia_models.ReceiptStagingBase) -> None:
+    receipt_stage = premia_crud.receipt_stage.create_v1(non_async_oracle_db, obj_in=payload_in)
+    return receipt_stage
+
+
 def get_cust_code(non_async_oracle_session: Session, cust_in: auth_models.User) -> str:
     cust_code = premia_crud.customer.get_cust_code(non_async_oracle_session, cust_in)
     return cust_code
@@ -72,6 +77,11 @@ def get_pol_no(non_async_oracle_db: Session, proposal: dict[str, str]) -> str:
 def policy_process_json(non_async_oracle_db: Session, pol_trans: premia_models.Policy) -> str:
     pol_no = premia_crud.policy.policy_process_json(non_async_oracle_db, pol_trans)
     return pol_no
+
+
+def receipt_process_json(non_async_oracle_db: Session, receipt_stage: premia_models.Policy) -> str:
+    receipt_num = premia_crud.policy.receipt_process_json(non_async_oracle_db, receipt_stage)
+    return receipt_num
 
 
 def calc_premium(non_async_oracle_db: Session, pol_trans: premia_models.Policy) -> str:

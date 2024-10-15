@@ -10,3 +10,4 @@ from .policycover import PolicyCover, PolicyCoverCreate, PolicyCoverInDB, Policy
 from .policycurrency import PolicyCurrency, PolicyCurrencyCreate, PolicyCurrencyInDB, PolicyCurrencyUpdate
 from .policyrisk import PolicyRisk, PolicyRiskCreate, PolicyRiskInDB, PolicyRiskUpdate
 from .policysection import PolicySection, PolicySectionCreate, PolicySectionInDB, PolicySectionUpdate
+from .receiptstaging import ReceiptStaging, ReceiptStagingCreate, ReceiptStagingInDB, ReceiptStagingUpdate

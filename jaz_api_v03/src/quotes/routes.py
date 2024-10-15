@@ -1,7 +1,7 @@
 import copy
 import json
 from base64 import b64decode, b64encode
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from Cryptodome.Cipher import AES
@@ -41,7 +41,7 @@ from ..masters import crud as masters_crud
 from ..premia import models as premia_models
 from ..premia import services as premia_services
 from ..premia.schemas import PolicyCreate, PolicyChargeCreate, PolicyCoverCreate, PolicyRiskCreate, PolicySectionCreate, \
-    PolicyCurrencyCreate
+    PolicyCurrencyCreate, ReceiptStagingCreate
 
 router = APIRouter()
 
@@ -132,6 +132,22 @@ async def quote(
 
     policy_quote_data = quote_to_policy(quote_data)
 
+    # policy_template_charges_list = await masters_crud.product.get_charges_by_product(async_db, prod_code='1002')
+    # policy_template_sections_list = await masters_crud.product.get_sections_by_product(async_db, prod_code='1002')
+    # policy_template_risks_list = await masters_crud.product.get_risks_by_product(async_db, prod_code='1002')
+    # policy_template_covers_list = await masters_crud.product.get_covers_by_product(async_db, prod_code='1002')
+    #
+    # pgit_policy_template = await masters_crud.product.get_product(async_db, prod_code='1002')
+    #
+    # policy_template_dict = {
+    #     "pgit_policy_template": {k: v for k, v in pgit_policy_template[0].items() if v != ''},
+    #     "pgit_pol_charge_template": [{k: v for k, v in charge.items() if v != ''} for charge in policy_template_charges_list if charge],
+    #     "pgit_pol_section": [{k: v for k, v in section.items() if v != ''} for section in policy_template_sections_list if section],
+    #     "pgit_pol_risk_addl_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in policy_template_risks_list if risk],
+    #     "pgit_pol_risk_cover_template": [{k: v for k, v in cover.items() if v != ''} for cover in policy_template_covers_list if cover]
+    # }
+
+    ################################################
     # print("Before product template")
     policy_template = await masters_crud.product.get_product_by_id(async_db, prod_code='1002')
     # print("After product template")
@@ -196,6 +212,8 @@ async def quote(
     # pgit_policy_template.update({"sections": policy_template_sections_list})
     #
     # ###########
+
+    #############################
     #
     # premia_policy_data = []
     pgit_policy_list_db = []
@@ -307,7 +325,7 @@ async def quote(
                     "prai_eff_fm_dt": proposal["pol_fm_dt"],
                     "prai_eff_to_dt": proposal["pol_to_dt"],
                     "prai_period": 365,  # TODO: Calculate from dates
-                    "prai_risk_id": "2",  # TODO: Calculate from number of risks
+                    "prai_risk_id": "2",  # TODO: Should be 3.
                     # # "prai_risk_sr_no": 1,  # TODO: Calculate from number of risks. But check
                     "prai_cr_uid": "PORTAL-REG",
                     "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -364,14 +382,50 @@ async def quote(
 
         policy = premia_services.create_policy(non_async_oracle_db, pgit_policy_data_pydantic)
         policy_process_json = premia_services.policy_process_json(non_async_oracle_db, policy)
+        policy_process_dict = json.loads(policy_process_json)
         # pol_no = premia_services.get_pol_no(non_async_oracle_db, pgit_policy_data)
         # policy = premia_services.update_policy(non_async_oracle_db, db_obj=policy, payload_in={"pol_no": pol_no})
         # prem_calc_status = premia_services.calc_premium(non_async_oracle_db, policy)
 
+        r_sys_id = premia_services.get_sys_id(non_async_oracle_db, "jaz_r_sys_id")
+        fw_receipt_stage_data = {
+            "r_sys_id": r_sys_id,
+            "r_comp_code": "001",
+            "r_tran_code": "RVCGP100",
+            "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "r_divn_code": "",
+            "r_dept_code": "",  # TODO: Get from quote
+            "r_rcpt_option": "1",
+            "r_rcpt_mode": "M-pesa",
+            "r_rcvd_from": "2",
+            "r_party_code": current_user.cust_code,
+            "r_curr_code": "KES",
+            "r_fc_amt": policy_process_dict["PR_POL_CONFIRM"]["P_PREM"],
+            "r_lc_amt": policy_process_dict["PR_POL_CONFIRM"]["P_PREM"],
+            "r_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
+            "r_cust_ref": quote_data["quot_paymt_ref"],
+            "r_our_ref": quote_data["quot_paymt_ref"],
+            "r_bank_code": "",
+            "r_bank_acnt_no": "",
+            "r_chq_no": quote_data["quot_paymt_ref"],
+            "r_chq_dt": quote_data["quot_paymt_date"],
+            "r_o_main_acnt_code": "151011",
+            "r_o_sub_acnt_code": current_user.cust_code,
+            "r_o_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
+            "r_o_fc_amt": policy_process_dict["PR_POL_CONFIRM"]["P_PREM"],
+            "r_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "r_cr_uid": "PORTAL-REG"
+        }
+        fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
+        receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
+        receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
+        receipt_process_dict = json.loads(receipt_process_json)
+        policy_process_dict['AUTO_RECEIPT'] = receipt_process_dict
+
     # TODO: Approve policy, Close RI
     # TODO: Return policy details and update quote
 
-    policy_process_dict = json.loads(policy_process_json)
+    # policy_process_dict = json.loads(policy_process_json)
 
     return policy_process_dict
     # return quotation

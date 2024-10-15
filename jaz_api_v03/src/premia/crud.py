@@ -87,6 +87,18 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
 
         return p_json.getvalue()
 
+    def receipt_process_json(self, oracle_db: Session, receipt_stage: premia_models.ReceiptStaging) -> str:
+        cursor = oracle_db.connection().connection.cursor()
+        p_json = cursor.var(oracledb.STRING)
+
+        cursor.callproc('JICK_UTILS_V2.AUTO_RECEIPT', [
+            receipt_stage.r_sys_id,
+            p_json
+        ])
+        oracle_db.commit()
+
+        return p_json.getvalue()
+
     def calc_premium(self, oracle_db: Session, pol_trans: premia_models.Policy) -> str:
         cursor = oracle_db.connection().connection.cursor()
         p_pol_sys_id: int = cursor.var(oracledb.NUMBER)
@@ -156,5 +168,15 @@ class CRUDCustomer(
         return f"{cust_cc_prefix}{next_no:06}"
 
 
+class CRUDReceiptStage(CRUDBase[premia_models.ReceiptStaging, premia_models.ReceiptStagingBase, premia_models.ReceiptStagingBase]):
+    def create_v1(
+            self, oracle_db: Session, *, obj_in: premia_models.ReceiptStagingBase
+    ) -> premia_models.ReceiptStaging:
+
+        receipt_stage_dict = obj_in.model_dump(exclude_unset=True)
+        return super().create_v1(oracle_db, obj_in=receipt_stage_dict)
+
+
 policy = CRUDPolicy(premia_models.Policy)
 customer = CRUDCustomer(premia_models.Customer)
+receipt_stage = CRUDReceiptStage(premia_models.ReceiptStaging)

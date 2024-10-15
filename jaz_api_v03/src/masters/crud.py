@@ -29,8 +29,8 @@ class CRUDProduct(
         # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
 
         stmt = (select(self.model)
-        .where(self.model.prod_code == prod_code)
-        .options(
+                .where(self.model.prod_code == prod_code)
+                .options(
             selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
             selectinload(self.model.sections)
             .selectinload(ProductSectionAssociation.section)
@@ -38,12 +38,121 @@ class CRUDProduct(
             .selectinload(SectionRiskAssociation.risk)
             .selectinload(Risk.covers)
             .selectinload(RiskCoverAssociation.cover)
-        ))
+        ).execution_options(recursion_depth=10000))
 
         # result = await async_db.execute(compiled_stmt)
         result = await async_db.execute(stmt)
         policy_template = result.scalars().first()
         return policy_template
+
+    async def get_product(
+            self, async_db: AsyncSession, *, prod_code: str
+    ) -> master_models.Cover:
+        # stmt = (select(self.model)
+        #         .options(
+        #     selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+        # ).filter(self.model.prod_code == prod_code))
+        # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+
+        stmt = (
+            select(self.model.pol_trans_dflt)  # Select both Cover and cvr_trans_dflt
+            .where(self.model.prod_code == prod_code)
+        )
+
+        result = await async_db.execute(stmt)
+        product_template = result.scalars().fetchall()
+        return product_template
+
+    async def get_charges_by_product(
+            self, async_db: AsyncSession, *, prod_code: str
+    ) -> master_models.Cover:
+        # stmt = (select(self.model)
+        #         .options(
+        #     selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+        # ).filter(self.model.prod_code == prod_code))
+        # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+
+        stmt = (
+            select(ProductChargeAssociation.chg_trans_dflt)  # Select both Cover and cvr_trans_dflt
+            # .join(Section)
+            # .join(ProductSectionAssociation)
+            .join(self.model)
+            .where(self.model.prod_code == prod_code)
+        )
+
+        # result = await async_db.execute(compiled_stmt)
+        result = await async_db.execute(stmt)
+        section_templates = result.scalars().fetchall()
+        return section_templates
+
+    async def get_sections_by_product(
+            self, async_db: AsyncSession, *, prod_code: str
+    ) -> master_models.Cover:
+        # stmt = (select(self.model)
+        #         .options(
+        #     selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+        # ).filter(self.model.prod_code == prod_code))
+        # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+
+        stmt = (
+            select(ProductSectionAssociation.sec_trans_dflt)  # Select both Cover and cvr_trans_dflt
+            # .join(Section)
+            # .join(ProductSectionAssociation)
+            .join(self.model)
+            .where(self.model.prod_code == prod_code)
+        )
+
+        # result = await async_db.execute(compiled_stmt)
+        result = await async_db.execute(stmt)
+        section_templates = result.scalars().fetchall()
+        return section_templates
+
+    async def get_risks_by_product(
+            self, async_db: AsyncSession, *, prod_code: str
+    ) -> master_models.Cover:
+        # stmt = (select(self.model)
+        #         .options(
+        #     selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+        # ).filter(self.model.prod_code == prod_code))
+        # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+
+        stmt = (
+            select(SectionRiskAssociation.risk_trans_dflt)  # Select both Cover and cvr_trans_dflt
+            .join(Section)
+            .join(ProductSectionAssociation)
+            .join(self.model)
+            .where(self.model.prod_code == prod_code)
+        )
+
+        # result = await async_db.execute(compiled_stmt)
+        result = await async_db.execute(stmt)
+        risk_templates = result.scalars().fetchall()
+        return risk_templates
+
+    async def get_covers_by_product(
+            self, async_db: AsyncSession, *, prod_code: str
+    ) -> master_models.Cover:
+        # stmt = (select(self.model)
+        #         .options(
+        #     selectinload(self.model.charges).selectinload(ProductChargeAssociation.charge),
+        # ).filter(self.model.prod_code == prod_code))
+        # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
+
+        stmt = (
+            select(RiskCoverAssociation.cvr_trans_dflt)  # Select both Cover and cvr_trans_dflt
+            # .join(RiskCoverAssociation)
+            .join(Risk)
+            .join(SectionRiskAssociation)
+            .join(Section)
+            .join(ProductSectionAssociation)
+            .join(self.model)
+            .where(self.model.prod_code == prod_code)
+        )
+
+        # result = await async_db.execute(compiled_stmt)
+        result = await async_db.execute(stmt)
+        cover_templates = result.scalars().fetchall()
+        return cover_templates
 
 
 class CRUDAttributeDefinition(

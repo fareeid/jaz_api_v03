@@ -41,6 +41,11 @@ class DocNumberRange(OrclBase):
     dnr_curr_no: Mapped[int] = mapped_column()
 
 
+class ReceiptStaging(OrclBase):
+    __tablename__ = "fw_receipt"
+    r_sys_id: Mapped[int] = mapped_column(primary_key=True)
+
+
 class Policy(OrclBase):  # type: ignore
     __tablename__ = "pgit_policy"
     pol_sys_id: Mapped[int] = mapped_column(primary_key=True)
@@ -203,7 +208,7 @@ OrclBase.prepare(
     # autoload_with=async_oracledb_engine,
     reflection_options={
         "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section", "pgit_pol_risk_addl_info",
-                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr"]
+                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "fw_receipt"]
     },
 )  # noqa: E501
 
@@ -247,6 +252,7 @@ PolicySectionBase = create_pydantic_model("PolicySectionBase", PolicySection)
 PolicyRiskBase = create_pydantic_model("PolicyRiskBase", PolicyRisk)
 PolicyCoverBase = create_pydantic_model("PolicyCoverBase", PolicyCover)
 CustomerBase = create_pydantic_model("CustomerBase", Customer)
+ReceiptStagingBase = create_pydantic_model("ReceiptStagingBase", ReceiptStaging)
 CustomerBase.model_config = ConfigDict(from_attributes=True)
 
 
@@ -262,7 +268,6 @@ def verify_pydantic_model(pydantic_model: Type[BaseModel]) -> None:
     print(f"Fields: {fields_dict}")
     print(instance.model_fields.items())
     print(f"Is instance {type(instance).__name__} a Pydantic Basemodel? {isinstance(instance, BaseModel)}")
-
 
 # Verify the created Pydantic models
 # verify_pydantic_model(PolicyBase)

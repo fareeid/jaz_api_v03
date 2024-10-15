@@ -400,8 +400,8 @@ async def quote(
             "r_rcvd_from": "2",
             "r_party_code": current_user.cust_code,
             "r_curr_code": "KES",
-            "r_fc_amt": policy_process_dict["PR_POL_CONFIRM"]["P_PREM"],
-            "r_lc_amt": policy_process_dict["PR_POL_CONFIRM"]["P_PREM"],
+            "r_fc_amt": quote_data["quot_paymt_amt"],
+            "r_lc_amt": quote_data["quot_paymt_amt"],
             "r_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
             "r_cust_ref": quote_data["quot_paymt_ref"],
             "r_our_ref": quote_data["quot_paymt_ref"],
@@ -412,7 +412,7 @@ async def quote(
             "r_o_main_acnt_code": "151011",
             "r_o_sub_acnt_code": current_user.cust_code,
             "r_o_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
-            "r_o_fc_amt": policy_process_dict["PR_POL_CONFIRM"]["P_PREM"],
+            "r_o_fc_amt": quote_data["quot_paymt_amt"],
             "r_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "r_cr_uid": "PORTAL-REG"
         }

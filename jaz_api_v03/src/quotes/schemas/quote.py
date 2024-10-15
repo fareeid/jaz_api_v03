@@ -21,6 +21,7 @@ class QuoteBase(BaseModel):
     quot_assr_flexi: Union[dict[str, Any] | None] = None
     quot_paymt_ref: Union[str | None] = None
     quot_paymt_date: Union[datetime | None] = None
+    quot_paymt_amt: Union[float | None] = None
 
     # @field_serializer("quot_paymt_date")  # type: ignore
     # def serialize_dt(self, dt: datetime, _info: str):

@@ -20,6 +20,7 @@ class Quote(Base):
     quot_assr_dob: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     quot_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     quot_paymt_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    quot_paymt_amt: Mapped[float] = mapped_column(nullable=True)
     quot_assr_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Relation to Quote - up - Not neccesary at quote creation. But you can have it as null until client is ready to bind cover
@@ -44,6 +45,7 @@ class Proposal(Base):
     prop_sr_no: Mapped[int]
     prop_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     prop_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    prop_paymt_amt: Mapped[float] = mapped_column(nullable=True)
 
     # input fields mapped to premia pgit_policy fields
     pol_quot_sys_id: Mapped[int] = mapped_column(nullable=True)

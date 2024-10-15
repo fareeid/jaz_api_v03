@@ -17,6 +17,7 @@ class ProposalBase(BaseModel):
     prop_sr_no: Union[int | None] = None
     prop_paymt_ref: Union[str | None] = None
     prop_paymt_date: Union[datetime | None] = None
+    prop_paymt_amt: Union[float | None] = None
     pol_quot_sys_id: Union[int | None] = None
     pol_quot_no: Union[str | None] = None
     pol_comp_code: Union[str | None] = None

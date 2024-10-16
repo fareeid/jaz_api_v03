@@ -67,7 +67,7 @@ async def register_agent(
             agent_in.cust_cc_code = customer_model_list[0].cust_cc_code
             agent_in.cust_customer_type = customer_model_list[0].cust_customer_type
             # agent_in.lic_no = customer_model_list[0].cust_ref_no
-            user = await services.create_user(async_db, agent_in)
+            user = await services.create_user(async_db, agent_in) 
         else:
             raise HTTPException(status_code=500, detail="Multiple records found. Please contact the Agents Administrator")
     elif len(agent_list) == 1:

@@ -61,7 +61,7 @@ async def register_agent(
             agent_in.first_name = customer_model_list[0].cust_first_name
             agent_in.last_name = customer_model_list[0].cust_last_name
             agent_in.name = customer_model_list[0].cust_name
-            agent_in.username = customer_model_list[0].cust_email1
+            agent_in.username = customer_model_list[0].cust_mobile_no     #customer_model_list[0].cust_email1
             agent_in.pin = customer_model_list[0].cust_civil_id
             agent_in.nic = customer_model_list[0].cust_ref_no
             agent_in.cust_cc_code = customer_model_list[0].cust_cc_code

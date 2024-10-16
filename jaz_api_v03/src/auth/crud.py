@@ -85,11 +85,15 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
         return agent_list
 
-
     async def authenticate(
-            self, async_db: AsyncSession, *, email: str, password: str
+            self,
+            async_db: AsyncSession,
+            *,
+            username: str,
+            password: str
     ) -> Union[User | None]:
-        user_list: list[User] = await self.get_by_email(async_db, email=email)
+        # user_list: list[User] = await self.get_by_email(async_db, email=email)
+        user_list: list[User] = await self.get_by_username(async_db, username=username)
         if user_list == []:
             return None
         if not verify_password(password, user_list[0].password):

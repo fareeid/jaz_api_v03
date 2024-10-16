@@ -99,6 +99,20 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
 
         return p_json.getvalue()
 
+    def validate_vehicle_json(self, oracle_db: Session, search_criteria: dict[str, str]) -> str:
+        cursor = oracle_db.connection().connection.cursor()
+        p_json = cursor.var(oracledb.STRING)
+
+        cursor.callproc('JICK_UTILS_V2.VALIDATE_VEH', [
+            search_criteria["vehicle_reg_no"],
+            search_criteria["vehicle_chassis_no"],
+            search_criteria["vehicle_engine_no"],
+            p_json
+        ])
+        oracle_db.commit()
+
+        return p_json.getvalue()
+
     def calc_premium(self, oracle_db: Session, pol_trans: premia_models.Policy) -> str:
         cursor = oracle_db.connection().connection.cursor()
         p_pol_sys_id: int = cursor.var(oracledb.NUMBER)

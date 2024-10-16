@@ -84,6 +84,11 @@ def receipt_process_json(non_async_oracle_db: Session, receipt_stage: premia_mod
     return receipt_num
 
 
+def validate_vehicle_json(non_async_oracle_db: Session, search_criteria: dict[str, str]) -> str:
+    info = premia_crud.policy.validate_vehicle_json(non_async_oracle_db, search_criteria)
+    return info
+
+
 def calc_premium(non_async_oracle_db: Session, pol_trans: premia_models.Policy) -> str:
     pol_no = premia_crud.policy.calc_premium(non_async_oracle_db, pol_trans)
     return pol_no

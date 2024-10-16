@@ -48,6 +48,18 @@ router = APIRouter()
 
 # @router.get("/branch", response_model=schemas.Branch)
 
+@router.post("/check_veh_status", response_model=dict[str, Any])
+async def check_veh_status(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        search_criteria: dict[str, Any],
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+) -> Any:
+    veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
+    return json.loads(veh_status)
+
+
 @router.post("/quote", response_model=dict[str, Any])  # schemas.Quote
 async def quote(
         *,
@@ -66,6 +78,21 @@ async def quote(
     payload = await external_apis_crud.external_payload.create_v2(
         async_db, obj_in=data
     )
+    for proposal in payload_in.proposals:
+        for section in proposal.proposalsections:
+            for risk in section.proposalrisks:
+                vehicle_reg_no = risk.prai_flexi["vehicle_reg_no"]["prai_data_03"]
+                vehicle_chassis_no = risk.prai_flexi["vehicle_chassis_no"]["prai_data_01"]
+                vehicle_engine_no = risk.prai_flexi["vehicle_engine_no"]["prai_data_02"]
+                # search_criteria = {"vehicle_reg_no": "KDD 990Z","vehicle_chassis_no": "CHASSIS 001", "vehicle_engine_no": "ENGINE 001"}
+                search_criteria = {
+                    "vehicle_reg_no": vehicle_reg_no,
+                    "vehicle_chassis_no": vehicle_chassis_no,
+                    "vehicle_engine_no": vehicle_engine_no
+                }
+                veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
+                if json.loads(veh_status)["Info"] == "Error":
+                    raise HTTPException(status_code=500, detail="Vehicle found in active policy. You cannot proceed")
 
     # background_tasks.add_task(services.send_user_email,
     #                           html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,

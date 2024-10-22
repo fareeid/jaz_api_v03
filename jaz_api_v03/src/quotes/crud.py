@@ -25,7 +25,7 @@ class CRUDPayload(
     ]
 ):
     async def create_v2(
-        self, async_db: AsyncSession, *, obj_in: vendor_schemas.QuoteMarineEncCreate
+            self, async_db: AsyncSession, *, obj_in: vendor_schemas.QuoteMarineEncCreate
     ) -> vendor_models.Payload:
         quote_marine_dict = jsonable_encoder(obj_in.model_dump(exclude_unset=True))
         # quote_marine_db = vendor_models.Payload(**quote_marine_dict)
@@ -37,7 +37,7 @@ class CRUDQuote(
     CRUDBase[models.Quote, schemas.QuoteCreate, schemas.QuoteUpdate]
 ):  # noqa: E501
     async def create_v1(
-        self, async_db: AsyncSession, *, obj_in: schemas.QuoteCreate
+            self, async_db: AsyncSession, *, obj_in: schemas.QuoteCreate
     ) -> models.Quote:
         quote_dict = jsonable_encoder(obj_in.model_dump(exclude_unset=True))
         # quote_dict = obj_in.model_dump(exclude_unset=True)
@@ -106,11 +106,15 @@ class CRUDQuote(
 class CRUDProposal(
     CRUDBase[models.Proposal, schemas.ProposalCreate, schemas.ProposalUpdate]
 ):
-    async def get_proposal_fields(self, async_db: AsyncSession, attr_name: str) -> dict[str, Any]: # list[master_models.AttributeDefinition]:
+    async def get_proposal_fields(self, async_db: AsyncSession, attr_name: str) -> dict[
+        str, Any]:  # list[master_models.AttributeDefinition]:
         stmt = (
-            select(self.model.pol_quot_sys_id, self.model.pol_quot_no, self.model.pol_comp_code, self.model.pol_divn_code, self.model.pol_dept_code,
-                   self.model.pol_prod_code, self.model.pol_type, self.model.pol_cust_code, self.model.pol_assr_code, self.model.pol_fm_dt,
-                   self.model.pol_to_dt, self.model.pol_dflt_si_curr_code, self.model.pol_prem_curr_code, self.model.pol_flexi)
+            select(self.model.pol_quot_sys_id, self.model.pol_quot_no, self.model.pol_comp_code,
+                   self.model.pol_divn_code, self.model.pol_dept_code,
+                   self.model.pol_prod_code, self.model.pol_type, self.model.pol_cust_code, self.model.pol_assr_code,
+                   self.model.pol_fm_dt,
+                   self.model.pol_to_dt, self.model.pol_dflt_si_curr_code, self.model.pol_prem_curr_code,
+                   self.model.pol_flexi)
             # .join(self.json_attribute_alias, self.model.jsonattributes)
             .filter(self.model.attr_name == attr_name)
         )
@@ -129,6 +133,10 @@ class CRUDProposal(
                 "json_value": json_value
             }
         return {}
+
+    async def get_proposal(self, async_db: AsyncSession, sys_id: int) -> models.Proposal:
+        prop = await super().get_by_id(async_db, id=sys_id)
+        return prop
 
 
 payload = CRUDPayload(vendor_models.Payload)

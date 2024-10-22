@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict
 class ProposalMotorCertBase(BaseModel):
     motor_cert_sr_no: Union[int | None] = None
     prai_risk_sr_no: Union[int, None] = None
+    prai_risk_id: Union[str, None] = None
     prai_flexi: Union[dict[str, Any] | None] = None
 
 

@@ -28,7 +28,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def create_v1(
-        self, async_db: AsyncSession, *, obj_in: CreateSchemaType
+            self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
         # print(obj_in)
@@ -39,7 +39,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def create(
-        self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
+            self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
     ) -> ModelType:
         if isinstance(obj_in, dict):
             # insert_data = jsonable_encoder(obj_in, exclude_unset=True)
@@ -54,7 +54,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def create_v2(
-        self, async_db: AsyncSession, *, obj_in: CreateSchemaType
+            self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         db_obj = self.model(**obj_in)
         async_db.add(db_obj)
@@ -63,11 +63,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def update(
-        self,
-        async_db: AsyncSession,
-        *,
-        db_obj: ModelType,
-        obj_in: Union[UpdateSchemaType, dict[str, Any]]
+            self,
+            async_db: AsyncSession,
+            *,
+            db_obj: ModelType,
+            obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
         # refreshed_db_obj = await async_db.execute(select(self.model).where(self.model.id == db_obj.id))
         refreshed_db_obj = await async_db.get(self.model, db_obj.id)
@@ -91,8 +91,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         result = await async_db.execute(select(self.model).where(self.model.id == id))
         return list(result.scalars().all())
 
+    async def get_by_id(self, async_db: AsyncSession, id: int) -> ModelType:
+        result = await async_db.get(self.model, id)
+        return result
+
     async def get_multi(
-        self, async_db: AsyncSession, skip: int = 0, limit: int = 100
+            self, async_db: AsyncSession, skip: int = 0, limit: int = 100
     ) -> list[ModelType]:
         result = await async_db.execute(select(self.model).offset(skip).limit(limit))
         return list(result.scalars().all())

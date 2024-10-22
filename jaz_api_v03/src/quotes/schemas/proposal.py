@@ -32,6 +32,7 @@ class ProposalBase(BaseModel):
     pol_dflt_si_curr_code: Union[str | None] = None
     pol_prem_curr_code: Union[str | None] = None
     pol_flexi: Union[dict[str, Any] | None] = None
+    pol_prop_sys_id: Union[int | None] = None
 
     # @field_serializer("pol_fm_dt", "pol_to_dt")  # type: ignore
     # def serialize_dt(self, dt: datetime, _info: str):

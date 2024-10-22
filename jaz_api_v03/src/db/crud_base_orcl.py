@@ -102,3 +102,27 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         non_async_oracle_db.commit()
         non_async_oracle_db.refresh(db_obj)
         return db_obj
+
+    def get_policy(self,
+                   non_async_oracle_db: Session,
+                   *,
+                   db_obj: ModelType
+                   ) -> ModelType:
+        primary_key = (db_obj.pol_sys_id, db_obj.pol_end_no_idx, db_obj.pol_end_sr_no)
+        refreshed_db_obj = non_async_oracle_db.get(self.model, primary_key)
+
+        # policy = non_async_oracle_db.get(
+        #     self.model,  # The model class
+        #     primary_key,  # The composite primary key as a tuple
+        #     options=[
+        #         # Eager load sections -> risks -> covers
+        #         joinedload(self.model.sections)
+        #         .joinedload(self.model.sections.risks)
+        #         .joinedload(Risk.covers),
+        #
+        #         # Eager load charges related to the policy
+        #         joinedload(Policy.charges)
+        #     ]
+        # )
+
+        return refreshed_db_obj

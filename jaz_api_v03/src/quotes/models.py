@@ -62,6 +62,7 @@ class Proposal(Base):
     pol_dflt_si_curr_code: Mapped[str] = mapped_column(nullable=False)
     pol_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
     pol_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
+    pol_prd_sys_id: Mapped[int] = mapped_column(nullable=True) # Link prop_sys_id to premia
 
     # output fields mapped from premia pgit_policy fields
     pol_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -102,7 +103,7 @@ class ProposalSection(Base):
 
     # Input fields mapped to premia pgit_pol_section fields
     psec_sec_code: Mapped[str] = mapped_column(nullable=False)
-    psec_srno: Mapped[int]
+    psec_srno: Mapped[int] = mapped_column(nullable=True)
     psec_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
@@ -127,10 +128,10 @@ class ProposalSection(Base):
 
 class ProposalRisk(Base):
     risk_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    risk_sr_no: Mapped[int]
+    risk_sr_no: Mapped[int] = mapped_column(nullable=True)
 
     # Input fields mapped to premia pgit_pol_risk_addl_info fields
-    prai_risk_sr_no: Mapped[int]
+    prai_risk_sr_no: Mapped[int] = mapped_column(nullable=True)
     prai_data_18: Mapped[str] = mapped_column(nullable=True)  # 'Kenya'
     prai_code_03: Mapped[str] = mapped_column(nullable=True)  # '503'
     prai_desc_09: Mapped[str] = mapped_column(nullable=True)  # 'Residential'
@@ -139,7 +140,7 @@ class ProposalRisk(Base):
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
     prai_sys_id: Mapped[int] = mapped_column(nullable=True)
     prai_risk_lvl_no: Mapped[int] = mapped_column(nullable=True)
-    prai_risk_id: Mapped[int] = mapped_column(nullable=True)
+    prai_risk_id: Mapped[str] = mapped_column(nullable=True)
     prai_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
     prai_end_no_idx: Mapped[int] = mapped_column(nullable=True)
 
@@ -178,16 +179,16 @@ class ProposalRisk(Base):
 
 class ProposalMotorCert(Base):
     motor_cert_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    motor_cert_sr_no: Mapped[int]
+    motor_cert_sr_no: Mapped[int] = mapped_column(nullable=True)
 
     # Input fields mapped to premia pgit_pol_risk_addl_info fields
-    prai_risk_sr_no: Mapped[int]
+    prai_risk_sr_no: Mapped[int] = mapped_column(nullable=True)
     prai_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # Output fields mapped to premia pgit_pol_risk_addl_info fields
     prai_sys_id: Mapped[int] = mapped_column(nullable=True)
     prai_risk_lvl_no: Mapped[int] = mapped_column(nullable=True)
-    prai_risk_id: Mapped[int] = mapped_column(nullable=True)
+    prai_risk_id: Mapped[str] = mapped_column(nullable=True)
     prai_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
     prai_end_no_idx: Mapped[int] = mapped_column(nullable=True)
 
@@ -205,11 +206,11 @@ class ProposalMotorCert(Base):
 
 class ProposalSMI(Base):
     smi_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    smi_sr_no: Mapped[int]
+    smi_sr_no: Mapped[int] = mapped_column(nullable=True)
 
     # Input fields mapped to premia pgit_pol_risk_smi fields
     prs_smi_code: Mapped[str] = mapped_column(nullable=False)
-    prs_sr_no: Mapped[int]
+    prs_sr_no: Mapped[int] = mapped_column(nullable=True)
     prs_rate: Mapped[float] = mapped_column(nullable=True)
     prs_rate_per: Mapped[float] = mapped_column(nullable=True)
     prs_si_fc: Mapped[float] = mapped_column(nullable=True)
@@ -242,7 +243,7 @@ class ProposalCover(Base):
 
     # Input fields mapped to premia pgit_pol_risk_cover fields
     prc_code: Mapped[str] = mapped_column(nullable=False)
-    prc_sr_no: Mapped[int]
+    prc_sr_no: Mapped[int] = mapped_column(nullable=True)
     prc_rate: Mapped[float] = mapped_column(nullable=True)
     prc_rate_per: Mapped[float] = mapped_column(nullable=True)
     prc_si_curr_code: Mapped[str] = mapped_column(nullable=False)
@@ -267,11 +268,11 @@ class ProposalCover(Base):
 
 class ProposalCharge(Base):
     chg_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    chg_sr_no: Mapped[int]
+    chg_sr_no: Mapped[int] = mapped_column(nullable=True)
 
     # Input fields mapped to premia pgit_pol_charge fields
     pchg_code: Mapped[str]
-    pchg_sr_no: Mapped[int]
+    pchg_sr_no: Mapped[int] = mapped_column(nullable=True)
     pchg_type: Mapped[str]
     pchg_perc: Mapped[float] = mapped_column(nullable=True)
     pchg_chg_fc: Mapped[float] = mapped_column(nullable=True)

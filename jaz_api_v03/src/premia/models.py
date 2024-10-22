@@ -79,6 +79,24 @@ class Policy(OrclBase):  # type: ignore
         lazy="subquery",
     )
 
+    # Relation to PolicyPremium - down
+    policypremium_collection: Mapped[list["PolicyPremium"]] = relationship(
+        back_populates="policy",
+        primaryjoin="and_(Policy.pol_sys_id==PolicyPremium.ppd_pol_sys_id, Policy.pol_end_no_idx==PolicyPremium.ppd_end_no_idx, Policy.pol_end_sr_no==PolicyPremium.ppd_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+    # Relation to PolicyPremium - down
+    policyacntdoc_collection: Mapped[list["PolicyAcntDoc"]] = relationship(
+        back_populates="policy",
+        primaryjoin="and_(Policy.pol_sys_id==PolicyAcntDoc.ad_pol_sys_id, Policy.pol_end_no_idx==PolicyAcntDoc.ad_end_no_idx, Policy.pol_end_sr_no==PolicyAcntDoc.ad_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
 
 class PolicyCharge(OrclBase):  # type: ignore
     __tablename__ = "pgit_pol_charge"
@@ -119,6 +137,48 @@ class PolicyCurrency(OrclBase):  # type: ignore
     )
     policy: Mapped["Policy"] = relationship(
         back_populates="policycurrency_collection",
+    )
+
+
+class PolicyPremium(OrclBase):  # type: ignore
+    __tablename__ = "pgit_pol_prem_dtl"
+    ppd_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    ppd_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    ppd_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    ppd_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Policy - up
+    ForeignKeyConstraint(
+        [ppd_pol_sys_id, ppd_end_no_idx, ppd_end_sr_no],
+        [
+            Policy.pol_sys_id,
+            Policy.pol_end_no_idx,
+            Policy.pol_end_sr_no,
+        ],
+    )
+    policy: Mapped["Policy"] = relationship(
+        back_populates="policypremium_collection",
+    )
+
+
+class PolicyAcntDoc(OrclBase):  # type: ignore
+    __tablename__ = "pgit_acnt_doc"
+    ad_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    ad_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    ad_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    ad_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Policy - up
+    ForeignKeyConstraint(
+        [ad_pol_sys_id, ad_end_no_idx, ad_end_sr_no],
+        [
+            Policy.pol_sys_id,
+            Policy.pol_end_no_idx,
+            Policy.pol_end_sr_no,
+        ],
+    )
+    policy: Mapped["Policy"] = relationship(
+        back_populates="policyacntdoc_collection",
     )
 
 
@@ -208,7 +268,8 @@ OrclBase.prepare(
     # autoload_with=async_oracledb_engine,
     reflection_options={
         "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section", "pgit_pol_risk_addl_info",
-                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "fw_receipt"]
+                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "pgit_pol_prem_dtl", "pgit_acnt_doc",
+                 "fw_receipt"]
     },
 )  # noqa: E501
 

@@ -19,6 +19,7 @@ class PraiFlexi(BaseModel):
 class ProposalRiskBase(BaseModel):
     risk_sr_no: Union[int, None] = None
     prai_risk_sr_no: Union[int, None] = None
+    prai_risk_id: Union[str, None] = None
     prai_flexi: Union[dict[str, Any], None] = None
 
 

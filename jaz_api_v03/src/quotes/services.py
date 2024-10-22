@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from . import crud as quotes_crud
 from . import schemas as quote_schemas
+from .crud import proposal as proposal_crud
 from .vendors_api import schemas as vendor_schemas
 from ..auth import schemas as user_schemas
 from ..auth import services as user_services
@@ -30,7 +31,7 @@ def parse_float(float_string: str, default: Union[float | None] = 0) -> Any:
 
 
 def create_covers_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> list[quote_schemas.ProposalCoverCreate]:
     covers_list = []
     proposal_cover_obj = quote_schemas.ProposalCoverCreate(
@@ -48,7 +49,7 @@ def create_covers_list(
 
 
 def create_smis_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> list[quote_schemas.ProposalSMICreate]:
     smis_list = []
     proposal_smi_obj = quote_schemas.ProposalSMICreate(
@@ -65,9 +66,9 @@ def create_smis_list(
 
 
 def create_risks_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
-    covers_list: list[quote_schemas.ProposalCoverCreate],
-    smis_list: list[quote_schemas.ProposalSMICreate],
+        payload_in: vendor_schemas.QuoteMarineCreate,
+        covers_list: list[quote_schemas.ProposalCoverCreate],
+        smis_list: list[quote_schemas.ProposalSMICreate],
 ) -> list[quote_schemas.ProposalRiskCreate]:
     risks_list = []
     flexi_dict = {}
@@ -97,7 +98,7 @@ def create_risks_list(
 
 
 def create_sections_list(
-    risks_list: list[quote_schemas.ProposalRiskCreate],
+        risks_list: list[quote_schemas.ProposalRiskCreate],
 ) -> list[quote_schemas.ProposalSectionCreate]:
     sections_list = []
     proposal_section_obj = quote_schemas.ProposalSectionCreate(
@@ -108,7 +109,7 @@ def create_sections_list(
 
 
 def create_charges_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> list[quote_schemas.ProposalChargeCreate]:
     charges_list = []
     stamp_duty_obj = quote_schemas.ProposalChargeCreate(
@@ -145,9 +146,9 @@ def create_charges_list(
 
 
 def create_proposals_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
-    sections_list: list[quote_schemas.ProposalSectionCreate],
-    charges_list: list[quote_schemas.ProposalChargeCreate],
+        payload_in: vendor_schemas.QuoteMarineCreate,
+        sections_list: list[quote_schemas.ProposalSectionCreate],
+        charges_list: list[quote_schemas.ProposalChargeCreate],
 ) -> list[quote_schemas.ProposalCreate]:
     proposals_list = []
     proposal_obj = quote_schemas.ProposalCreate(
@@ -169,7 +170,7 @@ def create_proposals_list(
         # pol_to_dt=datetime.strptime(payload_in.MCI_Cargo_dischargedate, "%d/%m/%Y"),
         pol_fm_dt=parse_datetime(payload_in.MCI_MPESAPayDate),
         pol_to_dt=parse_datetime(payload_in.MCI_MPESAPayDate)
-        + timedelta(days=int(payload_in.MCI_Cargo_InsuranceCoverPeriodDays)),
+                  + timedelta(days=int(payload_in.MCI_Cargo_InsuranceCoverPeriodDays)),
         pol_prem_curr_code="KES",
         pol_dflt_si_curr_code="KES",
         proposalsections=sections_list,
@@ -193,10 +194,17 @@ def create_proposals_list(
 #     pass
 
 
+async def get_proposal(
+        async_db: AsyncSession,
+        sys_id: int,
+) -> Any:
+    proposal = await proposal_crud.get_proposal(async_db, sys_id)
+
+
 async def create_quote(
-    async_db: AsyncSession,
-    oracle_db: Session,
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        async_db: AsyncSession,
+        oracle_db: Session,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> Any:
     quote_marine_dict = jsonable_encoder(  # noqa: F841
         payload_in.model_dump(exclude_unset=True)

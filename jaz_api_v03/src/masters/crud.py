@@ -108,7 +108,7 @@ class CRUDProduct(
         return section_templates
 
     async def get_risks_by_product(
-            self, async_db: AsyncSession, *, prod_code: str
+            self, async_db: AsyncSession, *, prod_code: str  #, risk_code: str
     ) -> master_models.Cover:
         # stmt = (select(self.model)
         #         .options(
@@ -116,12 +116,19 @@ class CRUDProduct(
         # ).filter(self.model.prod_code == prod_code))
         # compiled_stmt = stmt.compile(compile_kwargs={"literal_binds": True})
 
+        # Aliases for the association tables
+        sec_risk_assoc = aliased(SectionRiskAssociation)
+        prod_sec_assoc = aliased(ProductSectionAssociation)
+
+        # Query that matches the SQL structure you provided
         stmt = (
-            select(SectionRiskAssociation.risk_trans_dflt)  # Select both Cover and cvr_trans_dflt
-            .join(Section)
-            .join(ProductSectionAssociation)
-            .join(self.model)
-            .where(self.model.prod_code == prod_code)
+            select(sec_risk_assoc.risk_trans_dflt)
+            .join(Risk, sec_risk_assoc.risk_sys_id == Risk.risk_sys_id)  # Join Risk on sec_risk_assoc
+            .join(Section, sec_risk_assoc.sec_sys_id == Section.sec_sys_id)  # Join Section on sec_risk_assoc
+            .join(prod_sec_assoc, prod_sec_assoc.sec_sys_id == Section.sec_sys_id)  # Join ProductSectionAssociation
+            .join(self.model, prod_sec_assoc.prod_sys_id == self.model.prod_sys_id)  # Join Product on prod_sec_assoc
+            .where(self.model.prod_code == prod_code)  # Filter by Product.prod_code
+            #.where(Risk.risk_code == risk_code)  # Filter by Risk.risk_code
         )
 
         # result = await async_db.execute(compiled_stmt)

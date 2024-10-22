@@ -156,96 +156,45 @@ async def quote(
 
     quote_data = jsonable_encoder(quotation, by_alias=True, exclude_unset=True, exclude_defaults=True, exclude=None,
                                   exclude_none=True)
+    for proposal in quote_data["proposals"]:
+        proposal["pol_prd_sys_id"] = proposal["prop_sys_id"]
 
     policy_quote_data = quote_to_policy(quote_data)
 
-    # policy_template_charges_list = await masters_crud.product.get_charges_by_product(async_db, prod_code='1002')
-    # policy_template_sections_list = await masters_crud.product.get_sections_by_product(async_db, prod_code='1002')
-    # policy_template_risks_list = await masters_crud.product.get_risks_by_product(async_db, prod_code='1002')
-    # policy_template_covers_list = await masters_crud.product.get_covers_by_product(async_db, prod_code='1002')
-    #
-    # pgit_policy_template = await masters_crud.product.get_product(async_db, prod_code='1002')
-    #
-    # policy_template_dict = {
-    #     "pgit_policy_template": {k: v for k, v in pgit_policy_template[0].items() if v != ''},
-    #     "pgit_pol_charge_template": [{k: v for k, v in charge.items() if v != ''} for charge in policy_template_charges_list if charge],
-    #     "pgit_pol_section": [{k: v for k, v in section.items() if v != ''} for section in policy_template_sections_list if section],
-    #     "pgit_pol_risk_addl_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in policy_template_risks_list if risk],
-    #     "pgit_pol_risk_cover_template": [{k: v for k, v in cover.items() if v != ''} for cover in policy_template_covers_list if cover]
-    # }
-
-    ################################################
-    # print("Before product template")
-    policy_template = await masters_crud.product.get_product_by_id(async_db, prod_code='1002')
-    # print("After product template")
-    ###########
-    pgit_policy_template = {k: v for k, v in policy_template.pol_trans_dflt.items() if v != ''}
-    policy_template_charges_list = [{k: v for k, v in charge.chg_trans_dflt.items() if v != ''} for charge in
-                                    policy_template.charges]
-
-    # This gives a flatenned policy template
-    policy_template_dict = {"pgit_policy_template": pgit_policy_template,
-                            "pgit_pol_charge_template": policy_template_charges_list}
-    policy_template_sections_list = []
-    for quote_section in policy_template.sections:
-        if quote_section.sec_trans_dflt is not None:
-            pgit_pol_section_template = {k: v for k, v in quote_section.sec_trans_dflt.items() if v != ''}
-            policy_template_sections_list.append(pgit_pol_section_template)
-    policy_template_dict["pgit_pol_section"] = policy_template_sections_list
-
-    policy_template_risks_list = []
-    for quote_section in policy_template.sections:
-        if quote_section.sec_trans_dflt is not None:
-            for risk in quote_section.section.risks:
-                if risk.risk_trans_dflt is not None:
-                    pgit_pol_risk_addl_info_template = {k: v for k, v in risk.risk_trans_dflt.items() if v != ''}
-                    policy_template_risks_list.append(pgit_pol_risk_addl_info_template)
-    policy_template_dict["pgit_pol_risk_addl_info_template"] = policy_template_risks_list
-
-    policy_template_covers_list = []
-    for quote_section in policy_template.sections:
-        if quote_section.sec_trans_dflt is not None:
-            for risk in quote_section.section.risks:
-                if risk.risk_trans_dflt is not None:
-                    for cover in risk.risk.covers:
-                        if cover.cvr_trans_dflt is not None:
-                            policy_template_covers_list.append(
-                                {k: v for k, v in cover.cvr_trans_dflt.items() if v != ''})
-    policy_template_dict["pgit_pol_risk_cover_template"] = policy_template_covers_list
-
-    # This gives a nested policy template
-    # policy_template_sections_list = []
-    # for quote_section in policy_template.sections:
-    #     if quote_section.sec_trans_dflt is not None:
-    #         pgit_pol_section_template = {k: v for k, v in quote_section.sec_trans_dflt.items() if v != ''}
-    #         pgit_pol_section_template.update({"risks": []})
-    #         policy_template_sections_list.append(pgit_pol_section_template)
-    #         policy_template_risks_list = []
-    #         for risk in quote_section.section.risks:
-    #             if risk.risk_trans_dflt is not None:
-    #                 pgit_pol_risk_addl_info_template = {k: v for k, v in risk.risk_trans_dflt.items() if v != ''}
-    #                 pgit_pol_risk_addl_info_template.update({"covers": []})
-    #                 policy_template_risks_list.append(pgit_pol_risk_addl_info_template)
-    #                 # policy_template_risks_list.append({k: v for k, v in risk.risk_trans_dflt.items() if v != ''}.update({"covers": []}))
-    #                 policy_template_covers_list = []
-    #                 for cover in risk.risk.covers:
-    #                     if cover.cvr_trans_dflt is not None:
-    #                         policy_template_covers_list.append(
-    #                             {k: v for k, v in cover.cvr_trans_dflt.items() if v != ''})
-    #                 pgit_pol_risk_addl_info_template.update({"covers": policy_template_covers_list})
-    #         pgit_pol_section_template.update({"risks": policy_template_risks_list})
-    #
-    # pgit_policy_template.update({"charges": policy_template_charges_list})
-    # pgit_policy_template.update({"sections": policy_template_sections_list})
-    #
-    # ###########
-
-    #############################
-    #
     # premia_policy_data = []
     pgit_policy_list_db = []
 
     for proposal in policy_quote_data:
+        prop = await quotes_crud.proposal.get_proposal(async_db, proposal["pol_prd_sys_id"])
+
+        policy_template_charges_list = await masters_crud.product.get_charges_by_product(async_db, prod_code=proposal[
+            "pol_prod_code"])
+        policy_template_sections_list = await masters_crud.product.get_sections_by_product(async_db, prod_code=proposal[
+            "pol_prod_code"])
+        policy_template_all_risks_list = await masters_crud.product.get_risks_by_product(async_db, prod_code=proposal[
+            "pol_prod_code"])
+        policy_template_risks_list = [d for d in policy_template_all_risks_list if d.get('prai_remarks_10') == 'risk']
+        policy_template_certs_list = [d for d in policy_template_all_risks_list if d.get('prai_remarks_10') == 'cert']
+        # policy_template_certs_list = await masters_crud.product.get_risks_by_product(async_db, prod_code='1002', risk_code='motor_cert')
+        policy_template_covers_list = await masters_crud.product.get_covers_by_product(async_db, prod_code=proposal[
+            "pol_prod_code"])
+
+        pgit_policy_template = await masters_crud.product.get_product(async_db, prod_code=proposal["pol_prod_code"])
+
+        policy_template_dict = {
+            "pgit_policy_template": {k: v for k, v in pgit_policy_template[0].items() if v != ''},
+            "pgit_pol_charge_template": [{k: v for k, v in charge.items() if v != ''} for charge in
+                                         policy_template_charges_list if charge],
+            "pgit_pol_section": [{k: v for k, v in section.items() if v != ''} for section in
+                                 policy_template_sections_list if section],
+            "pgit_pol_risk_addl_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in
+                                                 policy_template_risks_list if risk],
+            "pgit_pol_risk_cert_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in
+                                                 policy_template_certs_list if risk],
+            "pgit_pol_risk_cover_template": [{k: v for k, v in cover.items() if v != ''} for cover in
+                                             policy_template_covers_list if cover]
+        }
+
         pol_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pol_sys_id")
         quote_charges_list = proposal.pop("proposalcharges", None)
         # policy_template_charges_list = pgit_policy_template["charges"]
@@ -256,6 +205,8 @@ async def quote(
             pchg_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pchg_sys_id")
             charge["pchg_sys_id"] = pchg_sys_id
             charge["pchg_pol_sys_id"] = pol_sys_id
+            charge["pchg_prod_code"] = proposal["pol_prod_code"]
+            charge["pchg_dept_code"] = proposal["pol_dept_code"]
             charge["pchg_cr_uid"] = "PORTAL-REG"
             charge["pchg_cr_dt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             pgit_pol_charge_data_pydantic = PolicyChargeCreate(**charge)
@@ -279,9 +230,9 @@ async def quote(
             "pac_rec_type": "I",
             "pac_comp_code": "001",
             "pac_divn_code": "118",
-            "pac_dept_code": "10",
-            "pac_prod_code": "1002",
-            "pac_ds_type": "2",
+            "pac_dept_code": proposal["pol_dept_code"],
+            "pac_prod_code": proposal["pol_prod_code"],
+            "pac_ds_type": policy_template_dict['pgit_policy_template']['pol_ds_type'],  #"2",
             "pac_cr_uid": "PORTAL-REG",
             "pac_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
@@ -312,6 +263,9 @@ async def quote(
                     cover["prc_lvl1_sys_id"] = prai_sys_id
                     cover["prc_eff_fm_dt"] = proposal["pol_fm_dt"]
                     cover["prc_eff_to_dt"] = proposal["pol_to_dt"]
+                    cover["prc_prod_code"] = proposal["pol_prod_code"]
+                    cover["prc_dept_code"] = proposal["pol_dept_code"]
+                    # cover["prc_peril_class_code"] = "PC-MOT-1002"
                     cover["prc_cr_uid"] = "PORTAL-REG"
                     cover["prc_cr_dt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     pgit_pol_risk_cover_data_pydantic = PolicyCoverCreate(**cover)
@@ -330,6 +284,9 @@ async def quote(
                     "prai_eff_fm_dt": proposal["pol_fm_dt"],
                     "prai_eff_to_dt": proposal["pol_to_dt"],
                     "prai_period": 365,  # TODO: Calculate from dates
+                    "prai_prod_code": proposal["pol_prod_code"],
+                    "prai_dept_code": proposal["pol_dept_code"],
+                    "prai_risk_ref_no": quote_risk["prai_risk_id"],
                     "prai_cr_uid": "PORTAL-REG",
                     "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
@@ -342,7 +299,7 @@ async def quote(
                 quote_certs_list = quote_risk.pop("proposalmotorcerts", None)
                 prai_cert_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_prai_sys_id")
                 pgit_pol_risk_cert_info_data = {
-                    **policy_template_dict["pgit_pol_risk_addl_info_template"][1],
+                    **policy_template_dict["pgit_pol_risk_cert_info_template"][0],
                     **quote_certs_list[0],
                     "prai_sys_id": prai_cert_sys_id,
                     "prai_pol_sys_id": pol_sys_id,
@@ -351,8 +308,10 @@ async def quote(
                     "prai_lvl2_sys_id": prai_cert_sys_id,
                     "prai_eff_fm_dt": proposal["pol_fm_dt"],
                     "prai_eff_to_dt": proposal["pol_to_dt"],
+                    "prai_prod_code": proposal["pol_prod_code"],
+                    "prai_dept_code": proposal["pol_dept_code"],
                     "prai_period": 365,  # TODO: Calculate from dates
-                    "prai_risk_id": "2",  # TODO: Should be 3.
+                    # "prai_risk_id": "2",  # TODO: Should be 3.
                     # # "prai_risk_sr_no": 1,  # TODO: Calculate from number of risks. But check
                     "prai_cr_uid": "PORTAL-REG",
                     "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -370,6 +329,8 @@ async def quote(
                 "psec_pol_sys_id": pol_sys_id,
                 "psec_eff_fm_dt": proposal["pol_fm_dt"],
                 "psec_eff_to_dt": proposal["pol_to_dt"],
+                "psec_prod_code": proposal["pol_prod_code"],
+                "psec_dept_code": proposal["pol_dept_code"],
                 "psec_cr_uid": "PORTAL-REG",
                 "psec_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
@@ -388,6 +349,7 @@ async def quote(
             "pol_no": str(pol_sys_id),
             "pol_uw_year": datetime.now().year,
             "pol_cal_yr": datetime.now().year,
+            "pol_cust_code": current_user.cust_code,
             # "pol_src_code": proposal["pol_cust_code"], # current_user.cust_code,
             "pol_src_code": current_user.cust_code,
             "pol_assr_name": quote_data["quot_assr_name"],
@@ -409,10 +371,13 @@ async def quote(
 
         policy = premia_services.create_policy(non_async_oracle_db, pgit_policy_data_pydantic)
         policy_process_json = premia_services.policy_process_json(non_async_oracle_db, policy)
+        policy = premia_services.get_policy(non_async_oracle_db, policy)
         policy_process_dict = json.loads(policy_process_json)
         # pol_no = premia_services.get_pol_no(non_async_oracle_db, pgit_policy_data)
         # policy = premia_services.update_policy(non_async_oracle_db, db_obj=policy, payload_in={"pol_no": pol_no})
         # prem_calc_status = premia_services.calc_premium(non_async_oracle_db, policy)
+        # prop = await quote_services.get_proposal(async_db, policy.pol_prd_sys_id)
+        # prop = await quotes_crud.proposal.get_proposal(async_db, policy.pol_prd_sys_id)
 
         r_sys_id = premia_services.get_sys_id(non_async_oracle_db, "jaz_r_sys_id")
         fw_receipt_stage_data = {
@@ -722,3 +687,44 @@ def test_oracle(
 ) -> Any:
     result = oracle_db.execute(text("select * from jick_t where rownum<=6"))
     return result.scalars().all()
+
+    # ################################################################################
+    # ################################################
+    # # print("Before product template")
+    # policy_template = await masters_crud.product.get_product_by_id(async_db, prod_code='1002')
+    # # print("After product template")
+    # ###########
+    # pgit_policy_template = {k: v for k, v in policy_template.pol_trans_dflt.items() if v != ''}
+    # policy_template_charges_list = [{k: v for k, v in charge.chg_trans_dflt.items() if v != ''} for charge in
+    #                                 policy_template.charges]
+    #
+    # # This gives a flatenned policy template
+    # policy_template_dict = {"pgit_policy_template": pgit_policy_template,
+    #                         "pgit_pol_charge_template": policy_template_charges_list}
+    # policy_template_sections_list = []
+    # for quote_section in policy_template.sections:
+    #     if quote_section.sec_trans_dflt is not None:
+    #         pgit_pol_section_template = {k: v for k, v in quote_section.sec_trans_dflt.items() if v != ''}
+    #         policy_template_sections_list.append(pgit_pol_section_template)
+    # policy_template_dict["pgit_pol_section"] = policy_template_sections_list
+    #
+    # policy_template_risks_list = []
+    # for quote_section in policy_template.sections:
+    #     if quote_section.sec_trans_dflt is not None:
+    #         for risk in quote_section.section.risks:
+    #             if risk.risk_trans_dflt is not None:
+    #                 pgit_pol_risk_addl_info_template = {k: v for k, v in risk.risk_trans_dflt.items() if v != ''}
+    #                 policy_template_risks_list.append(pgit_pol_risk_addl_info_template)
+    # policy_template_dict["pgit_pol_risk_addl_info_template"] = policy_template_risks_list
+    #
+    # policy_template_covers_list = []
+    # for quote_section in policy_template.sections:
+    #     if quote_section.sec_trans_dflt is not None:
+    #         for risk in quote_section.section.risks:
+    #             if risk.risk_trans_dflt is not None:
+    #                 for cover in risk.risk.covers:
+    #                     if cover.cvr_trans_dflt is not None:
+    #                         policy_template_covers_list.append(
+    #                             {k: v for k, v in cover.cvr_trans_dflt.items() if v != ''})
+    # policy_template_dict["pgit_pol_risk_cover_template"] = policy_template_covers_list
+    # ################################################################################

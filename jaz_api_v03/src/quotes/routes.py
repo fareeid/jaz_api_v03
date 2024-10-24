@@ -42,6 +42,7 @@ from ..premia import models as premia_models
 from ..premia import services as premia_services
 from ..premia.schemas import PolicyCreate, PolicyChargeCreate, PolicyCoverCreate, PolicyRiskCreate, PolicySectionCreate, \
     PolicyCurrencyCreate, ReceiptStagingCreate
+from ..reports import schemas as report_schemas
 
 router = APIRouter()
 
@@ -58,6 +59,20 @@ async def check_veh_status(
 ) -> Any:
     veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
     return json.loads(veh_status)
+
+
+@router.post("/report", response_model=list[dict[str, Any]])
+async def report(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        report_params: report_schemas.ReportParams,
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+) -> Any:
+    if not current_user.is_superuser:
+        report_params.search_criteria.cust_code = current_user.cust_code
+    premia_report = premia_services.run_report(non_async_oracle_db, report_params)
+    return premia_report
 
 
 @router.post("/quote", response_model=dict[str, Any])  # schemas.Quote
@@ -92,7 +107,8 @@ async def quote(
                 }
                 veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
                 if json.loads(veh_status)["Info"] == "Error":
-                    raise HTTPException(status_code=500, detail="Vehicle found in active policy. You cannot proceed")
+                    # raise HTTPException(status_code=502, detail="Vehicle found in active policy. You cannot proceed")
+                    return { "detail": "Vehicle found in active policy. You cannot proceed"}
 
     # background_tasks.add_task(services.send_user_email,
     #                           html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,

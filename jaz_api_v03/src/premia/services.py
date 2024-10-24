@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..auth import models as auth_models
 from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
 from ..premia import crud as premia_crud, models as premia_models
+from ..reports import schemas as report_schemas
 
 
 def get_cust_by_pin(
@@ -50,6 +51,7 @@ def update_policy(non_async_oracle_db: Session, db_obj: premia_models.Policy,
 def get_policy(non_async_oracle_db: Session, policy: premia_models.Policy) -> premia_models.Policy:
     policy = premia_crud.policy.get_policy(non_async_oracle_db, db_obj=policy)
     return policy
+
 
 def create_receipt_stage(non_async_oracle_db: Session, payload_in: premia_models.ReceiptStagingBase) -> None:
     receipt_stage = premia_crud.receipt_stage.create_v1(non_async_oracle_db, obj_in=payload_in)
@@ -96,3 +98,8 @@ def validate_vehicle_json(non_async_oracle_db: Session, search_criteria: dict[st
 def calc_premium(non_async_oracle_db: Session, pol_trans: premia_models.Policy) -> str:
     pol_no = premia_crud.policy.calc_premium(non_async_oracle_db, pol_trans)
     return pol_no
+
+
+def run_report(non_async_oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
+    rpt = premia_crud.policy.run_report(non_async_oracle_db, report_params)
+    return rpt

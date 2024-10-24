@@ -1,3 +1,7 @@
+import json
+from datetime import datetime
+from decimal import Decimal
+
 import oracledb
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -5,6 +9,17 @@ from sqlalchemy.orm import Session
 from . import models as premia_models, schemas as premia_schemas
 from ..auth import schemas as auth_schema, models as auth_models
 from ..db.crud_base_orcl import CRUDBase, ModelType
+from ..reports import schemas as report_schemas
+
+
+# Custom JSON encoder to handle datetime objects
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()  # Convert datetime to ISO format
+        elif isinstance(o, Decimal):
+            return float(o)        # Convert Decimal to float (or use str(o) for string)
+        return super().default(o)
 
 
 class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia_schemas.PolicyUpdate]):
@@ -138,6 +153,23 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
 
         return p_prem_success.getvalue()
 
+    def run_report(self, oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
+        cursor = oracle_db.connection().connection.cursor()
+        output_cursor = oracle_db.connection().connection.cursor()
+        search_criteria = list(report_params.search_criteria.model_dump(exclude_unset=True).values())
+        cursor.callproc(report_params.proc_name, [*search_criteria, output_cursor])
+        # cursor.callproc('JICK_UTILS_V2.P_CUST_PROD_RPT', ['150091', '01-SEP-2011', '30-OCT-2024', 1, 10, output_cursor])
+
+        rows = output_cursor.fetchall()
+        oracle_db.commit()
+        # Fetch column names from cursor description
+        column_names = [col[0] for col in output_cursor.description]
+        # Convert rows to a list of dictionaries (JSON-like structure)
+        json_result = [dict(zip(column_names, row)) for row in rows]
+        output_cursor.close()
+        # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
+        return json_result
+
 
 class CRUDCustomer(
     CRUDBase[premia_models.Customer, auth_schema.UserCreate, auth_schema.UserUpdate]
@@ -182,11 +214,11 @@ class CRUDCustomer(
         return f"{cust_cc_prefix}{next_no:06}"
 
 
-class CRUDReceiptStage(CRUDBase[premia_models.ReceiptStaging, premia_models.ReceiptStagingBase, premia_models.ReceiptStagingBase]):
+class CRUDReceiptStage(
+    CRUDBase[premia_models.ReceiptStaging, premia_models.ReceiptStagingBase, premia_models.ReceiptStagingBase]):
     def create_v1(
             self, oracle_db: Session, *, obj_in: premia_models.ReceiptStagingBase
     ) -> premia_models.ReceiptStaging:
-
         receipt_stage_dict = obj_in.model_dump(exclude_unset=True)
         return super().create_v1(oracle_db, obj_in=receipt_stage_dict)
 

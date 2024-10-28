@@ -82,8 +82,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db_obj: ModelType,
             obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
-        primary_key = (db_obj.pol_sys_id, db_obj.pol_end_no_idx, db_obj.pol_end_sr_no)
-        refreshed_db_obj = non_async_oracle_db.get(self.model, primary_key)
+
+        if hasattr(db_obj, 'pol_sys_id') and hasattr(db_obj, 'pol_end_no_idx') and hasattr(db_obj, 'pol_end_sr_no'):
+            primary_key = (db_obj.pol_sys_id, db_obj.pol_end_no_idx, db_obj.pol_end_sr_no)
+            refreshed_db_obj = non_async_oracle_db.get(self.model, primary_key)
+        else:
+            refreshed_db_obj = db_obj
 
         obj_data = jsonable_encoder(db_obj, exclude_none=True)
         if obj_data is None:

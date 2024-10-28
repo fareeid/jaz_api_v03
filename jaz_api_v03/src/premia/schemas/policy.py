@@ -15,6 +15,7 @@ class PolicyCreate(PolicyBase):
     policycurrency_collection: list = []
     policycharge_collection: list = []
     policysection_collection: list = []
+    policyhypothecation_collection: list = []
 
 
 # Properties to receive via API on update by User

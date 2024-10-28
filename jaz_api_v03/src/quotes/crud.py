@@ -44,8 +44,8 @@ class CRUDQuote(
 
         proposals_list = obj_in.proposals
         proposals_list_db = []
-        for proposal in proposals_list:
-            charges_list = proposal.proposalcharges
+        for prop in proposals_list:
+            charges_list = prop.proposalcharges
             # for charge in charges_list:
             #     charge_dict = jsonable_encoder(**charge.model_dump(exclude_unset=True))
             #     charge.pchg_flexi = charge_dict
@@ -55,7 +55,20 @@ class CRUDQuote(
                 for charge in charges_list
             ]
 
-            sections_list = proposal.proposalsections
+            premiums_list = prop.proposalpremiums
+            premiums_list_db = []
+            for premium in premiums_list:
+                installments_list = premium.proposalinstallments
+                installments_list_db = [
+                    models.ProposalInstallment(**installment.model_dump(exclude_unset=True))
+                    for installment in installments_list
+                ]
+                premium_dict = premium.model_dump(exclude_unset=True)
+                premium_dict["proposalinstallments"] = installments_list_db
+                premium_db = models.ProposalPremium(**premium_dict)
+                premiums_list_db.append(premium_db)
+
+            sections_list = prop.proposalsections
             sections_list_db = []
             for section in sections_list:
                 risks_list = section.proposalrisks
@@ -92,9 +105,10 @@ class CRUDQuote(
                 section_dict["proposalrisks"] = risks_list_db
                 section_db = models.ProposalSection(**section_dict)
                 sections_list_db.append(section_db)
-            proposal_dict = proposal.model_dump(exclude_unset=True)
+            proposal_dict = prop.model_dump(exclude_unset=True)
             proposal_dict["proposalsections"] = sections_list_db
             proposal_dict["proposalcharges"] = charges_list_db
+            proposal_dict["proposalpremiums"] = premiums_list_db
             proposal_db = models.Proposal(**proposal_dict)
             proposals_list_db.append(proposal_db)
 

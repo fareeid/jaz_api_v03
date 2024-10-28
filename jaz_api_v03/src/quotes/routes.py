@@ -41,7 +41,7 @@ from ..masters import crud as masters_crud
 from ..premia import models as premia_models
 from ..premia import services as premia_services
 from ..premia.schemas import PolicyCreate, PolicyChargeCreate, PolicyCoverCreate, PolicyRiskCreate, PolicySectionCreate, \
-    PolicyCurrencyCreate, ReceiptStagingCreate
+    PolicyCurrencyCreate, ReceiptStagingCreate, PolicyHypothecationCreate
 from ..reports import schemas as report_schemas
 
 router = APIRouter()
@@ -229,6 +229,28 @@ async def quote(
             pgit_pol_charge_list_db.append(premia_models.PolicyCharge(
                 **pgit_pol_charge_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)))
 
+        pgit_pol_hypothecation_list_db = []
+        if proposal["pol_hypothecation_yn"] == "1":
+
+            phpo_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_phpo_sys_id")
+            pgit_pol_hypothecation_data = {
+                "phpo_sys_id": phpo_sys_id,
+                "phpo_pol_sys_id": pol_sys_id,
+                "phpo_end_no_idx": 0,
+                "phpo_end_sr_no": 0,
+                "phpo_cust_code": prop.prop_bank_cust_code,
+                "phpo_hypo_type": "2",
+                "phpo_rec_type": "I",
+                "phpo_cr_uid": "PORTAL-REG",
+                "phpo_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "phpo_bank_name": prop.prop_bank_cust_name,
+            }
+            pgit_pol_hypothecation_data_pydantic = PolicyHypothecationCreate(**pgit_pol_hypothecation_data)
+            pgit_pol_hypothecation_db = premia_models.PolicyHypothecation(
+                **pgit_pol_hypothecation_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)
+            )
+            pgit_pol_hypothecation_list_db.append(pgit_pol_hypothecation_db)
+
         pgit_pol_appl_curr_list_db = []
         pac_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pac_sys_id")
         pgit_pol_appl_curr_data = {
@@ -361,6 +383,7 @@ async def quote(
             "policycharge_collection": pgit_pol_charge_list_db,
             "policysection_collection": pgit_pol_section_list_db,
             "policycurrency_collection": pgit_pol_appl_curr_list_db,
+            "policyhypothecation_collection": pgit_pol_hypothecation_list_db,
             "pol_sys_id": pol_sys_id,
             "pol_no": str(pol_sys_id),
             "pol_uw_year": datetime.now().year,

@@ -46,6 +46,8 @@ class Proposal(Base):
     prop_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     prop_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     prop_paymt_amt: Mapped[float] = mapped_column(nullable=True)
+    prop_bank_cust_code: Mapped[str] = mapped_column(nullable=True)
+    prop_bank_cust_name: Mapped[str] = mapped_column(nullable=True)
 
     # input fields mapped to premia pgit_policy fields
     pol_quot_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -57,12 +59,13 @@ class Proposal(Base):
     pol_type: Mapped[str] = mapped_column(nullable=False)
     pol_cust_code: Mapped[str] = mapped_column(nullable=False)
     pol_assr_code: Mapped[str] = mapped_column(nullable=True)
+    pol_hypothecation_yn: Mapped[str] = mapped_column(nullable=True)
     pol_fm_dt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     pol_to_dt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     pol_dflt_si_curr_code: Mapped[str] = mapped_column(nullable=False)
     pol_prem_curr_code: Mapped[str] = mapped_column(nullable=False)
     pol_flexi: Mapped[str] = mapped_column(JSONB, nullable=True)
-    pol_prd_sys_id: Mapped[int] = mapped_column(nullable=True) # Link prop_sys_id to premia
+    pol_prd_sys_id: Mapped[int] = mapped_column(nullable=True)  # Link prop_sys_id to premia
 
     # output fields mapped from premia pgit_policy fields
     pol_sys_id: Mapped[int] = mapped_column(nullable=True)
@@ -93,8 +96,75 @@ class Proposal(Base):
         lazy="subquery",
     )
 
+    # Relation to ProposalPremium - down
+    proposalpremiums: Mapped[list["ProposalPremium"]] = relationship(
+        back_populates="proposal",
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
     def __repr__(self) -> str:
         return f"Proposal(prop_sys_id={self.prop_sys_id!r}, prop_quot_sys_id={self.prop_quot_sys_id!r})"  # noqa: E501
+
+
+class ProposalPremium(Base):
+    prem_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    prem_sr_no: Mapped[int] = mapped_column(nullable=True)
+    prem_tot_amt: Mapped[float] = mapped_column(nullable=True)
+    prem_curr_code: Mapped[str] = mapped_column(nullable=True)
+    ad_pol_sys_id: Mapped[int] = mapped_column(nullable=True)
+    ad_end_no_idx: Mapped[int] = mapped_column(nullable=True)
+    ad_pol_no: Mapped[str] = mapped_column(nullable=True)
+    ad_end_no: Mapped[str] = mapped_column(nullable=True)
+    ad_doc_dt: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    ad_tran_code_doc_no: Mapped[str] = mapped_column(nullable=True)
+    ad_premium: Mapped[float] = mapped_column(nullable=True)
+    ad_stamp_duty: Mapped[float] = mapped_column(nullable=True)
+    ad_pcf: Mapped[float] = mapped_column(nullable=True)
+    ad_itl: Mapped[float] = mapped_column(nullable=True)
+    ad_comesa_fee: Mapped[float] = mapped_column(nullable=True)
+    ad_road_rescue: Mapped[float] = mapped_column(nullable=True)
+    ad_commission: Mapped[float] = mapped_column(nullable=True)
+    ad_wht: Mapped[float] = mapped_column(nullable=True)
+
+    # Relation to Proposal - up
+    prem_prop_sys_id: Mapped[int] = mapped_column(
+        ForeignKey("proposal.prop_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
+    )
+    proposal: Mapped["Proposal"] = relationship(back_populates="proposalpremiums")
+
+    # Relation to ProposalInstallment - down
+    proposalinstallments: Mapped[list["ProposalInstallment"]] = relationship(
+        back_populates="proposalpremium",
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+
+class ProposalInstallment(Base):
+    inst_sys_id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    inst_sr_no: Mapped[int] = mapped_column(nullable=True)
+    inst_curr_code: Mapped[str] = mapped_column(nullable=True)
+    inst_amt: Mapped[float] = mapped_column(nullable=True)
+    inst_due_dt: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    paymt_mode: Mapped[str] = mapped_column(nullable=True)
+    paymt_ref: Mapped[str] = mapped_column(nullable=True)
+    paymt_amt: Mapped[float] = mapped_column(nullable=True)
+    paymt_dt: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    rcpt_no: Mapped[str] = mapped_column(nullable=True)
+    rcpt_dt: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    rcpt_amt: Mapped[float] = mapped_column(nullable=True)
+
+    # Relation to ProposalPremium - up
+    inst_prem_sys_id: Mapped[int] = mapped_column(
+        ForeignKey("proposalpremium.prem_sys_id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
+    )
+    proposalpremium: Mapped["ProposalPremium"] = relationship(back_populates="proposalinstallments")
+
+    def __repr__(self) -> str:
+        return f"ProposalInstallment(inst_sys_id={self.inst_sys_id!r}, inst_prop_sys_id={self.inst_prop_sys_id!r})"
 
 
 class ProposalSection(Base):

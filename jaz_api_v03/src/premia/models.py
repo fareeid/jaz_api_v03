@@ -79,6 +79,15 @@ class Policy(OrclBase):  # type: ignore
         lazy="subquery",
     )
 
+    # Relation to PolicyHypothecation - down
+    policyhypothecation_collection: Mapped[list["PolicyHypothecation"]] = relationship(
+        back_populates="policy",
+        primaryjoin="and_(Policy.pol_sys_id==PolicyHypothecation.phpo_pol_sys_id, Policy.pol_end_no_idx==PolicyHypothecation.phpo_end_no_idx, Policy.pol_end_sr_no==PolicyHypothecation.phpo_end_sr_no)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
     # Relation to PolicyPremium - down
     policypremium_collection: Mapped[list["PolicyPremium"]] = relationship(
         back_populates="policy",
@@ -137,6 +146,27 @@ class PolicyCurrency(OrclBase):  # type: ignore
     )
     policy: Mapped["Policy"] = relationship(
         back_populates="policycurrency_collection",
+    )
+
+
+class PolicyHypothecation(OrclBase):  # type: ignore
+    __tablename__ = "pgit_pol_hypothecation"
+    phpo_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    phpo_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
+    phpo_end_no_idx: Mapped[int] = mapped_column(nullable=False)
+    phpo_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+
+    # Relation to Policy - up
+    ForeignKeyConstraint(
+        [phpo_pol_sys_id, phpo_end_no_idx, phpo_end_sr_no],
+        [
+            Policy.pol_sys_id,
+            Policy.pol_end_no_idx,
+            Policy.pol_end_sr_no,
+        ],
+    )
+    policy: Mapped["Policy"] = relationship(
+        back_populates="policyhypothecation_collection",
     )
 
 
@@ -268,7 +298,7 @@ OrclBase.prepare(
     # autoload_with=async_oracledb_engine,
     reflection_options={
         "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section", "pgit_pol_risk_addl_info",
-                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "pgit_pol_prem_dtl", "pgit_acnt_doc",
+                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "pgit_pol_hypothecation", "pgit_pol_prem_dtl", "pgit_acnt_doc",
                  "fw_receipt"]
     },
 )  # noqa: E501
@@ -309,6 +339,7 @@ def create_pydantic_model(name: str, sqlalchemy_model: Type[DeclarativeMeta]) ->
 PolicyBase = create_pydantic_model("PolicyBase", Policy)
 PolicyChargeBase = create_pydantic_model("PolicyChargeBase", PolicyCharge)
 PolicyCurrencyBase = create_pydantic_model("PolicyCurrencyBase", PolicyCurrency)
+PolicyHypothecationBase = create_pydantic_model("PolicyHypothecationBase", PolicyHypothecation)
 PolicySectionBase = create_pydantic_model("PolicySectionBase", PolicySection)
 PolicyRiskBase = create_pydantic_model("PolicyRiskBase", PolicyRisk)
 PolicyCoverBase = create_pydantic_model("PolicyCoverBase", PolicyCover)

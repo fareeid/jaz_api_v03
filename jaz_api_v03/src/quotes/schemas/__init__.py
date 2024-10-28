@@ -16,6 +16,18 @@ from .proposalcover import (  # noqa: F401
     ProposalCoverInDB,
     ProposalCoverUpdate,
 )
+from .proposalinstallment import (  # noqa: F401
+    ProposalInstallment,
+    ProposalInstallmentCreate,
+    ProposalInstallmentInDB,
+    ProposalInstallmentUpdate,
+)
+from .proposalpremium import (  # noqa: F401
+    ProposalPremium,
+    ProposalPremiumCreate,
+    ProposalPremiumInDB,
+    ProposalPremiumUpdate,
+)
 from .proposalrisk import (  # noqa: F401
     ProposalRisk,
     ProposalRiskCreate,

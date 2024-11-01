@@ -200,7 +200,7 @@ class CRUDCustomer(
 
         return customer_list
 
-    def get_cust_code(self, non_async_oracle_db: Session, cust_in: auth_models.User) -> str:
+    def get_new_cust_code(self, non_async_oracle_db: Session, cust_in: auth_models.User) -> str:
         cust_cc_prefix = cust_in.premia_cust_payload["cust_cc_prefix"]
         query = select(premia_models.DocNumberRange).where(
             premia_models.DocNumberRange.dnr_level_01 == cust_cc_prefix).with_for_update(

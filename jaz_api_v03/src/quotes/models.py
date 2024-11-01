@@ -13,6 +13,7 @@ class Quote(Base):
     quot_assr_id: Mapped[int] = mapped_column(nullable=True)
     quot_assr_name: Mapped[str] = mapped_column(nullable=True)
     quot_assr_nic: Mapped[str] = mapped_column(nullable=True)
+    quot_assr_lic: Mapped[str] = mapped_column(nullable=True)
     quot_assr_pin: Mapped[str] = mapped_column(nullable=True)
     quot_assr_phone: Mapped[str] = mapped_column(nullable=True)
     quot_assr_email: Mapped[str] = mapped_column(nullable=True)
@@ -46,8 +47,9 @@ class Proposal(Base):
     prop_paymt_ref: Mapped[str] = mapped_column(nullable=True)
     prop_paymt_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     prop_paymt_amt: Mapped[float] = mapped_column(nullable=True)
-    prop_bank_cust_code: Mapped[str] = mapped_column(nullable=True)
-    prop_bank_cust_name: Mapped[str] = mapped_column(nullable=True)
+    # prop_bank_cust_code: Mapped[str] = mapped_column(nullable=True)
+    # prop_bank_cust_name: Mapped[str] = mapped_column(nullable=True)
+    prop_hypothecation: Mapped[str] = mapped_column(JSONB, nullable=True)
 
     # input fields mapped to premia pgit_policy fields
     pol_quot_sys_id: Mapped[int] = mapped_column(nullable=True)

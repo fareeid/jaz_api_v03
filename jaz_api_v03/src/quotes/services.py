@@ -219,7 +219,7 @@ async def create_quote(
         pin=payload_in.MCI_Cargo_ImporterPIN,
     )
 
-    user = await user_services.get_user(async_db, user_obj)
+    new, user = await user_services.get_user(async_db, user_obj)
 
     # TO DO: Create/Fetch customer in/from Premia based on user
     # customer = premia_services.get_cust_by_pin(  # noqa: F841

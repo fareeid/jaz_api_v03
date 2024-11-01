@@ -1,6 +1,7 @@
 import os
 import random
 import string
+from datetime import datetime, timedelta
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -12,9 +13,13 @@ from fastapi import HTTPException
 from jinja2 import FileSystemLoader, Environment
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from . import crud, models, schemas
+from . import crud, models, schemas, security
+from .models import User
+from ..core.config import Settings, get_settings
 
 sample = Faker()
+
+settings: Settings = get_settings()
 
 # Set up Jinja2 environment
 base_path = os.path.dirname(os.path.abspath(__file__))
@@ -25,30 +30,50 @@ template_loader = FileSystemLoader(searchpath=templates_path)
 template_env = Environment(loader=template_loader)
 
 
-async def sample_user() -> schemas.UserCreateStrict:
+async def sample_user() -> schemas.UserCreateSelf:
     first_name = sample.first_name()
     last_name = sample.last_name()
-    email = f"{first_name.lower()}.{last_name.lower()}@example.com"
-    phone = sample.phone_number()
-    nic = ''.join(random.choices(string.digits, k=8))  # 12867677
+    # nic = ''.join(random.choices(string.digits, k=8))  # 12867677
     pin = "A" + ''.join(random.choices(string.digits, k=10)) + "Z"  # "A1234567890D",
+    # lic='lic'.join(random.choices(string.digits, k=7))
+    phone = sample.phone_number()
+    email = f"{first_name.lower()}.{last_name.lower()}@example.com"
     password = "qwerty"
+    gender = random.choice(["1", "2", "3"])
+    dob = sample.date_of_birth()
+    address = sample.address()
+    user_flexi = {
+        "quot_assr_addr": {
+            "pol_addr_01": address,
+        }
+    }
+
+    nic = ''.join(random.choices(string.digits, k=8)) if random.choice([True, False]) else None
+    lic_no = 'lic'.join(random.choices(string.digits, k=7)) if nic is None else None
 
     # TODO Add functionality to check corporate
 
-    user = schemas.UserCreateStrict(
+    user = schemas.UserCreateSelf(
         first_name=first_name,
         last_name=last_name,
-        name=f"{first_name} {last_name}",
+        nic=nic,
+        lic_no=lic_no,
+        pin=pin,
+        phone=sample.phone_number(),
         email=email,
         username=email,
-        phone=sample.phone_number(),
-        nic=nic,
-        pin=pin,
         password=password,
+        gender=gender,
+        dob=dob,
+        name=f"{first_name} {last_name}",
+        user_flexi=user_flexi,
     )
     # user.premia_cust_payload=None
-    return user
+    user_data = user.model_dump(
+        exclude={"is_staff", "cust_code", "cust_cc_code", "cust_customer_type", "premia_cust_payload", "id"},
+        exclude_none=True)
+    return user_data
+    # return user
 
 
 async def create_user(
@@ -66,41 +91,69 @@ async def get_agent(
     agent_list = await crud.user.get_agent(async_db, search_criteria=search_criteria)
     return agent_list
 
+
 async def get_user(
         async_db: AsyncSession,
-        user_in: schemas.UserCreate,
-) -> models.User:
+        user_in: schemas.UserCreateSelf,
+) -> tuple[bool, User | Any]:
+    new = False
     user_list = await crud.user.get_by_all(
         async_db, email=user_in.email, pin=user_in.pin, nic=user_in.nic
     )
-    if not user_list == []:
+    if not user_list:
+        # Happens through both Open Registration and Quotation. User does not exist. Create the user (whether strict or via quotation)
+        user = await create_user(async_db, user_in)
+        if isinstance(user_in, schemas.UserCreateSelf):
+            user = await crud.user.update(async_db, db_obj=user,
+                                          obj_in={"created_by": user.id, "created_at": datetime.now()})
+        new = True
+    else:
         # if type(user_in) is schemas.UserCreateStrict:
         # Happens if doing Open user registration
-        if isinstance(user_in, schemas.UserCreateStrict):
+        if isinstance(user_in, schemas.UserCreateSelf):
             raise HTTPException(
                 status_code=400,
-                detail="A user with these details already exists in the system",
+                detail="Returning Customer. Please go to login page...",
             )
         # Happens while creating user via quotation. If multiple users are returned do not attach a user to the quotation i.e. user.id is 0
         if len(user_list) > 1:
             user = user_list[0]
             user.id = 0
-            return user
-            # raise HTTPException(
-            #     status_code=400,
-            #     detail="Mulitple users found. Contact your admin",
-            # )
+            # return user
+            # return {"user": user, "status": "multiple users existing"}
+            raise HTTPException(
+                status_code=400,
+                detail="Mulitple users found. Contact your admin",
+            )
         # Happens while creating user via quotation. Since single user is returned, attach the user to the quote
         user_list_db = [
             models.User(**user) for user in user_list
         ]
         user = user_list_db[0]
-    else:
-        # Happens through both Open Registration and Quotation. User does not exist. Create the user (whether strict or via quotation)
-        user = await create_user(async_db, user_in)
 
-    return user
+    return new, user
 
+
+################
+async def send_new_user_email(activation_url, background_tasks, user):
+    # TODO: Create a txt file for new user registration
+    html_content, plain_text_content = generate_content(action_url=activation_url,
+                                                        html_template="new_user_activation.html",
+                                                        txt_template="", user=user)
+    background_tasks.add_task(send_user_email,
+                              html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,
+                              [user.email], "Activate Account")
+
+
+async def generate_activation_url(request, user):
+    activation_token_expires = timedelta(minutes=settings.ACTIVATION_TOKEN_EXPIRE_MINUTES)
+    user_activation_token = security.create_token(user.username, expires_delta=activation_token_expires)
+    base_url = str(request.base_url).rstrip("/")
+    activation_url = f"{base_url}/auth/activate?token={user_activation_token}"
+    return activation_url
+
+
+##############
 
 def generate_content(action_url, html_template, txt_template, user):
     context = {

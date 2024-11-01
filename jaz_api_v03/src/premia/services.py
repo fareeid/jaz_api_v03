@@ -1,5 +1,7 @@
+import copy
 from typing import Any, Union
 
+from fastapi import HTTPException
 # from fastapi import Depends
 from sqlalchemy.orm import Session
 
@@ -7,6 +9,42 @@ from ..auth import models as auth_models
 from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
 from ..premia import crud as premia_crud, models as premia_models
 from ..reports import schemas as report_schemas
+
+
+def get_premia_customer(
+        oracle_db: Session,
+        user_in: auth_models.User,
+) -> list[premia_models.Customer]:
+    search_criteria = {"cust_email1": user_in.email, "cust_civil_id": user_in.pin,
+                       "cust_ref_no": (user_in.lic_no or user_in.nic)}
+    customer_list = premia_crud.customer.get_customer(oracle_db, search_criteria=search_criteria)
+    return list(customer_list)
+
+
+def create_premia_customer(non_async_oracle_db, user):
+    cust_code = premia_crud.customer.get_new_cust_code(non_async_oracle_db, user)
+    cust_payload = copy.deepcopy(user.premia_cust_payload)
+    cust_payload["cust_code"] = cust_code
+    cust_payload["cust_cr_uid"] = "PORTAL-REG"
+    cust_payload["cust_cr_dt"] = user.created_at.isoformat()
+    cust_payload["cust_dob"] = user.dob.isoformat()
+    cust_payload["cust_addr_01"] = user.user_flexi["quot_assr_addr"]["pol_addr_01"]
+    cust_payload = {k: v for k, v in cust_payload.items() if v and v != ''}
+    customer_schema = premia_models.CustomerBase(**cust_payload)
+    customer_model = premia_crud.customer.create_v1(nonasync_oracle_db=non_async_oracle_db, obj_in=customer_schema)
+    return customer_model
+
+
+async def sync_user_to_premia_cust(non_async_oracle_db, user):
+    customer_model_list = get_premia_customer(non_async_oracle_db, user)
+    if len(customer_model_list) == 0:
+        customer_model = create_premia_customer(non_async_oracle_db, user)
+    elif len(customer_model_list) == 1:
+        customer_model = customer_model_list[0]
+    else:
+        raise HTTPException(status_code=400,
+                            detail="Multiple records found. Please contact the Agents Administrator")
+    return customer_model
 
 
 def get_cust_by_pin(
@@ -59,7 +97,7 @@ def create_receipt_stage(non_async_oracle_db: Session, payload_in: premia_models
 
 
 def get_cust_code(non_async_oracle_session: Session, cust_in: auth_models.User) -> str:
-    cust_code = premia_crud.customer.get_cust_code(non_async_oracle_session, cust_in)
+    cust_code = premia_crud.customer.get_new_cust_code(non_async_oracle_session, cust_in)
     return cust_code
 
 

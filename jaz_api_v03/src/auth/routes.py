@@ -1,10 +1,10 @@
-import copy
-import json
-from datetime import timedelta, datetime
+from datetime import timedelta
+from enum import Enum
 from typing import Any
 
 # from faker import Faker
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, Body
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, Body, Path
+from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -23,6 +23,11 @@ router = APIRouter()
 settings: Settings = get_settings()
 
 
+class Source(str, Enum):
+    quote = "quote"
+    user = "user"
+
+
 # def sample_user() -> schemas.UserCreate:
 #     user = schemas.UserCreate(
 #         first_name=sample.first_name(),
@@ -34,7 +39,7 @@ settings: Settings = get_settings()
 #     )
 #     return user
 
-@router.get("/sample_user", response_model=schemas.User)  #
+@router.get("/sample_user", response_model=dict[str, Any])  # schemas.User
 async def sample_user() -> Any:
     return await services.sample_user()
 
@@ -48,20 +53,23 @@ async def register_agent(
         background_tasks: BackgroundTasks,
         request: Request,
 ) -> Any:
+    # user = await services.get_user(async_db, agent_in)
     search_criteria = {"cust_code": agent_in.cust_code, "email": agent_in.email, "phone": agent_in.phone}
     agent_list = await services.get_agent(async_db, search_criteria=search_criteria)
 
     if len(agent_list) == 0:
-        premia_cust_search_criteria = {"cust_code": agent_in.cust_code, "cust_email1": agent_in.email, "cust_mobile_no": agent_in.phone}
+        premia_cust_search_criteria = {"cust_code": agent_in.cust_code, "cust_email1": agent_in.email,
+                                       "cust_mobile_no": agent_in.phone}
         customer_model_list = premia_services.get_customer(non_async_oracle_db,
                                                            search_criteria=premia_cust_search_criteria)
         if len(customer_model_list) == 0:
-            raise HTTPException(status_code=500, detail="Your details do not match any of our records. Please contact the Agents Administrator")
+            raise HTTPException(status_code=500,
+                                detail="Your details do not match any of our records. Please contact the Agents Administrator")
         elif len(customer_model_list) == 1:
             agent_in.first_name = customer_model_list[0].cust_first_name
             agent_in.last_name = customer_model_list[0].cust_last_name
             agent_in.name = customer_model_list[0].cust_name
-            agent_in.username = customer_model_list[0].cust_mobile_no     #customer_model_list[0].cust_email1
+            agent_in.username = customer_model_list[0].cust_mobile_no  #customer_model_list[0].cust_email1
             agent_in.pin = customer_model_list[0].cust_civil_id
             agent_in.nic = customer_model_list[0].cust_ref_no
             agent_in.cust_cc_code = customer_model_list[0].cust_cc_code
@@ -69,26 +77,21 @@ async def register_agent(
             # agent_in.lic_no = customer_model_list[0].cust_ref_no
             user = await services.create_user(async_db, agent_in)
         else:
-            raise HTTPException(status_code=500, detail="Multiple records found. Please contact the Agents Administrator")
+            raise HTTPException(status_code=400,
+                                detail="Multiple records found. Please contact the Agents Administrator")
     elif len(agent_list) == 1:
         agent = agent_list[0]
-        raise HTTPException(status_code=500, detail="Agent already registered as portal user. Please log in")
+        raise HTTPException(status_code=400, detail="Agent already registered as portal user. Please log in")
     else:
-        raise HTTPException(status_code=500, detail="Multiple records found. Please contact the Agents Administrator")
+        raise HTTPException(status_code=400, detail="Multiple records found. Please contact the Agents Administrator")
 
-    activation_token_expires = timedelta(minutes=settings.ACTIVATION_TOKEN_EXPIRE_MINUTES)
-    user_activation_token = security.create_token(user.username, expires_delta=activation_token_expires)
-    base_url = str(request.base_url).rstrip("/")
-    activation_url = f"{base_url}/auth/activate?token={user_activation_token}"
+    activation_url = await services.generate_activation_url(request, user)
+    # activation_token_expires = timedelta(minutes=settings.ACTIVATION_TOKEN_EXPIRE_MINUTES)
+    # user_activation_token = security.create_token(user.username, expires_delta=activation_token_expires)
+    # base_url = str(request.base_url).rstrip("/")
+    # activation_url = f"{base_url}/auth/activate?token={user_activation_token}"
 
-    # TODO: Create a txt file for new user registration
-    html_content, plain_text_content = services.generate_content(action_url=activation_url,
-                                                                 html_template="new_user_activation.html",
-                                                                 txt_template="", user=user)
-
-    background_tasks.add_task(services.send_user_email,
-                              html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,
-                              [user.email], "Activate Account")
+    await services.send_new_user_email(activation_url, background_tasks, user)
 
     # TODO Add functionality to approve agent & staff requests
     # TODO Create environment variable for send_from email
@@ -103,110 +106,84 @@ async def register_agent(
             }
 
 
-
-@router.post("/open", response_model=dict[str, Any])  # list[schemas.User] schemas.User
-async def create_user_open(
+@router.post("/create_user/{source}", response_model=dict[str, Any])  # list[schemas.User] schemas.User
+async def create_user(
         *,
         async_db: AsyncSession = Depends(get_session),
         non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
         # async_oracle_db: Session = Depends(get_async_oracle_session),
         # non_async_oracle_db: Session = Depends(get_oracle_session_sim),       # Simulation Premia
-        user_in: schemas.UserCreateStrict,
+        user_in: schemas.UserCreateSelf,
+        source: str = Path(..., description="Source should be quote or user"),
         background_tasks: BackgroundTasks,
         request: Request,
 ) -> Any:
     """
     Create new user without the need to be logged in.
     """
+    if source not in Source.__members__.values():
+        allowed_values = ", ".join([f.value for f in Source])
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid '{source}'. Please enter one of the following: quote."
+            # detail = f"Invalid '{source}'. Please enter one of the following: {allowed_values}."
+        )
 
     if settings.DEV_STATUS == "API_DEV":
-        user_in = await services.sample_user()
-
+        user_in = await sample_user()
     if settings.DEV_STATUS == "WEB_DEV":
         pass
-
     if settings.DEV_STATUS == "NO_DEV":
         pass
-
-    if not settings.USERS_OPEN_REGISTRATION:
-        raise HTTPException(
-            status_code=403,
-            detail="Open user registration is forbidden on this server",
-        )
+    if source == "user":
+        if not settings.USERS_OPEN_REGISTRATION:
+            raise HTTPException(
+                status_code=403,
+                detail="Open user registration is forbidden on this server",
+            )
+    # TODO: Seperate get and create user functions
     # Creates or returns an existing user
-    user = await services.get_user(async_db, user_in)
-    user = await crud.user.update(async_db, db_obj=user, obj_in={"created_by": user.id, "created_at": datetime.now()})
+    new, user = await services.get_user(async_db, user_in)
+    activation_url = ""
+    message = "User already exists. Please log in"
+    if new:
+        activation_url = await services.generate_activation_url(request, user)
+        await services.send_new_user_email(activation_url, background_tasks, user)
+        message = "A new Portal user has been registered. Please send an activation email. You can also log this user in and buy policy"
+    if source == "quote":
+        customer_model = await sync_user_to_premia_cust(non_async_oracle_db, user)
+        if customer_model and not user.cust_code:
+            user = await crud.user.update(async_db, db_obj=user,
+                                          obj_in={"cust_code": customer_model.cust_code, "is_active": True})
 
-    activation_token_expires = timedelta(minutes=settings.ACTIVATION_TOKEN_EXPIRE_MINUTES)
-    user_activation_token = security.create_token(user.username, expires_delta=activation_token_expires)
-    base_url = str(request.base_url).rstrip("/")
-    activation_url = f"{base_url}/auth/activate?token={user_activation_token}"
+    return_dict = {"message": message,
+                   "activation_url": activation_url,
+                   "user": jsonable_encoder(user,
+                                            exclude_unset=True,
+                                            exclude_none=True,
+                                            include={"name",
+                                                     "email",
+                                                     "phone",
+                                                     "pin",
+                                                     "lic_no",
+                                                     "nic",
+                                                     "dob",
+                                                     "gender",
+                                                     "user_flexi",})}
 
-    # TODO: Create a txt file for new user registration
-    html_content, plain_text_content = services.generate_content(action_url=activation_url,
-                                                                 html_template="new_user_activation.html",
-                                                                 txt_template="", user=user)
+    return return_dict
 
-    background_tasks.add_task(services.send_user_email,
-                              html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,
-                              [user.email], "Activate Account")
 
-    # TODO Add functionality to approve agent & staff requests
-    # TODO Create environment variable for send_from email
-
-    search_criteria = {"cust_email1": user.email, "cust_civil_id": user.pin, "cust_ref_no": user.nic}
-    # search_criteria = {"cust_email1": "sales@maishapoa.co.ke", "cust_civil_id": "P052205822V",
-    #                    "cust_ref_no": "21960760"}
-
-    # TODO: Convert from Premia simulation DB to real Premia DB. This works well
-    customer_model_list = premia_services.get_customer(non_async_oracle_db, search_criteria=search_criteria)
-    # customer_model_list = premia_services.get_customer(oracle_db, search_criteria=search_criteria)
-
+async def sync_user_to_premia_cust(non_async_oracle_db, user):
+    customer_model_list = premia_services.get_premia_customer(non_async_oracle_db, user)
     if len(customer_model_list) == 0:
-        # TODO: Create a txt file for new premia customer
-        html_content, plain_text_content = services.generate_content(action_url=None,
-                                                                     html_template="new_premia_customer.html",
-                                                                     txt_template="", user=user)
-
-        background_tasks.add_task(services.send_user_email, html_content, plain_text_content,
-                                  settings.EMAILS_FROM_EMAIL, ["nancy.nyanchogo@allianz.com"],
-                                  "PREMIA Customer Required")
-        # TODO: Create Customer code in Premia
-        cust_code = premia_services.get_cust_code(non_async_oracle_db, cust_in=user)
-        cust_payload = copy.deepcopy(user.premia_cust_payload)
-        cust_payload["cust_code"] = cust_code
-        cust_payload["cust_cr_uid"] = "PORTAL-REG"
-        cust_payload["cust_cr_dt"] = user.created_at.isoformat()
-        # premia_cust_payload = {"cust_name": "JOHN WILLIAMS", "cust_email1": "john.williams@example.com"}
-        user = await crud.user.update(async_db, db_obj=user,
-                                      obj_in={"cust_code": cust_code, "premia_cust_payload": cust_payload})
-        customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=cust_payload)
-    # TODO: This path not tested yet
-    elif len(customer_model_list) >= 2:
-        # TODO: Create a txt file for duplicate premia customer
-        html_content, plain_text_content = services.generate_content(action_url=None,
-                                                                     html_template="duplicate_premia_customer.html",
-                                                                     txt_template="", user=user)
-
-        background_tasks.add_task(services.send_user_email, html_content, plain_text_content,
-                                  settings.EMAILS_FROM_EMAIL, ["nancy.nyanchogo@allianz.com"],
-                                  "PREMIA Customer Duplicated")
-
+        customer_model = premia_services.create_premia_customer(non_async_oracle_db, user)
     elif len(customer_model_list) == 1:
-        user = await crud.user.update(async_db, db_obj=user, obj_in={"cust_code": customer_model_list[0].cust_code,
-                                                                     "cust_cc_code": customer_model_list[
-                                                                         0].cust_cc_code, })
-
-    # await services.send_new_user_activation_email(user, base_url, user_activation_token, "new_user_activation.html")
-
-    # return f"{base_url}/activate?token={user_activation_token}"
-    # print(activation_url)
-    # return {"activation_url": json.dumps(activation_url), "username": user.username}
-    # return user
-    return {"message": "User created and activation email sent",
-            "activation_url": activation_url,
-            # "html_content": html_content,
-            }
+        customer_model = customer_model_list[0]
+    else:
+        raise HTTPException(status_code=400,
+                            detail="Multiple records found. Please contact the Agents Administrator")
+    return customer_model
 
 
 @router.get("/activate", response_model=dict[str, Any])  #schemas.User
@@ -240,16 +217,21 @@ async def password_recovery(
     if user_list:
         activation_token_expires = timedelta(minutes=settings.ACTIVATION_TOKEN_EXPIRE_MINUTES)
         password_reset_token = security.create_token(email, expires_delta=activation_token_expires)
-        base_url = str(request.url)
+        base_url = str(request.base_url).rstrip("/")
         recovery_url = f"{base_url}/auth/reset-password?token={password_reset_token}"
-        background_tasks.add_task(services.send_user_email, user_list[0], recovery_url, password_reset_token,
+        html_content, plain_text_content = services.generate_content(action_url=None,
+                                                                     html_template="password_recovery.html",
+                                                                     txt_template="", user=user_list[0])
+        background_tasks.add_task(services.send_user_email, html_content, recovery_url, password_reset_token,
                                   "password_recovery.html", "Reset Password")
 
         # return f"{base_url}/activate?token={password_reset_token}"
-        print(recovery_url)
-        return {"recovery_url": json.dumps(recovery_url), "username": user_list[0].username}
-        # return user
-        # return {"message": "User created and activation email sent"}
+        # print(recovery_url)
+        return {
+            "message": f"Send the user a link to a form that posts this token and new password to {base_url}/auth/reset-password. {{token:'password_reset_token',new_password:'password'}}",
+            "password_reset_token": password_reset_token, "username": user_list[0].username}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid email or token")
 
 
 @router.post("/reset-password", response_model=dict[str, Any])  # schemas.User
@@ -262,12 +244,13 @@ async def reset_password(
     email = security.verify_token(token)
     user_list = await crud.user.get_by_email(async_db, email)
     if user_list:
-        if not user_list[0].is_active:
-            # TODO: Resend account activation email or redirect to user registration
-            return {"message": "Account is not activated.", "username": user_list[0].username,
-                    "is_active": user_list[0].is_active}
+        # if not user_list[0].is_active:
+        #     # TODO: Resend account activation email or redirect to user registration
+        #     return {"message": "Account is not activated.", "username": user_list[0].username,
+        #             "is_active": user_list[0].is_active}
         hashed_password = security.get_password_hash(new_password)
-        user = await crud.user.update(async_db, db_obj=user_list[0], obj_in={"password": hashed_password})
+        user = await crud.user.update(async_db, db_obj=user_list[0],
+                                      obj_in={"password": hashed_password, "is_active": True})
         return {"message": "Password is successfully reset.", "username": user_list[0].username,
                 "is_active": user_list[0].is_active}
     else:
@@ -285,7 +268,7 @@ async def login_access_token(
 
     user = await crud.user.authenticate(
         async_db,
-        username=form_data.username, 
+        username=form_data.username,
         password=form_data.password
     )
     if not user:

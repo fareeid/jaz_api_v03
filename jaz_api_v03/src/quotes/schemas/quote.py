@@ -13,6 +13,7 @@ class QuoteBase(BaseModel):
     quot_assr_id: Union[int | None] = None
     quot_assr_name: Union[str | None] = None
     quot_assr_nic: Union[str | None] = None
+    quot_assr_lic: Union[str | None] = None
     quot_assr_pin: Union[str | None] = None
     quot_assr_phone: Union[str | None] = None
     quot_assr_email: Union[EmailStr | None] = None

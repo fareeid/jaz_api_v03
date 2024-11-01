@@ -19,8 +19,9 @@ class ProposalBase(BaseModel):
     prop_paymt_ref: Union[str | None] = None
     prop_paymt_date: Union[datetime | None] = None
     prop_paymt_amt: Union[float | None] = None
-    prop_bank_cust_code: Union[str | None] = None
-    prop_bank_cust_name: Union[str | None] = None
+    # prop_bank_cust_code: Union[str | None] = None
+    # prop_bank_cust_name: Union[str | None] = None
+    prop_hypothecation: Union[dict[str, Any] | None] = None
     pol_quot_sys_id: Union[int | None] = None
     pol_quot_no: Union[str | None] = None
     pol_comp_code: Union[str | None] = None

@@ -1,4 +1,3 @@
-import copy
 import json
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
@@ -23,7 +22,6 @@ from . import (  # noqa: F401
 from . import services as quote_services
 from .models import Quote
 from .vendors_api import schemas as vendor_schemas
-from ..auth import crud as user_crud
 from ..auth import dependencies as auth_dependencies
 from ..auth import models as user_models
 from ..auth import schemas as user_schemas
@@ -84,6 +82,14 @@ async def quote(
         payload_in: schemas.QuoteCreate,
         current_user: user_models.User = Depends(auth_dependencies.get_current_user),
 ) -> Any:
+    policy_process_dict = await process_quote(async_db, current_user, non_async_oracle_db, payload_in)
+
+    return policy_process_dict
+    # return quotation
+    # return {"test_key": "test_value"}
+
+
+async def process_quote(async_db, current_user, non_async_oracle_db, payload_in):
     data = {
         "external_party": "jazk-web",
         "transaction_type": "Quote",
@@ -93,6 +99,7 @@ async def quote(
     payload = await external_apis_crud.external_payload.create_v2(
         async_db, obj_in=data
     )
+
     for proposal in payload_in.proposals:
         for section in proposal.proposalsections:
             for risk in section.proposalrisks:
@@ -107,79 +114,42 @@ async def quote(
                 }
                 veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
                 if json.loads(veh_status)["Info"] == "Error":
-                    # raise HTTPException(status_code=502, detail="Vehicle found in active policy. You cannot proceed")
-                    return { "detail": "Vehicle found in active policy. You cannot proceed"}
+                    raise HTTPException(status_code=400, detail="Vehicle found in active policy. You cannot proceed")
 
-    # background_tasks.add_task(services.send_user_email,
-    #                           html_content, plain_text_content, settings.EMAILS_FROM_EMAIL,
-    #                           [user.email], "Activate Account")
-
-    # customer = customers_crud.get_customer("152917")  # noqa: F841
-    # TODO Functionality to add checks for corporate/individual flags while creating user as customer
-    # Create User to attach to the quote. This is working. For now quotes will be
-    # created without bona fide users.
-    user_obj = user_schemas.UserCreate(
-        first_name=payload_in.quot_assr_name,
-        name=payload_in.quot_assr_name,
-        email=payload_in.quot_assr_email,
-        phone=payload_in.quot_assr_phone,
-        nic=payload_in.quot_assr_nic,
-        pin=payload_in.quot_assr_pin,
-        gender=payload_in.quot_assr_gender,
-        dob=payload_in.quot_assr_dob.isoformat(),
-        user_flexi=payload_in.quot_assr_flexi,
-    )
-    user = await user_services.get_user(async_db, user_obj)
-
-    cust_code = user.cust_code
-    if cust_code is None:
-        premia_cust_search_criteria = {"cust_email1": user.email, "cust_civil_id": user.pin, "cust_ref_no": user.nic}
-        customer_model_list = premia_services.get_customer(non_async_oracle_db,
-                                                           search_criteria=premia_cust_search_criteria)
-
-        if len(customer_model_list) == 0:
-            cust_code = premia_services.get_cust_code(non_async_oracle_db, cust_in=user)
-            cust_payload = copy.deepcopy(user.premia_cust_payload)
-            cust_payload["cust_code"] = cust_code
-            cust_payload["cust_cr_uid"] = "PORTAL-REG"
-            cust_payload["cust_cr_dt"] = user.dob.isoformat()  #.strftime("%Y-%m-%d %H:%M:%S")  # "%d-%b-%Y %H:%M"
-            cust_payload["cust_dob"] = user.dob.isoformat()
-            # cust_payload["cust_cr_dt"] = func.to_date(user.created_at, 'YYYY-MM-DD HH24:MI') #user.dob.isoformat()
-            # cust_payload["cust_dob"] = func.to_date(user.dob, 'YYYY-MM-DD HH24:MI')   #user.dob.isoformat()
-            cust_payload["cust_addr_01"] = user.user_flexi["quot_assr_addr"]["pol_addr_01"]
-            cust_payload = {k: v for k, v in cust_payload.items() if v and v != ''}
-            customer_schema = premia_models.CustomerBase(**cust_payload)
-            customer_model = premia_services.create_customer(non_async_oracle_db, premia_cust_payload=customer_schema)
-            if customer_model:
-                user = await user_crud.user.update(async_db, db_obj=user,
-                                                   obj_in={"cust_code": cust_code, "premia_cust_payload": cust_payload})
-
-        elif len(customer_model_list) == 1:
-            cust_code = customer_model_list[0].cust_code
-            user = await user_crud.user.update(async_db, db_obj=user,
-                                               obj_in={"cust_code": cust_code, "premia_cust_payload": {}})
-
-        else:
-            raise HTTPException(status_code=500, detail="Multiple customers found. Please contact admin.")
-
+    if current_user.cust_cc_code in ['01','10']:
+        if payload_in.quot_assr_email != current_user.email or payload_in.quot_assr_pin != current_user.pin:
+            raise HTTPException(status_code=400, detail="This customer is only authorised to transact for self")
+        user = current_user
+    else:
+        user_obj = user_schemas.UserCreate(
+            first_name=payload_in.quot_assr_name,
+            name=payload_in.quot_assr_name,
+            email=payload_in.quot_assr_email,
+            phone=payload_in.quot_assr_phone,
+            nic=payload_in.quot_assr_nic,
+            lic_no=payload_in.quot_assr_lic,
+            pin=payload_in.quot_assr_pin,
+            gender=payload_in.quot_assr_gender,
+            dob=payload_in.quot_assr_dob.isoformat(),
+            user_flexi=payload_in.quot_assr_flexi,
+        )
+        new, user = await user_services.get_user(async_db, user_obj)
+    customer_model = await premia_services.sync_user_to_premia_cust(non_async_oracle_db, user)
+    #################
+    #################
     payload_in.quot_assr_id = user.id
     for proposal in payload_in.proposals:
-        proposal.pol_assr_code = cust_code
+        proposal.pol_assr_code = customer_model.cust_code
         proposal.pol_flexi.update({"quot_assr_addr": user.user_flexi["quot_assr_addr"]})
-
     # TODO Refactor to use quote services
     quotation: Quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
-
     quote_data = jsonable_encoder(quotation, by_alias=True, exclude_unset=True, exclude_defaults=True, exclude=None,
                                   exclude_none=True)
     for proposal in quote_data["proposals"]:
         proposal["pol_prd_sys_id"] = proposal["prop_sys_id"]
-
     policy_quote_data = quote_to_policy(quote_data)
-
     # premia_policy_data = []
     pgit_policy_list_db = []
-
     for proposal in policy_quote_data:
         prop = await quotes_crud.proposal.get_proposal(async_db, proposal["pol_prd_sys_id"])
 
@@ -231,19 +201,19 @@ async def quote(
 
         pgit_pol_hypothecation_list_db = []
         if proposal["pol_hypothecation_yn"] == "1":
-
             phpo_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_phpo_sys_id")
             pgit_pol_hypothecation_data = {
                 "phpo_sys_id": phpo_sys_id,
                 "phpo_pol_sys_id": pol_sys_id,
                 "phpo_end_no_idx": 0,
                 "phpo_end_sr_no": 0,
-                "phpo_cust_code": prop.prop_bank_cust_code,
+                "phpo_cust_code": prop.prop_hypothecation["prop_bank_cust_code"],
                 "phpo_hypo_type": "2",
                 "phpo_rec_type": "I",
+                "phpo_ds_type": "2",
                 "phpo_cr_uid": "PORTAL-REG",
                 "phpo_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "phpo_bank_name": prop.prop_bank_cust_name,
+                "phpo_bank_name": prop.prop_hypothecation["prop_bank_cust_name"],
             }
             pgit_pol_hypothecation_data_pydantic = PolicyHypothecationCreate(**pgit_pol_hypothecation_data)
             pgit_pol_hypothecation_db = premia_models.PolicyHypothecation(
@@ -270,7 +240,7 @@ async def quote(
             "pac_divn_code": "118",
             "pac_dept_code": proposal["pol_dept_code"],
             "pac_prod_code": proposal["pol_prod_code"],
-            "pac_ds_type": policy_template_dict['pgit_policy_template']['pol_ds_type'],  #"2",
+            "pac_ds_type": policy_template_dict['pgit_policy_template']['pol_ds_type'],  # "2",
             "pac_cr_uid": "PORTAL-REG",
             "pac_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
@@ -390,7 +360,8 @@ async def quote(
             "pol_cal_yr": datetime.now().year,
             "pol_cust_code": current_user.cust_code,
             # "pol_src_code": proposal["pol_cust_code"], # current_user.cust_code,
-            "pol_src_code": current_user.cust_code,
+            "pol_src_type": "1" if current_user.cust_cc_code in ['01', '10'] else "2",
+            "pol_src_code": "" if current_user.cust_cc_code in ['01', '10'] else current_user.cust_code,
             "pol_assr_name": quote_data["quot_assr_name"],
             "pol_issue_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "pol_period": 365,  # TODO: Calculate based on the period
@@ -412,12 +383,6 @@ async def quote(
         policy_process_json = premia_services.policy_process_json(non_async_oracle_db, policy)
         policy = premia_services.get_policy(non_async_oracle_db, policy)
         policy_process_dict = json.loads(policy_process_json)
-        # pol_no = premia_services.get_pol_no(non_async_oracle_db, pgit_policy_data)
-        # policy = premia_services.update_policy(non_async_oracle_db, db_obj=policy, payload_in={"pol_no": pol_no})
-        # prem_calc_status = premia_services.calc_premium(non_async_oracle_db, policy)
-        # prop = await quote_services.get_proposal(async_db, policy.pol_prd_sys_id)
-        # prop = await quotes_crud.proposal.get_proposal(async_db, policy.pol_prd_sys_id)
-
         r_sys_id = premia_services.get_sys_id(non_async_oracle_db, "jaz_r_sys_id")
         fw_receipt_stage_data = {
             "r_sys_id": r_sys_id,
@@ -449,18 +414,13 @@ async def quote(
         }
         fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
         receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
-        receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
-        receipt_process_dict = json.loads(receipt_process_json)
-        policy_process_dict['AUTO_RECEIPT'] = receipt_process_dict
-
+        # receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
+        # receipt_process_dict = json.loads(receipt_process_json)
+        policy_process_dict['AUTO_RECEIPT'] = {}  # receipt_process_dict
     # TODO: Approve policy, Close RI
     # TODO: Return policy details and update quote
-
     # policy_process_dict = json.loads(policy_process_json)
-
     return policy_process_dict
-    # return quotation
-    # return {"test_key": "test_value"}
 
 
 def merge_lists_by_key(unique_key: str, dest_list: list[dict[str, Any]], update_list: list[dict[str, Any]]) -> list[

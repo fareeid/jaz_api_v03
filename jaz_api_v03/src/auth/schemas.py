@@ -37,21 +37,27 @@ class UserCreate(UserBase):
     def create_cust_payload(cls, values: dict):
         nic = values.get("nic")
         lic_no = values.get("lic_no")
+        name = values.get("name")
+        if not name:
+            values["name"] = f"{values.get('first_name')} {values.get('last_name')})"
         if nic and not lic_no:
             values["cust_customer_type"] = "02"
             values["cust_cc_code"] = "01"
         if lic_no and not nic:
             values["cust_customer_type"] = "01"
             values["cust_cc_code"] = "10"
+        if nic and lic_no:
+            values["cust_customer_type"] = "01"
+            values["cust_cc_code"] = "10"
 
         cust_payload = {
             "cust_first_name": (values.get("first_name") or values.get("name")).upper(),
             "cust_last_name": (values.get("last_name") or "").upper(),
-            "cust_name": values.get("name").upper(),
+            "cust_name": (values.get("name") or f"{values.get('first_name')} {values.get('last_name')}").upper(),
             "cust_email1": values.get("email"),
             "cust_mobile_no": values.get("phone"),
             "cust_civil_id": values.get("pin"),
-            "cust_ref_no": values.get("nic"),
+            "cust_ref_no": values.get("nic") or values.get("lic_no"),
             "cust_gender": values.get("gender"),
             "cust_dob": values.get("dob"),
             "cust_customer_type": values.get("cust_customer_type"),
@@ -87,8 +93,8 @@ class UserRegisterAgent(UserBase):
 
 
 # Properties to receive via API on creation
-class UserCreateStrict(UserCreate):
-    last_name: str
+class UserCreateSelf(UserCreate):
+    # last_name: str
     phone: str
     password: str
 

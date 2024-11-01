@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Union
 
-from sqlalchemy import select, union
+from sqlalchemy import select, union, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import User
@@ -33,9 +33,19 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     async def get_by_username(
             self, async_db: AsyncSession, username: str
     ) -> list[User]:
-        result = await async_db.execute(
-            select(self.model).where(self.model.username == username)  # type: ignore
+        query = select(self.model).where(
+            or_(
+                self.model.username == username,
+                self.model.email == username,
+                self.model.phone == username
+            )
         )
+
+        result = await async_db.execute(query)
+        # user = result.scalars().first()
+        # result = await async_db.execute(
+        #     select(self.model).where(self.model.username == username)  # type: ignore
+        # )
         return list(result.scalars().all())
 
     async def get_by_all(
@@ -94,7 +104,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     ) -> Union[User | None]:
         # user_list: list[User] = await self.get_by_email(async_db, email=email)
         user_list: list[User] = await self.get_by_username(async_db, username=username)
-        if user_list == []:
+        if not user_list:
             return None
         if not verify_password(password, user_list[0].password):
             return None

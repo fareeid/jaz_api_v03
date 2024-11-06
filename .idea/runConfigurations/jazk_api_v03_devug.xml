@@ -18,7 +18,7 @@
       <env name="POSTGRES_SERVER" value="localhost:5432" />
       <env name="POSTGRES_TEST_DB" value="web_test" />
       <env name="POSTGRES_USER" value="postgres" />
-      <env name="PREMIA_DB" value="p11tz" />
+      <env name="PREMIA_DB" value="p11tz1" />
       <env name="PREMIA_PASSWORD" value="Nairobi#2024" />
       <env name="PREMIA_PORT" value="1521" />
       <env name="PREMIA_SERVER" value="10.158.2.24" />

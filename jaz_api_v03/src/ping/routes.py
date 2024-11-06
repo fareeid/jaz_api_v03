@@ -4,6 +4,7 @@ import urllib.parse as urlparse
 from datetime import datetime
 from typing import Any, Union
 
+import oracledb
 import pytz
 from faker import Faker
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -77,6 +78,7 @@ async def read_current_time(db: AsyncSession = Depends(get_session)):
 @router.get("/test_error_loggin")
 async def test_error_loggin():
     raise ValueError("This is an intentional error for testing error logging!")
+
 
 @router.get("/stock_data")
 async def stock_data(q: Union[str, None] = None, callback: Union[str, None] = None) -> Any:
@@ -220,3 +222,59 @@ async def delete_person(
         raise HTTPException(status_code=404, detail="Person not found")
     person = await crud_person.person.remove(async_db=async_db, id=person_id)
     return person
+
+
+@router.get("/db/p11tz_conn_test")
+async def p11tz_conn_test():
+    try:
+        # Establish the connection using oracledb
+        connection = oracledb.connect(user="p11_ke_uat", password="Nairobi#2024", dsn="10.158.2.24:1521/p11tz")
+
+        # Test the connection by executing a simple query
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM DUAL")
+            result = cursor.fetchone()
+
+        # Close the connection
+        connection.close()
+
+        if result:
+            return {"status": "success", "message": "Successfully connected to 10.158.2.24:1521/p11tz"}
+        else:
+            raise HTTPException(status_code=500, detail="Connection to 10.158.2.24:1521/p11tz succeeded, but no result from test query")
+
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        return {"status": "error to 10.158.2.24:1521/p11tz", "message": str(error)}
+
+    except Exception as e:
+        # Handle any other exceptions that may occur
+        return {"status": "error to 10.158.2.24:1521/p11tz", "message": str(e)}
+
+
+@router.get("/db/p11ke_conn_test")
+async def p11ke_conn_test():
+    try:
+        # Establish the connection using oracledb
+        connection = oracledb.connect(user="p11_ke_live", password="p11_ke_live", dsn="10.211.1.5:1521/p11ke")
+
+        # Test the connection by executing a simple query
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM DUAL")
+            result = cursor.fetchone()
+
+        # Close the connection
+        connection.close()
+
+        if result:
+            return {"status": "success", "message": "Successfully connected to 10.211.1.5:1521/p11ke"}
+        else:
+            raise HTTPException(status_code=500, detail="Connection succeeded, but no result from test query")
+
+    except oracledb.DatabaseError as e:
+        error, = e.args
+        return {"status": "error to 10.211.1.5:1521/p11ke", "message": str(error)}
+
+    except Exception as e:
+        # Handle any other exceptions that may occur
+        return {"status": "error to 10.211.1.5:1521/p11ke", "message": str(e)}

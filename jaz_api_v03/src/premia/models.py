@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession  # noqa: F401
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeMeta
 
-from ..db.session import oracledb_engine_sim as oracledb_engine  # , simulation postgres_engine
+from ..db.session import oracledb_engine  # , Real engine
 
-# from ..db.session import oracledb_engine  # , Real engine
+# from ..db.session import oracledb_engine_sim as oracledb_engine  # , simulation postgres_engine
 
 # from ..db.session import async_oracledb_engine  # , postgres_engine
 

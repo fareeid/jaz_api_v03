@@ -40,7 +40,7 @@ jobs:
           registryUrl: jazkonlineregistry.azurecr.io
           registryUsername: ${{ secrets.JAZKAPI_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.JAZKAPI_REGISTRY_PASSWORD }}
-          containerAppName: jazk-api
+          containerAppName: jazk-api-v03
           resourceGroup: jazk-online
           containerAppEnvironment: jazk-online-container-env
           ingress: external

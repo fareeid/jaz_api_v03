@@ -388,7 +388,7 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
             "r_sys_id": r_sys_id,
             "r_comp_code": "001",
             "r_tran_code": "RVCGP100",
-            "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),   # "%Y-%m-%d %H:%M:%S"
             "r_divn_code": "",
             "r_dept_code": "",  # TODO: Get from quote
             "r_rcpt_option": "1",
@@ -414,9 +414,9 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
         }
         fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
         receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
-        # receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
-        # receipt_process_dict = json.loads(receipt_process_json)
-        policy_process_dict['AUTO_RECEIPT'] = {"RCPT_NO": "RVCGP100-2024000161"}  # receipt_process_dict
+        receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
+        receipt_process_dict = json.loads(receipt_process_json)
+        policy_process_dict['AUTO_RECEIPT'] = receipt_process_dict # {"RCPT_NO": "RVCGP100-2024000161"}  #
     # TODO: Approve policy, Close RI
     # TODO: Return policy details and update quote
     # policy_process_dict = json.loads(policy_process_json)

@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 import requests
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from requests.auth import HTTPBasicAuth
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +30,36 @@ async def dyn_payload(
         async_db, obj_in=data
     )
     return payload.__dict__['payload']
+
+
+@router.get("/get_mpesa_payload", response_model=dict[str, Any])
+async def get_mpesa_payload(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        trans_id: str,
+) -> Any:
+    payload = await external_apis_crud.external_payload.get_payload_by_ref(async_db, trans_id)
+
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        # payload = {"status": "00", "reference": "Transaction not found"}
+    payload = payload.payload
+    return payload
+
+
+@router.post("/get_payload", response_model=dict[str, Any])
+async def get_payload(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        reference_in: dict[str, Any],
+) -> Any:
+    payload = await external_apis_crud.external_payload.get_payload_by_ref(async_db, reference_in)
+
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        # payload = {"status": "00", "reference": "Transaction not found"}
+    payload = payload.payload
+    return payload
 
 
 @router.post("/stk_push", response_model=dict[str, Any])  # dict[str, Any]
@@ -72,7 +102,8 @@ async def stk_push(
     }
     payload_json = jsonable_encoder(payload)
 
-    response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', headers=headers, json=payload_json)
+    response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', headers=headers,
+                             json=payload_json)
     response_json = json.loads(response.text)
     formatted_response = jsonable_encoder(response_json)
     print(response.text.encode('utf8'))

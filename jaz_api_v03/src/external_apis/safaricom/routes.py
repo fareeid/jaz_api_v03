@@ -32,19 +32,43 @@ async def dyn_payload(
     return payload.__dict__['payload']
 
 
-@router.get("/get_mpesa_payload", response_model=dict[str, Any])
-async def get_mpesa_payload(
+@router.post("/confirmation", response_model=dict[str, Any])
+async def saf_confirmation(
         *,
         async_db: AsyncSession = Depends(get_session),
-        trans_id: str,
+        # oracle_db: Session = Depends(get_oracle_session_sim),
+        payload_in: dict[str, Any],
 ) -> Any:
-    payload = await external_apis_crud.external_payload.get_payload_by_ref(async_db, trans_id)
+    data = {
+        "external_party": "safaricom",
+        "transaction_type": "CustomerPayBillOnline-Confirmation",
+        "notification": "json",
+        "payload": payload_in,
+    }
+    payload = await external_apis_crud.external_payload.create_v2(
+        async_db, obj_in=data
+    )
+    return payload.__dict__['payload']
 
-    if payload is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-        # payload = {"status": "00", "reference": "Transaction not found"}
-    payload = payload.payload
-    return payload
+
+@router.post("/validation", response_model=dict[str, Any])
+async def saf_validation(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        # oracle_db: Session = Depends(get_oracle_session_sim),
+        payload_in: dict[str, Any],
+) -> Any:
+    data = {
+        "external_party": "safaricom",
+        "transaction_type": "CustomerPayBillOnline-Validation",
+        "notification": "json",
+        "payload": payload_in,
+    }
+    payload = await external_apis_crud.external_payload.create_v2(
+        async_db, obj_in=data
+    )
+    # return payload.__dict__['payload']
+    return {"ResultCode": "0", "ResultDesc": "Accepted"}
 
 
 @router.post("/get_payload", response_model=dict[str, Any])

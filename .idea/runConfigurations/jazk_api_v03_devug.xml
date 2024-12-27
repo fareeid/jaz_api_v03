@@ -21,7 +21,7 @@
       <env name="PREMIA_DB" value="p11tz" />
       <env name="PREMIA_PASSWORD" value="Nairobi#2024" />
       <env name="PREMIA_PORT" value="1521" />
-      <env name="PREMIA_SERVER" value="10.158.2.24" />
+      <env name="PREMIA_SERVER" value="10.212.0.6" />
       <env name="PREMIA_USER" value="P11_KE_UAT" />
       <env name="RUNNING_IN_PRODUCTION" value="0" />
       <env name="SECRET_KEY" value="0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A" />

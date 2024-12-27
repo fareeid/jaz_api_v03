@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 
 from fastapi import FastAPI, status
 from fastapi.encoders import jsonable_encoder
@@ -90,6 +91,21 @@ def create_application() -> FastAPI:
 
 
 app = create_application()
+
+
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    """
+    Custom handler for all unhandled exceptions. Returns detailed error information.
+    """
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An unexpected error occurred.",
+            "error": str(exc),
+            "traceback": traceback.format_exc()
+        },
+    )
 
 
 @app.exception_handler(ValidationError)

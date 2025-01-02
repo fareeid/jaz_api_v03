@@ -92,10 +92,10 @@ async def validate_assured(async_db, non_async_oracle_db, current_user, assr_in)
 
     # Return "invalid" if any condition is True
     if any(conditions):
-        return {
-            "detail": "0. As an intermdiary, you cannot use your KYC(email, phone, pin, id no, license no) to create Client details. Please update the Client data"}
-        # raise HTTPException(status_code=400,
-        #                     detail="0. As an intermdiary, you cannot use your KYC(email, phone, pin, id no, license no) to create Client details. Please update the Client data")
+        # return {
+        #     "detail": "0. As an intermdiary, you cannot use your KYC(email, phone, pin, id no, license no) to create Client details. Please update the Client data"}
+        raise HTTPException(status_code=400,
+                            detail="0. As an intermdiary, you cannot use your KYC(email, phone, pin, id no, license no) to create Client details. Please update the Client data")
 
     customer_model_list = premia_services.get_premia_customer(non_async_oracle_db, assr_in)
     if len(customer_model_list) > 1:

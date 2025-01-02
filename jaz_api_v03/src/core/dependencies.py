@@ -4,6 +4,7 @@ from typing import Any, AsyncGenerator, Generator
 import oracledb
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
+from sqlalchemy import text, String, collate
 
 from ..core.config import Settings, get_settings
 from ..db.session import (
@@ -45,6 +46,9 @@ async def get_async_oracle_session():
 def get_non_async_oracle_session() -> Generator:  # type: ignore
     try:
         db = oracledb_session_local()
+        # Set the session-specific parameters for case-insensitivity
+        db.execute(text("ALTER SESSION SET NLS_COMP=LINGUISTIC"))
+        db.execute(text("ALTER SESSION SET NLS_SORT=BINARY_CI"))
         yield db
     finally:
         db.close()
@@ -76,3 +80,11 @@ def aes_decrypt(data_in: str) -> Any:
     pt_str = "".join(c for c in pt.decode() if c.isprintable())
     # pt = cipher.decrypt(ct)
     return pt_str
+
+
+# Define your custom collation function (use your desired collation name)
+def apply_case_insensitive_collation(column):
+    """ Apply case-insensitive collation dynamically to string columns. """
+    if isinstance(column.type, String):  # Check if it's a string type column
+        return collate(column, 'case_insensitive')  # Apply the custom collation
+    return column

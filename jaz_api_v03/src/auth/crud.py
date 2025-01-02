@@ -1,12 +1,13 @@
 import logging
 from typing import Any, Union
 
-from sqlalchemy import select, union, or_
+from sqlalchemy import select, union_all, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import User
-from .schemas import UserCreate, UserUpdate
+from .schemas import UserCreate, UserUpdate, UserBase
 from .security import get_password_hash, verify_password
+from ..core.dependencies import apply_case_insensitive_collation
 from ..db.crud_base import CRUDBase
 
 log = logging.getLogger("uvicorn")
@@ -35,9 +36,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     ) -> list[User]:
         query = select(self.model).where(
             or_(
-                self.model.username == username,
-                self.model.email == username,
-                self.model.phone == username
+                apply_case_insensitive_collation(self.model.username) == username,
+                apply_case_insensitive_collation(self.model.email) == username,
+                apply_case_insensitive_collation(self.model.phone) == username
             )
         )
 
@@ -48,7 +49,73 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         # )
         return list(result.scalars().all())
 
-    async def get_by_all(
+    async def get_user_by_all(
+            self, async_db: AsyncSession, user_obj: UserBase
+    ) -> list[User]:
+        """
+        Search for a user by email, phone, pin, NIC, and license number.
+        All specified conditions must be true for a match.
+        """
+        # Start with the base query
+        query = select(self.model)
+
+        # Extract values from the dictionary
+        email = user_obj.email
+        phone = user_obj.phone
+        pin = user_obj.pin
+        nic = user_obj.nic
+        lic = user_obj.lic_no
+
+        # Apply filters only for non-None values
+        if email:
+            query = query.where(apply_case_insensitive_collation(self.model.email) == email)
+        if phone:
+            query = query.where(apply_case_insensitive_collation(self.model.phone) == phone)
+        if pin:
+            query = query.where(apply_case_insensitive_collation(self.model.pin) == pin)
+        if nic:
+            query = query.where(apply_case_insensitive_collation(self.model.nic) == nic)
+        elif lic:  # Only include lic if nic is not provided
+            query = query.where(apply_case_insensitive_collation(self.model.lic_no) == lic)
+
+        # Execute the query
+        result = await async_db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_user_by_any(
+            self, async_db: AsyncSession, user_obj: UserBase
+    ) -> list[User]:
+        # Extract values from the dictionary
+        email = user_obj.email
+        phone = user_obj.phone
+        pin = user_obj.pin
+        nic = user_obj.nic
+        lic = user_obj.lic_no
+
+        """
+        Search for a user by email, phone, pin, NIC, or license number.
+        If NIC is provided, license number will be ignored.
+        """
+        # Create dynamic filters
+        filters = []
+        if email:
+            filters.append(self.model.email == email)
+        if phone:
+            filters.append(self.model.phone == phone)
+        if pin:
+            filters.append(self.model.pin == pin)
+        if nic:
+            filters.append(self.model.nic == nic)
+        elif lic:  # Only include lic if nic is not provided
+            filters.append(self.model.lic_no == lic)
+
+        # Combine filters with OR condition
+        result = await async_db.execute(
+            select(self.model).where(or_(*filters))  # type: ignore
+        )
+        return list(result.scalars().all())
+
+    async def get_by_any(
             self,
             async_db: AsyncSession,
             email: Union[str | None] = None,
@@ -63,15 +130,18 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         # Check each parameter and create query if not None
         if email:
             # if email is not None or not email:
-            queries.append(select(self.model).where(self.model.email == email))  # type: ignore
+            queries.append(
+                select(self.model).where(apply_case_insensitive_collation(self.model.email) == email))  # type: ignore
         # if username is not None:
         #     queries.append(select(self.model).where(self.model.username == username))
         if pin:  # is not None or not pin:
-            queries.append(select(self.model).where(self.model.pin == pin))  # type: ignore
+            queries.append(
+                select(self.model).where(apply_case_insensitive_collation(self.model.pin) == pin))  # type: ignore
         if nic:  # is not None or not nic:
-            queries.append(select(self.model).where(self.model.nic == nic))  # type: ignore
+            queries.append(
+                select(self.model).where(apply_case_insensitive_collation(self.model.nic) == nic))  # type: ignore
 
-        stmt = union(*queries)
+        stmt = union_all(*queries)
         # print(stmt)
 
         result = await async_db.execute(stmt)
@@ -83,10 +153,15 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     async def get_agent(self, async_db: AsyncSession, search_criteria: dict[str, str]) -> list[User]:
         query = select(self.model)
-        where_criteria = conditions = [getattr(self.model, attr) == value for attr, value in search_criteria.items()]
+        # query = self.model.apply_collation(query)
+        where_criteria = conditions = [
+            apply_case_insensitive_collation(getattr(self.model, attr)) == value
+            for attr, value in search_criteria.items()
+        ]
 
         if where_criteria:
             query = query.where(*where_criteria)
+            # query = self.model.apply_collation(query)
 
         compiled_query = query.compile(compile_kwargs={"literal_binds": True})
         query_str = str(compiled_query)

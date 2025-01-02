@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import oracledb
-from sqlalchemy import select, text
+from sqlalchemy import select, text, or_, func, and_
 from sqlalchemy.orm import Session
 
 from . import models as premia_models, schemas as premia_schemas
@@ -18,7 +18,7 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(o, datetime):
             return o.isoformat()  # Convert datetime to ISO format
         elif isinstance(o, Decimal):
-            return float(o)        # Convert Decimal to float (or use str(o) for string)
+            return float(o)  # Convert Decimal to float (or use str(o) for string)
         return super().default(o)
 
 
@@ -185,13 +185,35 @@ class CRUDCustomer(
         )
         return list(result.scalars().all())
 
-    def get_customer(self, oracle_db: Session, search_criteria: dict[str, str]) -> list[premia_models.Customer]:
+    def get_customer_by_all(self, oracle_db: Session, search_criteria: dict[str, str]) -> list[premia_models.Customer]:
         query = select(premia_models.Customer)
         where_criteria = conditions = [getattr(premia_models.Customer, attr) == value for attr, value in
                                        search_criteria.items()]
 
         if where_criteria:
             query = query.where(*where_criteria)
+
+        compiled_query = query.compile(compile_kwargs={"literal_binds": True})
+        query_str = str(compiled_query)
+        # Set the session-specific parameters for case-insensitivity
+        # oracle_db.execute(text("ALTER SESSION SET NLS_COMP=LINGUISTIC"))
+        # oracle_db.execute(text("ALTER SESSION SET NLS_SORT=BINARY_CI"))
+        result = oracle_db.execute(query)
+        customer_list = result.scalars().all()
+
+        return customer_list
+
+    def get_customer_by_any(self, oracle_db: Session, search_criteria: dict[str, str]) -> list[premia_models.Customer]:
+        query = select(self.model)
+        where_criteria = [getattr(premia_models.Customer, attr) == value
+                          for attr, value in search_criteria.items()]
+
+        # Add the AND condition to check the NVL logic
+        and_condition = func.nvl(func.trunc(premia_models.Customer.cust_eff_to_dt), func.trunc(func.sysdate()) + 1) > func.trunc(
+            func.sysdate())
+
+        if where_criteria:
+            query = query.where(and_(and_condition, or_(*where_criteria)))
 
         compiled_query = query.compile(compile_kwargs={"literal_binds": True})
         query_str = str(compiled_query)

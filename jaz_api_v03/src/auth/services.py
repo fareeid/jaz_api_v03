@@ -84,6 +84,14 @@ async def create_user(
     return user
 
 
+async def update_user(
+        async_db: AsyncSession,
+        db_obj: models.User,
+        obj_in: dict[str, Any]) -> models.User:
+    user = await crud.user.update(async_db, db_obj=db_obj, obj_in=obj_in)
+    return user
+
+
 async def get_agent(
         async_db: AsyncSession,
         search_criteria: dict[str, Any],
@@ -92,12 +100,28 @@ async def get_agent(
     return agent_list
 
 
+async def get_user_by_all(
+        async_db: AsyncSession,
+        user_obj: schemas.UserBase,
+) -> models.User:
+    user_list = await crud.user.get_user_by_all(async_db, user_obj=user_obj)
+    return user_list
+
+
+async def get_user_by_any(
+        async_db: AsyncSession,
+        search_criteria: dict[str, Any],
+) -> models.User:
+    user_list = await crud.user.get_user_by_any(async_db, user_obj=search_criteria)
+    return user_list
+
+
 async def get_user(
         async_db: AsyncSession,
         user_in: schemas.UserCreateSelf,
 ) -> tuple[bool, User | Any]:
     new = False
-    user_list = await crud.user.get_by_all(
+    user_list = await crud.user.get_by_any(
         async_db, email=user_in.email, pin=user_in.pin, nic=user_in.nic
     )
     if not user_list:

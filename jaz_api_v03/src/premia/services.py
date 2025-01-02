@@ -15,9 +15,10 @@ def get_premia_customer(
         oracle_db: Session,
         user_in: auth_models.User,
 ) -> list[premia_models.Customer]:
-    search_criteria = {"cust_email1": user_in.email, "cust_civil_id": user_in.pin,
-                       "cust_ref_no": (user_in.lic_no or user_in.nic)}
-    customer_list = premia_crud.customer.get_customer(oracle_db, search_criteria=search_criteria)
+    # search_criteria = {"cust_email1": user_in.email, "cust_civil_id": user_in.pin, "cust_ref_no": (user_in.lic_no or user_in.nic)}
+    search_criteria = {"cust_civil_id": user_in.pin, "cust_ref_no": (user_in.lic_no or user_in.nic)}
+    # customer_list = premia_crud.customer.get_customer_by_all(oracle_db, search_criteria=search_criteria)
+    customer_list = premia_crud.customer.get_customer_by_any(oracle_db, search_criteria=search_criteria)
     return list(customer_list)
 
 
@@ -42,8 +43,9 @@ async def sync_user_to_premia_cust(non_async_oracle_db, user):
     elif len(customer_model_list) == 1:
         customer_model = customer_model_list[0]
     else:
+        cust_code_list = ", ".join([str(cust.cust_code) for cust in customer_model_list])
         raise HTTPException(status_code=400,
-                            detail="Multiple records found. Please contact the Agents Administrator")
+                            detail=f"Premia Customers {cust_code_list} share some of these details. Please forward to support team for validation.")
     return customer_model
 
 
@@ -64,7 +66,12 @@ def get_customer(
         search_criteria: premia_models.CustomerBase,
 ) -> list[premia_models.Customer]:
     # customer = customers_crud.get_customer("152917")  # noqa: F841
-    customer_list = premia_crud.customer.get_customer(oracle_db, search_criteria=search_criteria)
+    customer_list = premia_crud.customer.get_customer_by_all(oracle_db, search_criteria=search_criteria)
+    return list(customer_list)
+
+
+def get_customer_by_any(oracle_db: Session, search_criteria: dict[str, str]) -> list[premia_models.Customer]:
+    customer_list = premia_crud.customer.get_customer_by_any(oracle_db, search_criteria=search_criteria)
     return list(customer_list)
 
 

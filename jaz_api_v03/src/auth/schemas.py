@@ -4,13 +4,31 @@ from typing import Union, Any
 from pydantic import BaseModel, EmailStr, ConfigDict, model_validator
 
 
-# Shared properties
-class UserBase(BaseModel):
+class UserBaseDisplay(BaseModel):
+    id: Union[int | None] = None
     first_name: Union[str | None] = None
     last_name: Union[str | None] = None
     name: Union[str | None] = None
     username: Union[str | None] = None
-    password: Union[str | None] = None
+    email: Union[EmailStr | None] = None
+    phone: Union[str | None] = None
+    nic: Union[str | None] = None
+    pin: Union[str | None] = None
+    lic_no: Union[str | None] = None
+    gender: Union[str | None] = None
+    dob: Union[datetime | None] = None
+    cust_code: Union[str | None] = None
+    cust_cc_code: Union[str | None] = None
+
+
+# Shared properties
+class UserBase(UserBaseDisplay):
+    id: Union[int | None] = None
+    first_name: Union[str | None] = None
+    last_name: Union[str | None] = None
+    name: Union[str | None] = None
+    username: Union[str | None] = None
+    # password: Union[str | None] = None
     email: Union[EmailStr | None] = None
     phone: Union[str | None] = None
     nic: Union[str | None] = None
@@ -153,6 +171,7 @@ class UserInDBBase(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: Union[int | None] = None
+    password: Union[str | None] = None
 
     # class Config:
     #     from_attributes = True

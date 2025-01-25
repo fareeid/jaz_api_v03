@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..auth import models as auth_models
 from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
 from ..premia import crud as premia_crud, models as premia_models
+from ..quotes.endorsments import schemas as endt_schemas
 from ..reports import schemas as report_schemas
 
 
@@ -87,6 +88,16 @@ def create_policy(non_async_oracle_db: Session, payload_in: premia_models.Policy
     return policy
 
 
+def endt_request_depr(non_async_oracle_db: Session, endt_init_payload: endt_schemas.EndorsementRequestBase) -> None:
+    premia_crud.policy.endt_request_depr(non_async_oracle_db, endt_init_payload)
+    return
+
+
+def endt_init(non_async_oracle_db: Session, endt_init_payload: endt_schemas.EndtInit) -> None:
+    status = premia_crud.policy.endt_init(non_async_oracle_db, endt_init_payload)
+    return status
+
+
 def update_policy(non_async_oracle_db: Session, db_obj: premia_models.Policy,
                   payload_in: Union[dict, premia_models.PolicyBase]) -> None:
     policy = premia_crud.policy.update(non_async_oracle_db, db_obj=db_obj, obj_in=payload_in)
@@ -138,6 +149,11 @@ def receipt_process_json(non_async_oracle_db: Session, receipt_stage: premia_mod
 def validate_vehicle_json(non_async_oracle_db: Session, search_criteria: dict[str, str]) -> str:
     info = premia_crud.policy.validate_vehicle_json(non_async_oracle_db, search_criteria)
     return info
+
+
+def query_policy(non_async_oracle_db: Session, search_criteria: dict[str, str]) -> str:
+    pol = premia_crud.policy.query_policy(non_async_oracle_db, search_criteria)
+    return pol
 
 
 def calc_premium(non_async_oracle_db: Session, pol_trans: premia_models.Policy) -> str:

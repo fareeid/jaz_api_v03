@@ -8,6 +8,7 @@ class ExternalPayloadBase(BaseModel):
     transaction_type: Union[str, None] = None
     notification: Union[str, None] = None
     payload: Union[dict[str, Any], None] = None
+    payload_out: Union[dict[str, Any], None] = None
 
 
 class ExternalPayloadCreate(ExternalPayloadBase):

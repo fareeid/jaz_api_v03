@@ -92,11 +92,11 @@ async def update_user(
     return user
 
 
-async def get_agent(
+async def get_agent_by_all(
         async_db: AsyncSession,
         search_criteria: dict[str, Any],
 ) -> models.User:
-    agent_list = await crud.user.get_agent(async_db, search_criteria=search_criteria)
+    agent_list = await crud.user.get_agent_by_all(async_db, search_criteria=search_criteria)
     return agent_list
 
 

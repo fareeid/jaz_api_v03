@@ -82,7 +82,7 @@ async def get_payload(
     if payload is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
         # payload = {"status": "00", "reference": "Transaction not found"}
-    payload = payload.payload
+    payload = payload[0].payload
     return payload
 
 

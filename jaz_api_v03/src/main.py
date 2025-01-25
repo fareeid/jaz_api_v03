@@ -14,6 +14,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from .auth import routes as auth
 from .db.session import async_session_local
+from .external_apis import routes as external_apis
 from .external_apis.safaricom import routes as safaricom
 from .gwt_poc import routes as gwt_poc
 from .html_poc import routes as html_poc
@@ -22,6 +23,7 @@ from .masters import routes as masters
 from .ping import routes as ping
 from .premia import routes as policies
 from .quotes import routes as quotes
+from .quotes.endorsments import routes as endorsements
 
 # xtype: ignore
 
@@ -74,8 +76,10 @@ def create_application() -> FastAPI:
     fastapi_app.include_router(ping.router, prefix="/ping", tags=["ping"])
     fastapi_app.include_router(auth.router, prefix="/auth", tags=["auth"])
     fastapi_app.include_router(quotes.router, prefix="/quotes", tags=["quotes"])
+    fastapi_app.include_router(endorsements.router, prefix="/endorsements", tags=["endorsements"])
     fastapi_app.include_router(policies.router, prefix="/policies", tags=["policies"])
-    fastapi_app.include_router(safaricom.router, prefix="/extern", tags=["external_apis"])
+    fastapi_app.include_router(external_apis.router, prefix="/external_apis", tags=["external_apis"])
+    fastapi_app.include_router(safaricom.router, prefix="/safaricom", tags=["external_apis"])
 
     fastapi_app.include_router(masters.router, prefix="/masters", tags=["masters"])
     fastapi_app.include_router(html_poc.router, prefix="/portalx", tags=["portal"])

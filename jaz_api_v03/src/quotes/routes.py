@@ -59,7 +59,7 @@ async def check_veh_status(
     return json.loads(veh_status)
 
 
-@router.post("/validate_assr", response_model=user_schemas.UserBaseDisplay) # dict[str, Any]
+@router.post("/validate_assr", response_model=user_schemas.UserBaseDisplay)  # dict[str, Any]
 async def validate_assr(
         *,
         async_db: AsyncSession = Depends(get_session),
@@ -107,13 +107,15 @@ async def validate_assured(async_db, non_async_oracle_db, current_user, assr_in)
     if len(user_list) > 1:
         # return {"detail": "Assured is invalid"}
         cust_code_list = ", ".join([str(user.cust_code) for user in user_list])
-        raise HTTPException(status_code=400, detail=f"Users {cust_code_list} share all of these details. Please forward to support team for validation")
+        raise HTTPException(status_code=400,
+                            detail=f"Users {cust_code_list} share all of these details. Please forward to support team for validation")
     if len(user_list) == 0:
         user_list = await user_services.get_user_by_any(async_db, assr_in)
         if len(user_list) > 1:
             # return {"detail": "Assured is invalid"}
             cust_code_list = ", ".join([str(user.cust_code) for user in user_list])
-            raise HTTPException(status_code=400, detail=f"Users {cust_code_list} share some of these details. Please forward to support team for validation")
+            raise HTTPException(status_code=400,
+                                detail=f"Users {cust_code_list} share some of these details. Please forward to support team for validation")
         if len(user_list) == 1:
             raise HTTPException(status_code=400,
                                 detail=f"User {user_list[0].cust_code} has some of these details. Please forward to support team for validation")
@@ -179,11 +181,21 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
                 }
                 veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
                 if json.loads(veh_status)["Info"] == "Error":
-                    raise HTTPException(status_code=400, detail="Vehicle found in active policy. You cannot proceed")
+                    detail = "Vehicle found in active policy. You cannot proceed"
+                    payload_out = await external_apis_crud.external_payload.update(
+                        async_db, db_obj=payload,
+                        obj_in={"payload_out": {"detail": detail}, "updated_at": datetime.now()}
+                    )
+                    raise HTTPException(status_code=400, detail=detail)
 
     if current_user.cust_cc_code in ['01', '10']:
         if payload_in.quot_assr_email != current_user.email or payload_in.quot_assr_pin != current_user.pin:
-            raise HTTPException(status_code=400, detail="This customer is only authorised to transact for self")
+            detail = "This customer is only authorised to transact for self"
+            payload_out = await external_apis_crud.external_payload.update(
+                async_db, db_obj=payload,
+                obj_in={"payload_out": {"detail": detail}, "updated_at": datetime.now()}
+            )
+            raise HTTPException(status_code=400, detail=detail)
         user = current_user
     else:
         # assr_data = {
@@ -209,11 +221,15 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
         user = await validate_assured(async_db, non_async_oracle_db, current_user, user_obj)
         if user.id is None:
             user = await user_services.create_user(async_db, user_obj)
-# CONTINUE FROM HERE
+        # CONTINUE FROM HERE
         # new, user = await user_services.get_user(async_db, user_obj)
         if user.cust_code == current_user.cust_code:
-            raise HTTPException(status_code=400,
-                                detail="1. As an intermdiary, you cannot use your KYC(email, phone, pin, id no, license no) to create Client details. Please update the Client data")
+            detail = "1. As an intermdiary, you cannot use your KYC(email, phone, pin, id no, license no) to create Client details. Please update the Client data"
+            payload_out = await external_apis_crud.external_payload.update(
+                async_db, db_obj=payload,
+                obj_in={"payload_out": {"detail": detail}, "updated_at": datetime.now()}
+            )
+            raise HTTPException(status_code=400, detail=detail)
         if user.cust_code is None:
             customer_model = await premia_services.sync_user_to_premia_cust(non_async_oracle_db, user)
             user = await user_services.update_user(async_db, user, {"cust_code": customer_model.cust_code})
@@ -438,7 +454,7 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
             "policyhypothecation_collection": pgit_pol_hypothecation_list_db,
             "pol_sys_id": pol_sys_id,
             "pol_no": str(pol_sys_id),
-            "pol_uw_year": datetime.now().year,
+            "pol_uw_year": datetime.fromisoformat(proposal["pol_fm_dt"]).year,  #datetime.now().year,
             "pol_cal_yr": datetime.now().year,
             "pol_cust_code": current_user.cust_code,
             # "pol_src_code": proposal["pol_cust_code"], # current_user.cust_code,
@@ -502,6 +518,10 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
     # TODO: Approve policy, Close RI
     # TODO: Return policy details and update quote
     # policy_process_dict = json.loads(policy_process_json)
+    payload_out = await external_apis_crud.external_payload.update(
+        async_db, db_obj=payload,
+        obj_in={"payload_out": policy_process_dict, "updated_at": datetime.now()}
+    )
     return policy_process_dict
 
 

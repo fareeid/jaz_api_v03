@@ -151,7 +151,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         # print(user_list)
         return user_model_list
 
-    async def get_agent(self, async_db: AsyncSession, search_criteria: dict[str, str]) -> list[User]:
+    async def get_agent_by_all(self, async_db: AsyncSession, search_criteria: dict[str, str]) -> list[User]:
         query = select(self.model)
         # query = self.model.apply_collation(query)
         where_criteria = conditions = [

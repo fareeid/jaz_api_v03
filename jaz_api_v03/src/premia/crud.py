@@ -4,11 +4,13 @@ from decimal import Decimal
 
 import oracledb
 from sqlalchemy import select, text, or_, func, and_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from . import models as premia_models, schemas as premia_schemas
+from . import schemas as query_schemas
 from ..auth import schemas as auth_schema, models as auth_models
 from ..db.crud_base_orcl import CRUDBase, ModelType
+from ..quotes.endorsments import schemas as endt_schemas
 from ..reports import schemas as report_schemas
 
 
@@ -128,6 +130,79 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
 
         return p_json.getvalue()
 
+    def endt_request_depr(self, oracle_db: Session, endt_init_payload: endt_schemas.EndorsementRequestBase) -> None:
+        cursor = oracle_db.connection().connection.cursor()
+        # p_ref_number = oracle_db.execute(text('SELECT PGI_INF_FLEX_SYS_ID.NEXTVAL FROM dual')).first()[0]
+        p_ref_number = 1
+        p_ws_input = json.dumps(endt_init_payload.model_dump())
+        p_ws_response_type = cursor.var(oracledb.STRING)
+        p_ws_error = cursor.var(oracledb.CURSOR)
+        p_ws_response = cursor.var(oracledb.CURSOR)
+        p_pol_sys_id = cursor.var(oracledb.NUMBER)
+        p_pol_end_idx = cursor.var(oracledb.NUMBER)
+
+        cursor.callproc('PGIPK_INTG_FLEX.PR_PARSE_WS_KEY', [
+            p_ref_number,
+            p_ws_input,
+            p_ws_response_type,
+            p_ws_error,
+            p_ws_response,
+            p_pol_sys_id,
+            p_pol_end_idx,
+        ])
+        oracle_db.commit()
+
+        return p_pol_sys_id.getvalue(), p_pol_end_idx.getvalue()
+
+    def endt_init(self, oracle_db: Session, endt_init_payload: endt_schemas.EndtInit) -> None:
+        cursor = oracle_db.connection().connection.cursor()
+        p_input_json = json.dumps(endt_init_payload.model_dump(),
+                                  default=lambda obj: obj.strftime('%d-%b-%y %H:%M') if isinstance(obj,
+                                                                                                   datetime) else obj)
+
+        p_output_cursor = oracle_db.connection().connection.cursor()
+        p_ws_error = oracle_db.connection().connection.cursor()
+        p_ws_response = oracle_db.connection().connection.cursor()
+
+        p_prem_success = cursor.var(oracledb.STRING)
+        p_inst_success = cursor.var(oracledb.STRING)
+
+        cursor.callproc('JICK_UTILS_V2.P_ENDT_INIT', [
+            p_input_json,
+            p_output_cursor,
+            p_ws_error,
+            p_ws_response,
+        ])
+        rows = p_output_cursor.fetchall()
+        column_names = [col[0] for col in p_output_cursor.description]
+        json_result = [dict(zip(column_names, row)) for row in rows]
+        oracle_db.commit()
+        if not json_result[0]["STATUS"].startswith("ORA-0000"):
+            return json_result
+
+        # cursor.callproc('JICK_UTILS_V2.P_CALC_PREMIUM', [
+        #     endt_init_payload.policy_no,
+        #     p_prem_success,
+        #     p_inst_success
+        # ])
+
+        cursor.callproc('JICK_UTILS_V2.P_CALC_PREMIUM', [
+            endt_init_payload.policy_no,
+            p_output_cursor
+        ])
+        oracle_db.commit()
+
+        rows = p_output_cursor.fetchall()
+        # Fetch column names from cursor description
+        column_names = [col[0] for col in p_output_cursor.description]
+        # Convert rows to a list of dictionaries (JSON-like structure)
+        json_result = [dict(zip(column_names, row)) for row in rows]
+        p_output_cursor.close()
+        if not json_result[0]["STATUS"].startswith("ORA-0000"):
+            return json_result
+        # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
+        return json_result
+
     def calc_premium(self, oracle_db: Session, pol_trans: premia_models.Policy) -> str:
         cursor = oracle_db.connection().connection.cursor()
         p_pol_sys_id: int = cursor.var(oracledb.NUMBER)
@@ -170,6 +245,23 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
         # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
         return json_result
 
+    def query_policy(self, oracle_db: Session, search_criteria: dict[str, str]) -> list[premia_models.Policy]:
+        stmt = (
+            select(premia_models.Policy)
+            .options(
+                joinedload(premia_models.Policy.policycharge_collection),
+                joinedload(premia_models.Policy.policysection_collection)
+                .joinedload(premia_models.PolicySection.policyrisk_collection)
+                .joinedload(premia_models.PolicyRisk.policycover_collection)
+            )
+            .where(premia_models.Policy.pol_no == search_criteria["pol_no"])
+        )
+        result = oracle_db.execute(stmt)
+        pol_list = result.unique().scalars().all()
+        policy_list = [query_schemas.PolicyQuerySchema.model_validate(pol_instance) for pol_instance in pol_list]
+
+        return policy_list
+
 
 class CRUDCustomer(
     CRUDBase[premia_models.Customer, auth_schema.UserCreate, auth_schema.UserUpdate]
@@ -209,7 +301,8 @@ class CRUDCustomer(
                           for attr, value in search_criteria.items()]
 
         # Add the AND condition to check the NVL logic
-        and_condition = func.nvl(func.trunc(premia_models.Customer.cust_eff_to_dt), func.trunc(func.sysdate()) + 1) > func.trunc(
+        and_condition = func.nvl(func.trunc(premia_models.Customer.cust_eff_to_dt),
+                                 func.trunc(func.sysdate()) + 1) > func.trunc(
             func.sysdate())
 
         if where_criteria:

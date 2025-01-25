@@ -55,9 +55,15 @@ async def register_agent(
 ) -> Any:
     # user = await services.get_user(async_db, agent_in)
     search_criteria = {"cust_code": agent_in.cust_code, "email": agent_in.email, "phone": agent_in.phone}
-    agent_list = await services.get_agent(async_db, search_criteria=search_criteria)
+    agent_list = await services.get_agent_by_all(async_db, search_criteria=search_criteria)
 
     if len(agent_list) == 0:
+        user_list = await services.get_user_by_any(async_db, agent_in)
+        if len(user_list) > 0:
+            # return {"detail": "Assured is invalid"}
+            cust_code_list = ", ".join([str(user.cust_code) for user in user_list])
+            raise HTTPException(status_code=400, detail=f"These details already exist. Please forward to support team for validation")
+
         premia_cust_search_criteria = {"cust_code": agent_in.cust_code, "cust_email1": agent_in.email,
                                        "cust_mobile_no": agent_in.phone}
         customer_model_list = premia_services.get_customer(non_async_oracle_db,

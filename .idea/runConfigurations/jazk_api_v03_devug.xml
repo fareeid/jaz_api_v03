@@ -19,10 +19,10 @@
       <env name="POSTGRES_TEST_DB" value="web_test" />
       <env name="POSTGRES_USER" value="postgres" />
       <env name="PREMIA_DB" value="p11tz" />
-      <env name="PREMIA_PASSWORD" value="Nairobi#2024" />
+      <env name="PREMIA_PASSWORD" value="p11_ke_uat2" />
       <env name="PREMIA_PORT" value="1521" />
       <env name="PREMIA_SERVER" value="10.212.0.6" />
-      <env name="PREMIA_USER" value="P11_KE_UAT" />
+      <env name="PREMIA_USER" value="p11_ke_uat2" />
       <env name="RUNNING_IN_PRODUCTION" value="0" />
       <env name="SECRET_KEY" value="0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A" />
       <env name="STAFF_ADMIN_EMAIL" value="matthew.kimweli@allianz.com" />

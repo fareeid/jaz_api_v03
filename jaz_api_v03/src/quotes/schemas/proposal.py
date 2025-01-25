@@ -90,3 +90,4 @@ class Proposal(ProposalInDBBase):
 # Properties stored in DB
 class ProposalInDB(ProposalInDBBase):
     pass
+

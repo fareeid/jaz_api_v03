@@ -235,7 +235,10 @@ class PolicySection(OrclBase):  # type: ignore
     # Relation to PolicyRisk - down
     policyrisk_collection: Mapped[list["PolicyRisk"]] = relationship(
         back_populates="policysection",
-        primaryjoin="and_(PolicySection.psec_pol_sys_id==PolicyRisk.prai_pol_sys_id, PolicySection.psec_end_no_idx==PolicyRisk.prai_end_no_idx, PolicySection.psec_end_sr_no==PolicyRisk.prai_end_sr_no)",
+        primaryjoin="and_(PolicySection.psec_pol_sys_id==PolicyRisk.prai_pol_sys_id, "
+                    "PolicySection.psec_end_no_idx==PolicyRisk.prai_end_no_idx, "
+                    "PolicySection.psec_end_sr_no==PolicyRisk.prai_end_sr_no,"
+                    "PolicySection.psec_sys_id==PolicyRisk.prai_psec_sys_id)",
         # noqa: E501
         cascade="all, delete-orphan",
         lazy="subquery",
@@ -248,14 +251,16 @@ class PolicyRisk(OrclBase):  # type: ignore
     prai_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
     prai_end_no_idx: Mapped[int] = mapped_column(nullable=False)
     prai_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+    prai_psec_sys_id: Mapped[int] = mapped_column(nullable=False)
 
     # Relation to Section - up
     ForeignKeyConstraint(
-        [prai_pol_sys_id, prai_end_no_idx, prai_end_sr_no],
+        [prai_pol_sys_id, prai_end_no_idx, prai_end_sr_no, prai_psec_sys_id],
         [
             PolicySection.psec_pol_sys_id,
             PolicySection.psec_end_no_idx,
             PolicySection.psec_end_sr_no,
+            PolicySection.psec_sys_id,
         ],
     )
     policysection: Mapped["PolicySection"] = relationship(
@@ -265,7 +270,10 @@ class PolicyRisk(OrclBase):  # type: ignore
     # Relation to PolicyCover - down
     policycover_collection: Mapped[list["PolicyCover"]] = relationship(
         back_populates="policyrisk",
-        primaryjoin="and_(PolicyRisk.prai_pol_sys_id==PolicyCover.prc_pol_sys_id, PolicyRisk.prai_end_no_idx==PolicyCover.prc_end_no_idx, PolicyRisk.prai_end_sr_no==PolicyCover.prc_end_sr_no)",
+        primaryjoin="and_(PolicyRisk.prai_pol_sys_id==PolicyCover.prc_pol_sys_id,"
+                    "PolicyRisk.prai_end_no_idx==PolicyCover.prc_end_no_idx,"
+                    "PolicyRisk.prai_end_sr_no==PolicyCover.prc_end_sr_no,"
+                    "PolicyRisk.prai_sys_id==PolicyCover.prc_lvl1_sys_id)",
         # noqa: E501
         cascade="all, delete-orphan",
         lazy="subquery",
@@ -278,14 +286,16 @@ class PolicyCover(OrclBase):  # type: ignore
     prc_pol_sys_id: Mapped[int] = mapped_column(nullable=False)
     prc_end_no_idx: Mapped[int] = mapped_column(nullable=False)
     prc_end_sr_no: Mapped[int] = mapped_column(nullable=False)
+    prc_lvl1_sys_id: Mapped[int] = mapped_column(nullable=False)
 
     # Relation to Section - up
     ForeignKeyConstraint(
-        [prc_pol_sys_id, prc_end_no_idx, prc_end_sr_no],
+        [prc_pol_sys_id, prc_end_no_idx, prc_end_sr_no, prc_lvl1_sys_id],
         [
             PolicyRisk.prai_pol_sys_id,
             PolicyRisk.prai_end_no_idx,
             PolicyRisk.prai_end_sr_no,
+            PolicyRisk.prai_sys_id,
         ],
     )
     policyrisk: Mapped["PolicyRisk"] = relationship(

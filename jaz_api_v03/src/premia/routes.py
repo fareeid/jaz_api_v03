@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from . import crud as policy_crud, services as premia_services, models as premia_models
+from . import schemas as premia_schemas
 # from . import schemas
 from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
 
@@ -33,3 +34,14 @@ def customer(
     customer_model_list = premia_services.get_customer(oracle_db, search_criteria=search_criteria.model_dump(exclude_unset=True))
     # custtomer_dict_list = [cust.to_dict() for cust in customer_model_list]
     return [cust.to_dict() for cust in customer_model_list]
+
+
+@router.post("/policy_query", response_model=list[premia_schemas.PolicyQuerySchema])  # list[dict[str, Any]]
+def policy_query(
+        *,
+        oracle_db: Session = Depends(get_non_async_oracle_session),
+        # pol_no: str,
+        search_criteria: dict[str, Any],
+) -> premia_schemas.PolicyQuerySchema:
+    pol_instance = premia_services.query_policy(oracle_db, search_criteria)
+    return pol_instance

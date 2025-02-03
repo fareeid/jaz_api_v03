@@ -161,6 +161,11 @@ def calc_premium(non_async_oracle_db: Session, pol_trans: premia_models.Policy) 
     return pol_no
 
 
+def approve_policy(non_async_oracle_db: Session, pol_no: str) -> str:
+    pol_no = premia_crud.policy.approve_policy(non_async_oracle_db, pol_no)
+    return pol_no
+
+
 def run_report(non_async_oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
     rpt = premia_crud.policy.run_report(non_async_oracle_db, report_params)
     return rpt

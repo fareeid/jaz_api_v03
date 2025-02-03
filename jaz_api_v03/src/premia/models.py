@@ -9,8 +9,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeMeta
 
 from ..db.session import oracledb_engine  # , Real engine
-
-# from ..db.session import oracledb_engine_sim as oracledb_engine  # , simulation postgres_engine
+from ..db.session import oracledb_engine_sim  # as oracledb_engine  # , simulation postgres_engine
 
 # from ..db.session import async_oracledb_engine  # , postgres_engine
 
@@ -303,15 +302,31 @@ class PolicyCover(OrclBase):  # type: ignore
     )
 
 
-OrclBase.prepare(
-    autoload_with=oracledb_engine,
-    # autoload_with=async_oracledb_engine,
-    reflection_options={
-        "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section", "pgit_pol_risk_addl_info",
-                 "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "pgit_pol_hypothecation", "pgit_pol_prem_dtl", "pgit_acnt_doc",
-                 "fw_receipt"]
-    },
-)  # noqa: E501
+try:
+    OrclBase.prepare(
+        autoload_with=oracledb_engine,
+        # autoload_with=async_oracledb_engine,
+        reflection_options={
+            "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section",
+                     "pgit_pol_risk_addl_info",
+                     "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "pgit_pol_hypothecation",
+                     "pgit_pol_prem_dtl", "pgit_acnt_doc",
+                     "fw_receipt"]
+        },
+    )  # noqa: E501
+except Exception as e:
+    print(e)
+    OrclBase.prepare(
+        autoload_with=oracledb_engine_sim,
+        # autoload_with=async_oracledb_engine,
+        reflection_options={
+            "only": ["pcom_customer", "pgim_doc_number_range", "pgit_policy", "pgit_pol_section",
+                     "pgit_pol_risk_addl_info",
+                     "pgit_pol_risk_cover", "pgit_pol_charge", "pgit_pol_appl_curr", "pgit_pol_hypothecation",
+                     "pgit_pol_prem_dtl", "pgit_acnt_doc",
+                     "fw_receipt"]
+        },
+    )  # noqa: E501
 
 
 # Define the to_dict method in a mixin class
@@ -345,17 +360,20 @@ def create_pydantic_model(name: str, sqlalchemy_model: Type[DeclarativeMeta]) ->
     return create_model(name, **fields)
 
 
-# Create Pydantic models dynamically
-PolicyBase = create_pydantic_model("PolicyBase", Policy)
-PolicyChargeBase = create_pydantic_model("PolicyChargeBase", PolicyCharge)
-PolicyCurrencyBase = create_pydantic_model("PolicyCurrencyBase", PolicyCurrency)
-PolicyHypothecationBase = create_pydantic_model("PolicyHypothecationBase", PolicyHypothecation)
-PolicySectionBase = create_pydantic_model("PolicySectionBase", PolicySection)
-PolicyRiskBase = create_pydantic_model("PolicyRiskBase", PolicyRisk)
-PolicyCoverBase = create_pydantic_model("PolicyCoverBase", PolicyCover)
-CustomerBase = create_pydantic_model("CustomerBase", Customer)
-ReceiptStagingBase = create_pydantic_model("ReceiptStagingBase", ReceiptStaging)
-CustomerBase.model_config = ConfigDict(from_attributes=True)
+try:
+    # Create Pydantic models dynamically
+    PolicyBase = create_pydantic_model("PolicyBase", Policy)
+    PolicyChargeBase = create_pydantic_model("PolicyChargeBase", PolicyCharge)
+    PolicyCurrencyBase = create_pydantic_model("PolicyCurrencyBase", PolicyCurrency)
+    PolicyHypothecationBase = create_pydantic_model("PolicyHypothecationBase", PolicyHypothecation)
+    PolicySectionBase = create_pydantic_model("PolicySectionBase", PolicySection)
+    PolicyRiskBase = create_pydantic_model("PolicyRiskBase", PolicyRisk)
+    PolicyCoverBase = create_pydantic_model("PolicyCoverBase", PolicyCover)
+    CustomerBase = create_pydantic_model("CustomerBase", Customer)
+    ReceiptStagingBase = create_pydantic_model("ReceiptStagingBase", ReceiptStaging)
+    CustomerBase.model_config = ConfigDict(from_attributes=True)
+except Exception as e:
+    print(e)
 
 
 # print(type(PolicyBase) is BaseModel)

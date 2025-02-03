@@ -11,6 +11,7 @@ from ...premia import services as premia_services
 
 router = APIRouter()
 
+
 @router.post("/endt_init_depr", response_model=dict[str, Any])
 async def endt_init_depr(
         *,
@@ -57,17 +58,20 @@ async def endt_init(
                             detail=f"There's a pending transaction for policy {endt_init_payload.policy_no}. Please contact support team.")
 
     if endt_init_payload.endorsement_type == "ED002":
-        if endt_init_payload.vehicle_value.prai_num_02 < policy[0].policysection_collection[0].policyrisk_collection[0].prai_num_02:
+        if endt_init_payload.vehicle_value.prai_num_02 < policy[0].policysection_collection[0].policyrisk_collection[
+            0].prai_num_02:
             raise HTTPException(status_code=400,
                                 detail=f"Vehicle value cannot be reduced for Increase in SI endorsment.")
 
     if endt_init_payload.endorsement_type == "ED018":
-        if endt_init_payload.vehicle_value.prai_num_02 > policy[0].policysection_collection[0].policyrisk_collection[0].prai_num_02:
+        if endt_init_payload.vehicle_value.prai_num_02 > policy[0].policysection_collection[0].policyrisk_collection[
+            0].prai_num_02:
             raise HTTPException(status_code=400,
                                 detail=f"Vehicle value cannot be increased for Decrease in SI endorsment.")
 
     if endt_init_payload.endorsement_type in ["ED002", "ED018"]:
-        if endt_init_payload.vehicle_value.prai_num_02 == policy[0].policysection_collection[0].policyrisk_collection[0].prai_num_02:
+        if endt_init_payload.vehicle_value.prai_num_02 == policy[0].policysection_collection[0].policyrisk_collection[
+            0].prai_num_02:
             raise HTTPException(status_code=400,
                                 detail=f"Endorsement has no effect. Please review'")
 
@@ -75,8 +79,6 @@ async def endt_init(
     if not endt_status[0]["STATUS"].startswith("ORA-0000"):
         raise HTTPException(status_code=400,
                             detail=f"Endorsement generated error: {endt_status[0]['STATUS']}. Please contact support team.")
-
-
 
     pol_instance = premia_services.query_policy(non_async_oracle_db, {"pol_no": endt_init_payload.policy_no})
     x = {

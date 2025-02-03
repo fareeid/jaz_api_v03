@@ -228,6 +228,27 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
 
         return p_prem_success.getvalue()
 
+    def approve_policy(self, oracle_db: Session, pol_no: str) -> str:
+        cursor = oracle_db.connection().connection.cursor()
+        p_pol_no = cursor.var(oracledb.STRING)
+        p_output_cursor = oracle_db.connection().connection.cursor()
+
+        cursor.callproc('JICK_UTILS_V2.P_APPROVE_POLICY', [
+            p_pol_no,
+            p_output_cursor
+        ])
+        oracle_db.commit()
+        rows = p_output_cursor.fetchall()
+        # Fetch column names from cursor description
+        column_names = [col[0] for col in p_output_cursor.description]
+        # Convert rows to a list of dictionaries (JSON-like structure)
+        json_result = [dict(zip(column_names, row)) for row in rows]
+        p_output_cursor.close()
+        if not json_result[0]["STATUS"].startswith("ORA-0000"):
+            return json_result
+        # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
+        return json_result
+
     def run_report(self, oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
         cursor = oracle_db.connection().connection.cursor()
         output_cursor = oracle_db.connection().connection.cursor()

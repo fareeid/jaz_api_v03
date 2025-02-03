@@ -218,6 +218,11 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
             dob=payload_in.quot_assr_dob.isoformat(),
             user_flexi=payload_in.quot_assr_flexi,
         )
+        detail = "About to validate the assured. I may not come back if invalid!!"
+        payload_out = await external_apis_crud.external_payload.update(
+            async_db, db_obj=payload,
+            obj_in={"payload_out": {"detail": detail}, "updated_at": datetime.now()}
+        )
         user = await validate_assured(async_db, non_async_oracle_db, current_user, user_obj)
         if user.id is None:
             user = await user_services.create_user(async_db, user_obj)

@@ -523,10 +523,10 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
     # TODO: Approve policy, Close RI
     # TODO: Return policy details and update quote
     # policy_process_dict = json.loads(policy_process_json)
-    payload_out = await external_apis_crud.external_payload.update(
-        async_db, db_obj=payload,
-        obj_in={"payload_out": policy_process_dict, "updated_at": datetime.now()}
-    )
+        payload_out = await external_apis_crud.external_payload.update(
+            async_db, db_obj=payload,
+            obj_in={"payload_out": policy_process_dict, "updated_at": datetime.now()}
+        )
     return policy_process_dict
 
 

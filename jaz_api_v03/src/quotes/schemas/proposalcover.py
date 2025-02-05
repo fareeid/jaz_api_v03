@@ -1,12 +1,13 @@
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ########## Cover Schema #########
 # Shared properties
 class ProposalCoverBase(BaseModel):
     cvr_sr_no: Union[int | None] = None
+    prc_sr_no: Union[int | None] = None
     prc_code: Union[str | None] = None
     prc_rate: Union[float | None] = None
     prc_rate_per: Union[float | None] = None
@@ -35,11 +36,13 @@ class ProposalCoverUpdate(ProposalCoverBase):
 
 # Properties shared by models stored in DB
 class ProposalCoverInDBBase(ProposalCoverBase):
+    model_config = ConfigDict(from_attributes=True)
+
     cvr_sys_id: int
     cvr_risk_sys_id: int
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

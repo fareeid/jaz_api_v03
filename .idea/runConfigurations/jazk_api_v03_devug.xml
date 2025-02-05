@@ -1,0 +1,41 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="jazk_api_v03_devug" type="Python.FastAPI">
+    <option name="file" value="D:\dev\jazk\jaz_api_v03\src\main.py" />
+    <module name="jazk" />
+    <option name="ENV_FILES" value="" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="false" />
+    <envs>
+      <env name="AGENT_ADMIN_EMAIL" value="nancy.nyanchogo@allianz.com" />
+      <env name="DEV_STATUS" value="WEB_DEV" />
+      <env name="DYN_MARINE_KEY" value="abcdefghijk23456" />
+      <env name="P11_DB_SIM" value="premia" />
+      <env name="P11_PASSWORD_SIM" value="changethis" />
+      <env name="P11_SERVER_SIM" value="localhost:5432" />
+      <env name="P11_USER_SIM" value="postgres" />
+      <env name="POSTGRES_DB" value="web_dev" />
+      <env name="POSTGRES_PASSWORD" value="changethis" />
+      <env name="POSTGRES_SERVER" value="localhost:5432" />
+      <env name="POSTGRES_TEST_DB" value="web_test" />
+      <env name="POSTGRES_USER" value="postgres" />
+      <env name="PREMIA_DB" value="p11tz" />
+      <env name="PREMIA_PASSWORD" value="p11_ke_uat2" />
+      <env name="PREMIA_PORT" value="1521" />
+      <env name="PREMIA_SERVER" value="10.212.0.6" />
+      <env name="PREMIA_USER" value="p11_ke_uat2" />
+      <env name="RUNNING_IN_PRODUCTION" value="0" />
+      <env name="SECRET_KEY" value="0VgKaAreq7S6B1GZyiySv_QQ7NSGCHoNUONKoyZKU_A" />
+      <env name="STAFF_ADMIN_EMAIL" value="matthew.kimweli@allianz.com" />
+      <env name="TESTING" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="$USER_HOME$/.conda/envs/jaz_api_v03/python.exe" />
+    <option name="SDK_NAME" value="jaz_api_v03" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/jaz_api_v03/src" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="launchJavascriptDebuger" value="false" />
+    <method v="2" />
+  </configuration>
+</component>

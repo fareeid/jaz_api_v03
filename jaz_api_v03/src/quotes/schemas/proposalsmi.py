@@ -1,12 +1,13 @@
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ########## SMI Schema #########
 # Shared properties
 class ProposalSMIBase(BaseModel):
     smi_sr_no: Union[int | None] = None
+    prs_sr_no: Union[int | None] = None
     prs_smi_code: Union[str | None] = None
     prs_rate: Union[float | None] = None
     prs_rate_per: Union[float | None] = None
@@ -33,11 +34,13 @@ class ProposalSMIUpdate(ProposalSMIBase):
 
 # Properties shared by models stored in DB
 class ProposalSMIInDBBase(ProposalSMIBase):
+    model_config = ConfigDict(from_attributes=True)
+
     smi_sys_id: int
     smi_risk_sys_id: int
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client

@@ -1,18 +1,20 @@
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # ########## Charge Schema #########
 # Shared properties
 class ProposalChargeBase(BaseModel):
-    chg_sr_no: Union[int | None] = None
+    chg_sr_no: Union[int, None] = None
+    pchg_sr_no: Union[int, None] = None
     pchg_code: Union[str | None] = None
     pchg_type: Union[str | None] = None
     pchg_perc: Union[float | None] = None
     pchg_chg_fc: Union[float | None] = None
     pchg_prem_curr_code: Union[str | None] = None
     pchg_rate_per: Union[float | None] = None
+    # pchg_flexi: Union[json | None] = None
 
 
 # Properties to receive on Proposal Charge creation
@@ -33,11 +35,13 @@ class ProposalChargeUpdate(ProposalChargeBase):
 
 # Properties shared by models stored in DB
 class ProposalChargeInDBBase(ProposalChargeBase):
+    model_config = ConfigDict(from_attributes=True)
+
     chg_sys_id: int
     chg_prop_sys_id: int
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client
@@ -45,6 +49,6 @@ class ProposalCharge(ProposalChargeInDBBase):
     pass
 
 
-# Properties properties stored in DB
+# Properties stored in DB
 class ProposalChargeInDB(ProposalChargeInDBBase):
     pass

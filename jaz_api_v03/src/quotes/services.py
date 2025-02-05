@@ -2,15 +2,18 @@ from datetime import datetime, timedelta
 from typing import Any, Union
 
 from dateutil import parser
+# from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
-from ..auth import crud as user_crud
-from ..auth import schemas as user_schemas
-from ..auth import services as user_services
 from . import crud as quotes_crud
 from . import schemas as quote_schemas
+from .crud import proposal as proposal_crud
 from .vendors_api import schemas as vendor_schemas
+from ..auth import schemas as user_schemas
+from ..auth import services as user_services
+from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
 
 
 def parse_datetime(date_string: str, default: Union[datetime | None] = None) -> Any:
@@ -28,7 +31,7 @@ def parse_float(float_string: str, default: Union[float | None] = 0) -> Any:
 
 
 def create_covers_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> list[quote_schemas.ProposalCoverCreate]:
     covers_list = []
     proposal_cover_obj = quote_schemas.ProposalCoverCreate(
@@ -46,7 +49,7 @@ def create_covers_list(
 
 
 def create_smis_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> list[quote_schemas.ProposalSMICreate]:
     smis_list = []
     proposal_smi_obj = quote_schemas.ProposalSMICreate(
@@ -63,9 +66,9 @@ def create_smis_list(
 
 
 def create_risks_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
-    covers_list: list[quote_schemas.ProposalCoverCreate],
-    smis_list: list[quote_schemas.ProposalSMICreate],
+        payload_in: vendor_schemas.QuoteMarineCreate,
+        covers_list: list[quote_schemas.ProposalCoverCreate],
+        smis_list: list[quote_schemas.ProposalSMICreate],
 ) -> list[quote_schemas.ProposalRiskCreate]:
     risks_list = []
     flexi_dict = {}
@@ -95,7 +98,7 @@ def create_risks_list(
 
 
 def create_sections_list(
-    risks_list: list[quote_schemas.ProposalRiskCreate],
+        risks_list: list[quote_schemas.ProposalRiskCreate],
 ) -> list[quote_schemas.ProposalSectionCreate]:
     sections_list = []
     proposal_section_obj = quote_schemas.ProposalSectionCreate(
@@ -106,7 +109,7 @@ def create_sections_list(
 
 
 def create_charges_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> list[quote_schemas.ProposalChargeCreate]:
     charges_list = []
     stamp_duty_obj = quote_schemas.ProposalChargeCreate(
@@ -143,9 +146,9 @@ def create_charges_list(
 
 
 def create_proposals_list(
-    payload_in: vendor_schemas.QuoteMarineCreate,
-    sections_list: list[quote_schemas.ProposalSectionCreate],
-    charges_list: list[quote_schemas.ProposalChargeCreate],
+        payload_in: vendor_schemas.QuoteMarineCreate,
+        sections_list: list[quote_schemas.ProposalSectionCreate],
+        charges_list: list[quote_schemas.ProposalChargeCreate],
 ) -> list[quote_schemas.ProposalCreate]:
     proposals_list = []
     proposal_obj = quote_schemas.ProposalCreate(
@@ -167,7 +170,7 @@ def create_proposals_list(
         # pol_to_dt=datetime.strptime(payload_in.MCI_Cargo_dischargedate, "%d/%m/%Y"),
         pol_fm_dt=parse_datetime(payload_in.MCI_MPESAPayDate),
         pol_to_dt=parse_datetime(payload_in.MCI_MPESAPayDate)
-        + timedelta(days=int(payload_in.MCI_Cargo_InsuranceCoverPeriodDays)),
+                  + timedelta(days=int(payload_in.MCI_Cargo_InsuranceCoverPeriodDays)),
         pol_prem_curr_code="KES",
         pol_dflt_si_curr_code="KES",
         proposalsections=sections_list,
@@ -177,41 +180,51 @@ def create_proposals_list(
     return proposals_list
 
 
-# async def dump_payload(async_db: AsyncSession, payload_in: str) -> None:
-#     _ = await user_services
+# def get_cust_by_pin(
+#     *,
+#     # oracle_db: Session = Depends(get_oracle_session),
+#     oracle_db: Session = Depends(get_oracle_session_sim),
+#     pin: str,
+#     # current_user: models.User = Depends(deps.get_current_active_superuser),
+# ) -> Any:
+#     # customer = customers_crud.get_customer("152917")  # noqa: F841
+#     policy = premia_crud.customer.get_cust_by_pin(oracle_db, pin="A016034508E")
+#     return policy
+#     # return {"test_key": "test_value"}
+#     pass
+
+
+async def get_proposal(
+        async_db: AsyncSession,
+        sys_id: int,
+) -> Any:
+    proposal = await proposal_crud.get_proposal(async_db, sys_id)
 
 
 async def create_quote(
-    async_db: AsyncSession, payload_in: vendor_schemas.QuoteMarineCreate
+        async_db: AsyncSession,
+        oracle_db: Session,
+        payload_in: vendor_schemas.QuoteMarineCreate,
 ) -> Any:
     quote_marine_dict = jsonable_encoder(  # noqa: F841
         payload_in.model_dump(exclude_unset=True)
     )
+
     # 1.  Create/Search User
     user_obj = user_schemas.UserCreate(
         first_name=payload_in.MCI_Cargo_ImporterName,
         name=payload_in.MCI_Cargo_ImporterName,
         email=payload_in.MCI_CAEmail,
-        username=payload_in.MCI_CAEmail,
+        # username=payload_in.MCI_CAEmail,
         pin=payload_in.MCI_Cargo_ImporterPIN,
     )
 
-    # Check customer by pin ---
-    user_list = await user_crud.user.get_by_pin(
-        async_db, pin=payload_in.MCI_Cargo_ImporterPIN
-    )
-    if not user_list == []:
-        user = user_list[0]
-    else:
-        user_list = await user_crud.user.get_by_email(
-            async_db, email=payload_in.MCI_CAEmail
-        )
-        if not user_list == []:
-            user = user_list[0]
-        else:
-            user = await user_services.create_user(async_db, user_obj)  # noqa: F841
+    new, user = await user_services.get_user(async_db, user_obj)
 
     # TO DO: Create/Fetch customer in/from Premia based on user
+    # customer = premia_services.get_cust_by_pin(  # noqa: F841
+    #     oracle_db, payload_in.MCI_Cargo_ImporterPIN
+    # )
 
     covers_list = create_covers_list(payload_in)
     smis_list = create_smis_list(payload_in)

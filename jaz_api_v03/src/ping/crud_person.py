@@ -3,9 +3,9 @@ from typing import Any, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.crud_base import CRUDBase
 from .models import Item, Person
 from .schemas import PersonCreate, PersonUpdate
+from ..db.crud_base import CRUDBase
 
 log = logging.getLogger("uvicorn")
 
@@ -15,7 +15,7 @@ class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):
         self, async_db: AsyncSession, *, obj_in: Union[PersonCreate, dict[str, Any]]
     ) -> Person:
         person_dict = self.replace_pass_items_field(
-            obj_in.dict(exclude_unset=True)  # type: ignore
+            obj_in.model_dump(exclude_unset=True)  # type: ignore
         )  # __dict__
         return await super().create(async_db, obj_in=person_dict)
 
@@ -29,7 +29,7 @@ class CRUDPerson(CRUDBase[Person, PersonCreate, PersonUpdate]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
         # if update_data["password"]:
         # if update_data.get("password"):
         #     hashed_password = update_data["password"]

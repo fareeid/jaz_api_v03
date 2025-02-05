@@ -4,9 +4,9 @@ from jose import jwt
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from . import crud, models, schemas, security
 from ..core.config import Settings, get_settings
 from ..core.dependencies import get_session
-from . import crud, models, schemas, security
 
 settings: Settings = get_settings()
 
@@ -29,7 +29,7 @@ async def get_current_user(
             detail="Could not validate credentials",
         )
     user_list = await crud.user.get(async_db, id=token_data.sub)  # type: ignore
-    if user_list == []:
+    if not user_list:
         raise HTTPException(status_code=404, detail="User not found")
     return user_list[0]
 

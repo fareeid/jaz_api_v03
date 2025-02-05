@@ -2,24 +2,26 @@ from datetime import datetime, timedelta
 from typing import Any, Union
 
 import bcrypt
+from fastapi import HTTPException
 from jose import jwt
+
+from ..core.config import Settings, get_settings
 
 # Depracated due to AttributeError: module 'bcrypt' has no attribute '__about__'
 # passlib is not longer actively maintained
 # https://github.com/pyca/bcrypt/issues/684
-from passlib.context import CryptContext
-
-from ..core.config import Settings, get_settings
+# from passlib.context import CryptContext
 
 settings: Settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ALGORITHM = "HS256"
 
 
+# noinspection DuplicatedCode
 def create_access_token(
-    subject: Union[str, Any], expires_delta: Union[timedelta, None] = None
+        subject: Union[str, Any], expires_delta: Union[timedelta, None] = None
 ) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -32,14 +34,38 @@ def create_access_token(
     return encoded_jwt
 
 
-# Depracated due to AttributeError: module 'bcrypt' has no attribute '__about__'
-def verify_passwordx(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+def create_token(
+        subject: Union[str, Any], expires_delta: Union[timedelta, None] = None
+) -> str:
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(
+            minutes=settings.TOKEN_EXPIRE_MINUTES
+        )
+    to_encode = {"exp": expire, "sub": str(subject)}
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def verify_token(token: str) -> Union[str, None]:
+    try:
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        return decoded_token["sub"]
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Activation link expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid token")
 
 
 # Depracated due to AttributeError: module 'bcrypt' has no attribute '__about__'
-def get_password_hashx(password: str) -> str:
-    return pwd_context.hash(password)
+# def verify_passwordx(plain_password: str, hashed_password: str) -> bool:
+#     return pwd_context.verify(plain_password, hashed_password)
+
+
+# Depracated due to AttributeError: module 'bcrypt' has no attribute '__about__'
+# def get_password_hashx(password: str) -> str:
+#     return pwd_context.hash(password)
 
 
 # Use this to avoid above error in docker

@@ -1,6 +1,6 @@
 from typing import Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # from . import ProposalRisk, ProposalRiskCreate
 from .proposalrisk import ProposalRisk, ProposalRiskCreate
@@ -10,6 +10,7 @@ from .proposalrisk import ProposalRisk, ProposalRiskCreate
 # Shared properties
 class ProposalSectionBase(BaseModel):
     sec_sr_no: Union[int | None] = None
+    psec_sr_no: Union[int | None] = None
     psec_sec_code: Union[str | None] = None
 
 
@@ -27,12 +28,14 @@ class ProposalSectionUpdate(ProposalSectionBase):
 
 # Properties shared by models stored in DB
 class ProposalSectionInDBBase(ProposalSectionBase):
+    model_config = ConfigDict(from_attributes=True)
+
     sec_sys_id: int
     sec_prop_sys_id: int
     proposalrisks: list[ProposalRisk] = []
 
-    class Config:
-        from_attributes = True
+    # class Config:
+    #     from_attributes = True
 
 
 # Properties to return to client
@@ -40,6 +43,6 @@ class ProposalSection(ProposalSectionInDBBase):
     pass
 
 
-# Properties properties stored in DB
+# Properties stored in DB
 class ProposalSectionInDB(ProposalSectionInDBBase):
     pass

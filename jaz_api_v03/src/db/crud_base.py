@@ -28,10 +28,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     async def create_v1(
-        self, async_db: AsyncSession, *, obj_in: CreateSchemaType
+            self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         # obj_in_data = jsonable_encoder(obj_in)
-        print(obj_in)
+        # print(obj_in)
         db_obj = self.model(**obj_in)
         async_db.add(db_obj)
         await async_db.commit()
@@ -39,14 +39,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def create(
-        self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
+            self, async_db: AsyncSession, *, obj_in: Union[CreateSchemaType, dict[str, Any]]
     ) -> ModelType:
         if isinstance(obj_in, dict):
             # insert_data = jsonable_encoder(obj_in, exclude_unset=True)
             insert_data = obj_in
         else:
-            insert_data = obj_in.dict(exclude_unset=True)
-        print(jsonable_encoder(insert_data))
+            insert_data = obj_in.model_dump(exclude_unset=True)
+        # print(jsonable_encoder(insert_data))
         db_obj = self.model(**insert_data)
         async_db.add(db_obj)
         await async_db.commit()
@@ -54,7 +54,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def create_v2(
-        self, async_db: AsyncSession, *, obj_in: CreateSchemaType
+            self, async_db: AsyncSession, *, obj_in: CreateSchemaType
     ) -> ModelType:
         db_obj = self.model(**obj_in)
         async_db.add(db_obj)
@@ -63,32 +63,40 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def update(
-        self,
-        async_db: AsyncSession,
-        *,
-        db_obj: ModelType,
-        obj_in: Union[UpdateSchemaType, dict[str, Any]]
+            self,
+            async_db: AsyncSession,
+            *,
+            db_obj: ModelType,
+            obj_in: Union[UpdateSchemaType, dict[str, Any]]
     ) -> ModelType:
-        obj_data = jsonable_encoder(db_obj)
+        # refreshed_db_obj = await async_db.execute(select(self.model).where(self.model.id == db_obj.id))
+        refreshed_db_obj = await async_db.get(self.model, db_obj.id)
+        obj_data = jsonable_encoder(refreshed_db_obj)
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
         for field in obj_data:
             if field in update_data:
-                setattr(db_obj, field, update_data[field])
-        async_db.add(db_obj)
+                setattr(refreshed_db_obj, field, update_data[field])
+
+        async_db.add(refreshed_db_obj)
+        # merged_obj = await async_db.merge(refreshed_db_obj)
 
         await async_db.commit()
-        await async_db.refresh(db_obj)
-        return db_obj
+        await async_db.refresh(refreshed_db_obj)
+        return refreshed_db_obj
 
     async def get(self, async_db: AsyncSession, id: int) -> list[ModelType]:
         result = await async_db.execute(select(self.model).where(self.model.id == id))
         return list(result.scalars().all())
 
+    async def get_by_id(self, async_db: AsyncSession, id: int) -> ModelType:
+        result = await async_db.get(self.model, id)
+        return result
+
     async def get_multi(
-        self, async_db: AsyncSession, skip: int = 0, limit: int = 100
+            self, async_db: AsyncSession, skip: int = 0, limit: int = 100
     ) -> list[ModelType]:
         result = await async_db.execute(select(self.model).offset(skip).limit(limit))
         return list(result.scalars().all())

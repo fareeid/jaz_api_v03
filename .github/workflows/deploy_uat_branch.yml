@@ -1,4 +1,4 @@
-name: Trigger auto deployment for jazk-api-app2
+name: Trigger auto deployment for uat api
 
 # When this action will be executed
 on:

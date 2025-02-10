@@ -6,25 +6,25 @@ from pydantic import BaseModel, ConfigDict
 
 class PolicyAcntDocQuerySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    ad_sys_id:Union[int, None] = None
-    ad_tran_sys_id:Union[int, None] = None
-    ad_pol_sys_id:Union[int, None] = None
-    ad_end_no_idx:Union[int, None] = None
-    ad_end_sr_no:Union[int, None] = None
-    ad_doc_type:Union[str, None] = None
-    ad_tran_type:Union[str, None] = None
-    ad_tran_code:Union[str, None] = None
-    ad_acnt_year:Union[int, None] = None
-    ad_doc_no:Union[int, None] = None
-    ad_doc_dt:Union[datetime, None] = None
-    ad_int_ent_yn:Union[str, None] = None
-    ad_drcr_flag:Union[str, None] = None
-    ad_curr_code:Union[str, None] = None
-    ad_amt_fc:Union[float, None] = None
-    ad_amt_lc_1:Union[float, None] = None
-    ad_narration:Union[str, None] = None
-    ad_main_acnt_code:Union[str, None] = None
-    ad_sub_acnt_code:Union[str, None] = None
+    ad_sys_id: Union[int, None] = None
+    ad_tran_sys_id: Union[int, None] = None
+    ad_pol_sys_id: Union[int, None] = None
+    ad_end_no_idx: Union[int, None] = None
+    ad_end_sr_no: Union[int, None] = None
+    ad_doc_type: Union[str, None] = None
+    ad_tran_type: Union[str, None] = None
+    ad_tran_code: Union[str, None] = None
+    ad_acnt_year: Union[int, None] = None
+    ad_doc_no: Union[int, None] = None
+    ad_doc_dt: Union[datetime, None] = None
+    ad_int_ent_yn: Union[str, None] = None
+    ad_drcr_flag: Union[str, None] = None
+    ad_curr_code: Union[str, None] = None
+    ad_amt_fc: Union[float, None] = None
+    ad_amt_lc_1: Union[float, None] = None
+    ad_narration: Union[str, None] = None
+    ad_main_acnt_code: Union[str, None] = None
+    ad_sub_acnt_code: Union[str, None] = None
 
 
 class PolicyChargeQuerySchema(BaseModel):
@@ -114,6 +114,13 @@ class PolicySectionQuerySchema(BaseModel):
     psec_eff_fm_dt: Union[datetime, None] = None
     psec_eff_to_dt: Union[datetime, None] = None
     policyrisk_collection: list[PolicyRiskQuerySchema] = []
+
+
+class PolicyNoQuerySchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    pol_sys_id: Union[int, None] = None
+    pol_no: Union[str, None] = None
+    status: Union[str, None] = None
 
 
 class PolicyQuerySchema(BaseModel):

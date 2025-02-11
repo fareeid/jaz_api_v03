@@ -4,6 +4,21 @@ from typing import Union
 from pydantic import BaseModel, ConfigDict
 
 
+class PolicyReceiptStagingQuerySchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    r_sys_id: Union[int, None] = None
+    r_tran_code: Union[str, None] = None
+    r_doc_dt: Union[datetime, None] = None
+    r_doc_no: Union[int, None] = None
+    r_rcpt_mode: Union[str, None] = None
+    r_curr_code: Union[str, None] = None
+    r_remarks: Union[str, None] = None
+    r_fc_amt: Union[float, None] = None
+    r_cust_ref: Union[str, None] = None
+    r_chq_no: Union[str, None] = None
+    r_chq_dt: Union[datetime, None] = None
+
+
 class PolicyAcntDocQuerySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     ad_sys_id: Union[int, None] = None
@@ -177,4 +192,5 @@ class PolicyQuerySchema(BaseModel):
     policycharge_collection: list[PolicyChargeQuerySchema] = []
     policysection_collection: list[PolicySectionQuerySchema] = []
     policyacntdoc_collection: list[PolicyAcntDocQuerySchema] = []
-    rcpt_list: list = []
+    receiptstaging_collection: list[PolicyReceiptStagingQuerySchema] = []
+    new_rcpt_list: list = []

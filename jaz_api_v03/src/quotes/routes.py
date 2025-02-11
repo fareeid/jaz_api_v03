@@ -216,7 +216,7 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
     policy_quote_data, quote_data = await create_portal_quote(async_db, payload_in, user)
     # premia_policy_data = []
     policy_list = []
-    rcpt_list = []
+    new_rcpt_list = []
     for proposal in policy_quote_data:
         policy_template_dict, prop = await get_policy_template_dict(async_db, proposal)
 
@@ -283,8 +283,8 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
                     # receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
                     rcpt = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.AUTO_RECEIPT_V2',
                                                               r_sys_id)[0]
-                    rcpt_list.append(rcpt)
-            policy_schema.rcpt_list = rcpt_list
+                    new_rcpt_list.append(rcpt)
+            policy_schema.new_rcpt_list = new_rcpt_list
         policy_list.append(policy_schema)
     return policy_list
 

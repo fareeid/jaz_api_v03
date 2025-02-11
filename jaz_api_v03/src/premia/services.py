@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import models as auth_models
 from ..core.dependencies import get_non_async_oracle_session, get_oracle_session_sim  # noqa: F401
-from ..premia import crud as premia_crud, models as premia_models, schemas as premia_schemas
+from ..premia import crud as premia_crud, models as premia_models
 from ..quotes.endorsments import schemas as endt_schemas
 from ..reports import schemas as report_schemas
 
@@ -166,8 +166,8 @@ def approve_policy(non_async_oracle_db: Session, pol_no: str) -> str:
     return pol_no
 
 
-def run_proc_by_sys_id(non_async_oracle_db: Session, proc: str, pol_trans: premia_schemas.PolicyQuerySchema) -> str:
-    pol_no = premia_crud.policy.run_proc_by_sys_id(non_async_oracle_db, proc, pol_trans)
+def run_proc_by_sys_id(non_async_oracle_db: Session, proc: str, sys_id: int) -> str:
+    pol_no = premia_crud.policy.run_proc_by_sys_id(non_async_oracle_db, proc, sys_id)
     return pol_no
 
 

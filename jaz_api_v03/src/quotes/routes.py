@@ -179,7 +179,9 @@ async def calc_quote(
         policy_quote: PolicyQuerySchema,
         current_user: user_models.User = Depends(auth_dependencies.get_current_user),
 ) -> Any:
-    calc_status = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_CALC_PREMIUM', policy_quote)[0]
+    calc_status = \
+        premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_CALC_PREMIUM',
+                                           policy_quote.pol_sys_id)[0]
     # if calc_status["STATUS"] == "SUCCESS":
     #     policy_schema.pol_no = policy["POL_NO"]
     return calc_status
@@ -194,7 +196,8 @@ async def approve_policy(
         policy_quote: PolicyQuerySchema,
         current_user: user_models.User = Depends(auth_dependencies.get_current_user),
 ) -> Any:
-    approve_status = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_APPROVE_POLICY', policy_quote)
+    approve_status = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_APPROVE_POLICY',
+                                                        policy_quote.pol_sys_id)
     # if approve_status["STATUS"] == "SUCCESS":
     #     policy = premia_services.query_policy(non_async_oracle_db, {"pol_no": approve_status["POL_NO"]})[0]
     #     return policy
@@ -213,6 +216,7 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
     policy_quote_data, quote_data = await create_portal_quote(async_db, payload_in, user)
     # premia_policy_data = []
     policy_list = []
+    rcpt_list = []
     for proposal in policy_quote_data:
         policy_template_dict, prop = await get_policy_template_dict(async_db, proposal)
 
@@ -238,7 +242,8 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
 
         policy_db = premia_services.create_policy(non_async_oracle_db, pgit_policy_data_pydantic)
         policy_schema = PolicyQuerySchema.model_validate(policy_db)
-        policy = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_GENERATE_POL_NO', policy_schema)[0]
+        policy = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_GENERATE_POL_NO',
+                                                    policy_schema.pol_sys_id)[0]
         if policy["STATUS"] == "SUCCESS":
             policy_schema.pol_no = policy["POL_NO"]
             for installment in proposalpremiums[0].get('proposalinstallments', []):
@@ -248,7 +253,8 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
                         "r_sys_id": r_sys_id,
                         "r_comp_code": "001",
                         "r_tran_code": "RVCGP100",
-                        "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),  # "%Y-%m-%d %H:%M:%S"
+                        "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),
+                        # "%Y-%m-%d %H:%M:%S"
                         "r_divn_code": "",
                         "r_dept_code": "",  # TODO: Get from quote
                         "r_rcpt_option": "1",
@@ -274,8 +280,11 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
                     }
                     fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
                     receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
-                    receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
-
+                    # receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
+                    rcpt = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.AUTO_RECEIPT_V2',
+                                                              r_sys_id)[0]
+                    rcpt_list.append(rcpt)
+            policy_schema.rcpt_list = rcpt_list
         policy_list.append(policy_schema)
     return policy_list
 

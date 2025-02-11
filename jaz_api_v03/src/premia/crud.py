@@ -249,12 +249,12 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
         # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
         return json_result
 
-    def run_proc_by_sys_id(self, oracle_db: Session, proc: str, pol_trans: premia_schemas.PolicyQuerySchema) -> str:
+    def run_proc_by_sys_id(self, oracle_db: Session, proc: str, sys_id: int) -> str:
         cursor = oracle_db.connection().connection.cursor()
         p_output_cursor = oracle_db.connection().connection.cursor()
 
         cursor.callproc(proc, [
-            pol_trans.pol_sys_id,
+            sys_id,
             p_output_cursor
         ])
         oracle_db.commit()
@@ -268,6 +268,7 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
         #     return json_result
         # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
         return json_result
+
 
     def run_report(self, oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
         cursor = oracle_db.connection().connection.cursor()

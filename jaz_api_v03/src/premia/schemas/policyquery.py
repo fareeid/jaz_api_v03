@@ -177,3 +177,4 @@ class PolicyQuerySchema(BaseModel):
     policycharge_collection: list[PolicyChargeQuerySchema] = []
     policysection_collection: list[PolicySectionQuerySchema] = []
     policyacntdoc_collection: list[PolicyAcntDocQuerySchema] = []
+    rcpt_list: list = []

@@ -39,7 +39,7 @@ from ..masters import crud as masters_crud
 from ..premia import models as premia_models
 from ..premia import services as premia_services
 from ..premia.schemas import PolicyCreate, PolicyChargeCreate, PolicyCoverCreate, PolicyRiskCreate, PolicySectionCreate, \
-    PolicyCurrencyCreate, ReceiptStagingCreate, PolicyHypothecationCreate
+    PolicyCurrencyCreate, ReceiptStagingCreate, PolicyHypothecationCreate, PolicyQuerySchema
 from ..reports import schemas as report_schemas
 
 router = APIRouter()
@@ -156,38 +156,503 @@ async def quote(
     # return {"test_key": "test_value"}
 
 
+@router.post("/submit_quote", response_model=list[PolicyQuerySchema])  # schemas.Quote
+async def submit_quote(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        # non_async_oracle_db: Session = Depends(get_oracle_session_sim),  # Simulation Premia
+        payload_in: schemas.QuoteCreate,
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+) -> Any:
+    pol_no_list = await save_quote(async_db, current_user, non_async_oracle_db, payload_in)
+
+    return pol_no_list
+
+
+@router.post("/calc_quote", response_model=dict[str, Any])  # schemas.Quote
+async def calc_quote(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        # non_async_oracle_db: Session = Depends(get_oracle_session_sim),  # Simulation Premia
+        policy_quote: PolicyQuerySchema,
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+) -> Any:
+    calc_status = \
+        premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_CALC_PREMIUM',
+                                           policy_quote.pol_sys_id)[0]
+    # if calc_status["STATUS"] == "SUCCESS":
+    #     policy_schema.pol_no = policy["POL_NO"]
+    return calc_status
+
+
+@router.post("/approve_policy", response_model=list[dict[str, Any]])  # PolicyQuerySchema
+async def approve_policy(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        # non_async_oracle_db: Session = Depends(get_oracle_session_sim),  # Simulation Premia
+        policy_quote: PolicyQuerySchema,
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+) -> Any:
+    approve_status = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_APPROVE_POLICY',
+                                                        policy_quote.pol_sys_id)
+    # if approve_status["STATUS"] == "SUCCESS":
+    #     policy = premia_services.query_policy(non_async_oracle_db, {"pol_no": approve_status["POL_NO"]})[0]
+    #     return policy
+
+    return approve_status
+
+
+async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
+    payload = await log_payload_in(async_db, payload_in)
+
+    await validate_vehicle(async_db, non_async_oracle_db, payload, payload_in)
+
+    user = await sync_assured(async_db, current_user, non_async_oracle_db, payload, payload_in)
+    #################
+    #################
+    policy_quote_data, quote_data = await create_portal_quote(async_db, payload_in, user)
+    # premia_policy_data = []
+    policy_list = []
+    new_rcpt_list = []
+    for proposal in policy_quote_data:
+        policy_template_dict, prop = await get_policy_template_dict(async_db, proposal)
+
+        pol_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pol_sys_id")
+        pgit_pol_charge_list_db = await premia_charge_list(non_async_oracle_db, pol_sys_id, policy_template_dict,
+                                                           proposal)
+
+        pgit_pol_hypothecation_list_db = await premia_hypothecation_list(non_async_oracle_db, pol_sys_id, prop,
+                                                                         proposal)
+
+        pgit_pol_appl_curr_list_db = await premia_curr_list(non_async_oracle_db, pol_sys_id, policy_template_dict,
+                                                            proposal)
+
+        pgit_pol_section_list_db = await premia_section_list(non_async_oracle_db, pol_sys_id, policy_template_dict,
+                                                             proposal)
+
+        proposalpremiums = proposal.pop('proposalpremiums')
+
+        pgit_policy_data_pydantic = await premia_policy_list(current_user, pgit_pol_appl_curr_list_db,
+                                                             pgit_pol_charge_list_db, pgit_pol_hypothecation_list_db,
+                                                             pgit_pol_section_list_db, pol_sys_id,
+                                                             policy_template_dict, proposal, quote_data)
+
+        policy_db = premia_services.create_policy(non_async_oracle_db, pgit_policy_data_pydantic)
+        policy_schema = PolicyQuerySchema.model_validate(policy_db)
+        policy = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_GENERATE_POL_NO',
+                                                    policy_schema.pol_sys_id)[0]
+        if policy["STATUS"] == "SUCCESS":
+            policy_schema.pol_no = policy["POL_NO"]
+            for installment in proposalpremiums[0].get('proposalinstallments', []):
+                if 'paymt_ref' in installment:
+                    r_sys_id = premia_services.get_sys_id(non_async_oracle_db, "jaz_r_sys_id")
+                    fw_receipt_stage_data = {
+                        "r_sys_id": r_sys_id,
+                        "r_comp_code": "001",
+                        "r_tran_code": "RVCGP100",
+                        "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),
+                        # "%Y-%m-%d %H:%M:%S"
+                        "r_divn_code": "",
+                        "r_dept_code": "",  # TODO: Get from quote
+                        "r_rcpt_option": "1",
+                        "r_rcpt_mode": "M-pesa",
+                        "r_rcvd_from": "2",
+                        "r_party_code": current_user.cust_code,
+                        "r_curr_code": "KES",
+                        "r_fc_amt": installment["paymt_amt"],
+                        "r_lc_amt": installment["paymt_amt"],
+                        "r_remarks": policy["POL_NO"],
+                        "r_cust_ref": installment["paymt_ref"],
+                        "r_our_ref": installment["paymt_ref"],
+                        "r_bank_code": "",
+                        "r_bank_acnt_no": "",
+                        "r_chq_no": installment["paymt_ref"],
+                        "r_chq_dt": installment["paymt_dt"],
+                        "r_o_main_acnt_code": "151011",
+                        "r_o_sub_acnt_code": current_user.cust_code,
+                        "r_o_remarks": policy["POL_NO"],
+                        "r_o_fc_amt": installment["paymt_amt"],
+                        "r_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "r_cr_uid": "PORTAL-REG"
+                    }
+                    fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
+                    receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
+                    # receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
+                    rcpt = premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.AUTO_RECEIPT_V2',
+                                                              r_sys_id)[0]
+                    new_rcpt_list.append(rcpt)
+            policy_schema.new_rcpt_list = new_rcpt_list
+        policy_list.append(policy_schema)
+    return policy_list
+
+
 async def process_quote(async_db, current_user, non_async_oracle_db, payload_in):
-    data = {
-        "external_party": "jazk-web",
-        "transaction_type": "Quote",
-        "notification": "json",
-        "payload": jsonable_encoder(payload_in.model_dump(exclude_unset=True))
+    payload = await log_payload_in(async_db, payload_in)
+
+    await validate_vehicle(async_db, non_async_oracle_db, payload, payload_in)
+
+    user = await sync_assured(async_db, current_user, non_async_oracle_db, payload, payload_in)
+    #################
+    #################
+    policy_quote_data, quote_data = await create_portal_quote(async_db, payload_in, user)
+    # premia_policy_data = []
+    pgit_policy_list_db = []
+    for proposal in policy_quote_data:
+        policy_template_dict, prop = await get_policy_template_dict(async_db, proposal)
+
+        pol_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pol_sys_id")
+        pgit_pol_charge_list_db = await premia_charge_list(non_async_oracle_db, pol_sys_id, policy_template_dict,
+                                                           proposal)
+
+        pgit_pol_hypothecation_list_db = await premia_hypothecation_list(non_async_oracle_db, pol_sys_id, prop,
+                                                                         proposal)
+
+        pgit_pol_appl_curr_list_db = await premia_curr_list(non_async_oracle_db, pol_sys_id, policy_template_dict,
+                                                            proposal)
+
+        pgit_pol_section_list_db = await premia_section_list(non_async_oracle_db, pol_sys_id, policy_template_dict,
+                                                             proposal)
+
+        pgit_policy_data_pydantic = await premia_policy_list(current_user, pgit_pol_appl_curr_list_db,
+                                                             pgit_pol_charge_list_db, pgit_pol_hypothecation_list_db,
+                                                             pgit_pol_section_list_db, pol_sys_id,
+                                                             policy_template_dict, proposal, quote_data)
+
+        policy = premia_services.create_policy(non_async_oracle_db, pgit_policy_data_pydantic)
+        policy_process_json = premia_services.policy_process_json(non_async_oracle_db, policy)
+        policy = premia_services.get_policy(non_async_oracle_db, policy)
+        policy_process_dict = json.loads(policy_process_json)
+
+        receipt_process_json = await process_receipt(current_user, non_async_oracle_db, policy_process_dict, quote_data)
+        receipt_process_dict = json.loads(receipt_process_json)
+        policy_process_dict['AUTO_RECEIPT'] = receipt_process_dict  # {"RCPT_NO": "RVCGP100-2024000161"}  #
+        # TODO: Approve policy, Close RI
+        # TODO: Return policy details and update quote
+        # policy_process_dict = json.loads(policy_process_json)
+        payload_out = await external_apis_crud.external_payload.update(
+            async_db, db_obj=payload,
+            obj_in={"payload_out": policy_process_dict, "updated_at": datetime.now()}
+        )
+    return policy_process_dict
+
+
+async def process_receipt(current_user, non_async_oracle_db, policy_process_dict, quote_data):
+    r_sys_id = premia_services.get_sys_id(non_async_oracle_db, "jaz_r_sys_id")
+    fw_receipt_stage_data = {
+        "r_sys_id": r_sys_id,
+        "r_comp_code": "001",
+        "r_tran_code": "RVCGP100",
+        "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),  # "%Y-%m-%d %H:%M:%S"
+        "r_divn_code": "",
+        "r_dept_code": "",  # TODO: Get from quote
+        "r_rcpt_option": "1",
+        "r_rcpt_mode": "M-pesa",
+        "r_rcvd_from": "2",
+        "r_party_code": current_user.cust_code,
+        "r_curr_code": "KES",
+        "r_fc_amt": quote_data["quot_paymt_amt"],
+        "r_lc_amt": quote_data["quot_paymt_amt"],
+        "r_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
+        "r_cust_ref": quote_data["quot_paymt_ref"],
+        "r_our_ref": quote_data["quot_paymt_ref"],
+        "r_bank_code": "",
+        "r_bank_acnt_no": "",
+        "r_chq_no": quote_data["quot_paymt_ref"],
+        "r_chq_dt": quote_data["quot_paymt_date"],
+        "r_o_main_acnt_code": "151011",
+        "r_o_sub_acnt_code": current_user.cust_code,
+        "r_o_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
+        "r_o_fc_amt": quote_data["quot_paymt_amt"],
+        "r_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "r_cr_uid": "PORTAL-REG"
     }
-    payload = await external_apis_crud.external_payload.create_v2(
-        async_db, obj_in=data
-    )
+    fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
+    receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
+    receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
+    return receipt_process_json
 
+
+async def premia_policy_list(current_user, pgit_pol_appl_curr_list_db, pgit_pol_charge_list_db,
+                             pgit_pol_hypothecation_list_db, pgit_pol_section_list_db, pol_sys_id,
+                             policy_template_dict, proposal, quote_data):
+    pgit_policy_data = {
+        **policy_template_dict["pgit_policy_template"],
+        **proposal,
+        "policycharge_collection": pgit_pol_charge_list_db,
+        "policysection_collection": pgit_pol_section_list_db,
+        "policycurrency_collection": pgit_pol_appl_curr_list_db,
+        "policyhypothecation_collection": pgit_pol_hypothecation_list_db,
+        "pol_sys_id": pol_sys_id,
+        "pol_no": str(pol_sys_id),
+        "pol_uw_year": datetime.fromisoformat(proposal["pol_fm_dt"]).year,  # datetime.now().year,
+        "pol_cal_yr": datetime.now().year,
+        "pol_cust_code": current_user.cust_code,
+        # "pol_src_code": proposal["pol_cust_code"], # current_user.cust_code,
+        "pol_src_type": "1" if current_user.cust_cc_code in ['01', '10'] else "2",
+        "pol_src_code": "" if current_user.cust_cc_code in ['01', '10'] else current_user.cust_code,
+        "pol_assr_name": quote_data["quot_assr_name"],
+        "pol_issue_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "pol_period": 365,  # TODO: Calculate based on the period
+        "pol_no_risk": 1,  # TODO: Calculate from number of risks
+        "pol_no_section": 1,  # TODO: Calculate from number of sections
+        "pol_city": "NAIROBI",  # TODO: Get from quote
+        "pol_civil_id": quote_data["quot_assr_pin"],
+        "pol_ref_no": quote_data["quot_assr_nic"],
+        "pol_email_id": quote_data["quot_assr_email"],
+        "pol_quot_recvd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "pol_cr_uid": "PORTAL-REG",
+        "pol_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    pgit_policy_data_pydantic = PolicyCreate(**pgit_policy_data)
+    pgit_policy_db = premia_models.Policy(**pgit_policy_data)
+    # pgit_policy_list_db.append(pgit_policy_db)
+    return pgit_policy_data_pydantic
+
+
+async def premia_section_list(non_async_oracle_db, pol_sys_id, policy_template_dict, proposal):
+    quote_sections_list = proposal.pop("proposalsections", None)
+    pgit_pol_section_list_db = []
+    for quote_section in quote_sections_list:
+        psec_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_psec_sys_id")
+        pgit_pol_risk_addl_info_list_db = await premia_risk_list(non_async_oracle_db, pol_sys_id,
+                                                                 policy_template_dict, proposal, psec_sys_id,
+                                                                 quote_section)
+
+        pgit_pol_section_data = {
+            **policy_template_dict["pgit_pol_section"][0],
+            **quote_section,
+            "policyrisk_collection": pgit_pol_risk_addl_info_list_db,
+            "psec_sys_id": psec_sys_id,
+            "psec_pol_sys_id": pol_sys_id,
+            "psec_eff_fm_dt": proposal["pol_fm_dt"],
+            "psec_eff_to_dt": proposal["pol_to_dt"],
+            "psec_prod_code": proposal["pol_prod_code"],
+            "psec_dept_code": proposal["pol_dept_code"],
+            "psec_cr_uid": "PORTAL-REG",
+            "psec_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        pgit_pol_section_data_pydantic = PolicySectionCreate(**pgit_pol_section_data)
+        pgit_pol_section_db = premia_models.PolicySection(
+            **pgit_pol_section_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
+        pgit_pol_section_list_db.append(pgit_pol_section_db)
+    return pgit_pol_section_list_db
+
+
+async def premia_risk_list(non_async_oracle_db, pol_sys_id, policy_template_dict, proposal, psec_sys_id, quote_section):
+    quote_risks_list = quote_section.pop("proposalrisks")
+    pgit_pol_risk_addl_info_list_db = []
+    for quote_risk in quote_risks_list:
+        prai_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_prai_sys_id")
+        quote_covers_list = quote_risk.pop("proposalcovers", None)
+
+        pgit_pol_risk_cover_data = merge_lists_by_key("prc_code",
+                                                      policy_template_dict["pgit_pol_risk_cover_template"],
+                                                      quote_covers_list)
+        pgit_pol_risk_cover_list_db = await premia_cover_list(non_async_oracle_db, pgit_pol_risk_cover_data,
+                                                              pol_sys_id, prai_sys_id, proposal, psec_sys_id,
+                                                              quote_section)
+
+        # Motor Risk details
+        pgit_pol_risk_addl_info_data = {
+            **policy_template_dict["pgit_pol_risk_addl_info_template"][0],
+            **quote_risk,
+            "policycover_collection": pgit_pol_risk_cover_list_db,
+            "prai_sys_id": prai_sys_id,
+            "prai_pol_sys_id": pol_sys_id,
+            "prai_psec_sys_id": psec_sys_id,
+            "prai_lvl1_sys_id": prai_sys_id,
+            "prai_eff_fm_dt": proposal["pol_fm_dt"],
+            "prai_eff_to_dt": proposal["pol_to_dt"],
+            "prai_period": 365,  # TODO: Calculate from dates
+            "prai_prod_code": proposal["pol_prod_code"],
+            "prai_dept_code": proposal["pol_dept_code"],
+            "prai_risk_ref_no": quote_risk["prai_risk_id"],
+            "prai_cr_uid": "PORTAL-REG",
+            "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        pgit_pol_risk_addl_info_data_pydantic = PolicyRiskCreate(**pgit_pol_risk_addl_info_data)
+        pgit_pol_risk_addl_info_db = premia_models.PolicyRisk(
+            **pgit_pol_risk_addl_info_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
+        pgit_pol_risk_addl_info_list_db.append(pgit_pol_risk_addl_info_db)
+
+        # Motor Cert Details
+        quote_certs_list = quote_risk.pop("proposalmotorcerts", None)
+        prai_cert_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_prai_sys_id")
+        pgit_pol_risk_cert_info_data = {
+            **policy_template_dict["pgit_pol_risk_cert_info_template"][0],
+            **quote_certs_list[0],
+            "prai_sys_id": prai_cert_sys_id,
+            "prai_pol_sys_id": pol_sys_id,
+            "prai_psec_sys_id": psec_sys_id,
+            "prai_lvl1_sys_id": prai_sys_id,
+            "prai_lvl2_sys_id": prai_cert_sys_id,
+            "prai_eff_fm_dt": proposal["pol_fm_dt"],
+            "prai_eff_to_dt": proposal["pol_to_dt"],
+            "prai_prod_code": proposal["pol_prod_code"],
+            "prai_dept_code": proposal["pol_dept_code"],
+            "prai_period": 365,  # TODO: Calculate from dates
+            # "prai_risk_id": "2",  # TODO: Should be 3.
+            # # "prai_risk_sr_no": 1,  # TODO: Calculate from number of risks. But check
+            "prai_cr_uid": "PORTAL-REG",
+            "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        pgit_pol_risk_cert_info_data_pydantic = PolicyRiskCreate(**pgit_pol_risk_cert_info_data)
+        pgit_pol_risk_cert_info_db = premia_models.PolicyRisk(
+            **pgit_pol_risk_cert_info_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
+        pgit_pol_risk_addl_info_list_db.append(pgit_pol_risk_cert_info_db)
+    return pgit_pol_risk_addl_info_list_db
+
+
+async def premia_cover_list(non_async_oracle_db, pgit_pol_risk_cover_data, pol_sys_id, prai_sys_id, proposal,
+                            psec_sys_id, quote_section):
+    pgit_pol_risk_cover_list_db = []
+    for cover in pgit_pol_risk_cover_data:
+        cover["prc_sys_id"] = premia_services.get_sys_id(non_async_oracle_db, "pgi_prc_sys_id")
+        cover["prc_pol_sys_id"] = pol_sys_id
+        cover["prc_psec_sys_id"] = psec_sys_id
+        cover["prc_sec_code"] = quote_section["psec_sec_code"]
+        cover["prc_lvl1_sys_id"] = prai_sys_id
+        cover["prc_eff_fm_dt"] = proposal["pol_fm_dt"]
+        cover["prc_eff_to_dt"] = proposal["pol_to_dt"]
+        cover["prc_prod_code"] = proposal["pol_prod_code"]
+        cover["prc_dept_code"] = proposal["pol_dept_code"]
+        # cover["prc_peril_class_code"] = "PC-MOT-1002"
+        cover["prc_cr_uid"] = "PORTAL-REG"
+        cover["prc_cr_dt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        pgit_pol_risk_cover_data_pydantic = PolicyCoverCreate(**cover)
+        pgit_pol_risk_cover_list_db.append(premia_models.PolicyCover(
+            **pgit_pol_risk_cover_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)))
+    return pgit_pol_risk_cover_list_db
+
+
+async def premia_curr_list(non_async_oracle_db, pol_sys_id, policy_template_dict, proposal):
+    pgit_pol_appl_curr_list_db = []
+    pac_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pac_sys_id")
+    pgit_pol_appl_curr_data = {
+        # **policy_template_dict["pgit_pol_appl_curr"][0],
+        # **quote_section,
+        "pac_sys_id": pac_sys_id,
+        "pac_pol_sys_id": pol_sys_id,
+        "pac_end_no_idx": 0,
+        "pac_end_sr_no": 0,
+        "pac_curr_code": proposal["pol_prem_curr_code"],
+        "pac_curr_rate_type": "B",
+        "pac_curr_rate_1": 1,
+        "pac_curr_rate_2": 1,
+        "pac_curr_rate_3": 1,
+        "pac_rec_type": "I",
+        "pac_comp_code": "001",
+        "pac_divn_code": "118",
+        "pac_dept_code": proposal["pol_dept_code"],
+        "pac_prod_code": proposal["pol_prod_code"],
+        "pac_ds_type": policy_template_dict['pgit_policy_template']['pol_ds_type'],  # "2",
+        "pac_cr_uid": "PORTAL-REG",
+        "pac_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    pgit_pol_appl_curr_data_pydantic = PolicyCurrencyCreate(**pgit_pol_appl_curr_data)
+    pgit_pol_appl_curr_db = premia_models.PolicyCurrency(
+        **pgit_pol_appl_curr_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
+    pgit_pol_appl_curr_list_db.append(pgit_pol_appl_curr_db)
+    return pgit_pol_appl_curr_list_db
+
+
+async def premia_hypothecation_list(non_async_oracle_db, pol_sys_id, prop, proposal):
+    pgit_pol_hypothecation_list_db = []
+    if proposal["pol_hypothecation_yn"] == "1":
+        phpo_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_phpo_sys_id")
+        pgit_pol_hypothecation_data = {
+            "phpo_sys_id": phpo_sys_id,
+            "phpo_pol_sys_id": pol_sys_id,
+            "phpo_end_no_idx": 0,
+            "phpo_end_sr_no": 0,
+            "phpo_cust_code": prop.prop_hypothecation["prop_bank_cust_code"],
+            "phpo_hypo_type": "2",
+            "phpo_rec_type": "I",
+            "phpo_ds_type": "2",
+            "phpo_cr_uid": "PORTAL-REG",
+            "phpo_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "phpo_bank_name": prop.prop_hypothecation["prop_bank_cust_name"],
+        }
+        pgit_pol_hypothecation_data_pydantic = PolicyHypothecationCreate(**pgit_pol_hypothecation_data)
+        pgit_pol_hypothecation_db = premia_models.PolicyHypothecation(
+            **pgit_pol_hypothecation_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)
+        )
+        pgit_pol_hypothecation_list_db.append(pgit_pol_hypothecation_db)
+    return pgit_pol_hypothecation_list_db
+
+
+async def premia_charge_list(non_async_oracle_db, pol_sys_id, policy_template_dict, proposal):
+    quote_charges_list = proposal.pop("proposalcharges", None)
+    # policy_template_charges_list = pgit_policy_template["charges"]
+    pgit_pol_charge_data = merge_lists_by_key("pchg_code", policy_template_dict["pgit_pol_charge_template"],
+                                              quote_charges_list)
+    pgit_pol_charge_list_db = []
+    for charge in pgit_pol_charge_data:
+        pchg_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pchg_sys_id")
+        charge["pchg_sys_id"] = pchg_sys_id
+        charge["pchg_pol_sys_id"] = pol_sys_id
+        charge["pchg_prod_code"] = proposal["pol_prod_code"]
+        charge["pchg_dept_code"] = proposal["pol_dept_code"]
+        charge["pchg_cr_uid"] = "PORTAL-REG"
+        charge["pchg_cr_dt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        pgit_pol_charge_data_pydantic = PolicyChargeCreate(**charge)
+        pgit_pol_charge_list_db.append(premia_models.PolicyCharge(
+            **pgit_pol_charge_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)))
+    return pgit_pol_charge_list_db
+
+
+async def get_policy_template_dict(async_db, proposal):
+    prop = await quotes_crud.proposal.get_proposal(async_db, proposal["pol_prd_sys_id"])
+    policy_template_charges_list = await masters_crud.product.get_charges_by_product(async_db, prod_code=proposal[
+        "pol_prod_code"])
+    policy_template_sections_list = await masters_crud.product.get_sections_by_product(async_db, prod_code=proposal[
+        "pol_prod_code"])
+    policy_template_all_risks_list = await masters_crud.product.get_risks_by_product(async_db, prod_code=proposal[
+        "pol_prod_code"])
+    policy_template_risks_list = [d for d in policy_template_all_risks_list if d.get('prai_remarks_10') == 'risk']
+    policy_template_certs_list = [d for d in policy_template_all_risks_list if d.get('prai_remarks_10') == 'cert']
+    # policy_template_certs_list = await masters_crud.product.get_risks_by_product(async_db, prod_code='1002', risk_code='motor_cert')
+    policy_template_covers_list = await masters_crud.product.get_covers_by_product(async_db, prod_code=proposal[
+        "pol_prod_code"])
+    pgit_policy_template = await masters_crud.product.get_product(async_db, prod_code=proposal["pol_prod_code"])
+
+    fw_receipt_template = []
+
+    policy_template_dict = {
+        "pgit_policy_template": {k: v for k, v in pgit_policy_template[0].items() if v != ''},
+        "pgit_pol_charge_template": [{k: v for k, v in charge.items() if v != ''} for charge in
+                                     policy_template_charges_list if charge],
+        "pgit_pol_section": [{k: v for k, v in section.items() if v != ''} for section in
+                             policy_template_sections_list if section],
+        "pgit_pol_risk_addl_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in
+                                             policy_template_risks_list if risk],
+        "pgit_pol_risk_cert_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in
+                                             policy_template_certs_list if risk],
+        "pgit_pol_risk_cover_template": [{k: v for k, v in cover.items() if v != ''} for cover in
+                                         policy_template_covers_list if cover]
+    }
+    return policy_template_dict, prop
+
+
+async def create_portal_quote(async_db, payload_in, user):
+    payload_in.quot_assr_id = user.id
     for proposal in payload_in.proposals:
-        for section in proposal.proposalsections:
-            for risk in section.proposalrisks:
-                vehicle_reg_no = risk.prai_flexi["vehicle_reg_no"]["prai_data_03"]
-                vehicle_chassis_no = risk.prai_flexi["vehicle_chassis_no"]["prai_data_01"]
-                vehicle_engine_no = risk.prai_flexi["vehicle_engine_no"]["prai_data_02"]
-                # search_criteria = {"vehicle_reg_no": "KDD 990Z","vehicle_chassis_no": "CHASSIS 001", "vehicle_engine_no": "ENGINE 001"}
-                search_criteria = {
-                    "vehicle_reg_no": vehicle_reg_no,
-                    "vehicle_chassis_no": vehicle_chassis_no,
-                    "vehicle_engine_no": vehicle_engine_no
-                }
-                veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
-                if json.loads(veh_status)["Info"] == "Error":
-                    detail = "Vehicle found in active policy. You cannot proceed"
-                    payload_out = await external_apis_crud.external_payload.update(
-                        async_db, db_obj=payload,
-                        obj_in={"payload_out": {"detail": detail}, "updated_at": datetime.now()}
-                    )
-                    raise HTTPException(status_code=400, detail=detail)
+        proposal.pol_assr_code = user.cust_code
+        proposal.pol_flexi.update({"quot_assr_addr": user.user_flexi["quot_assr_addr"]})
+    # TODO Refactor to use quote services
+    quotation: Quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
+    quote_data = jsonable_encoder(quotation, by_alias=True, exclude_unset=True, exclude_defaults=True, exclude=None,
+                                  exclude_none=True)
+    for proposal in quote_data["proposals"]:
+        proposal["pol_prd_sys_id"] = proposal["prop_sys_id"]
+    policy_quote_data = quote_to_policy(quote_data)
+    return policy_quote_data, quote_data
 
+
+async def sync_assured(async_db, current_user, non_async_oracle_db, payload, payload_in):
     if current_user.cust_cc_code in ['01', '10']:
         if payload_in.quot_assr_email != current_user.email or payload_in.quot_assr_pin != current_user.pin:
             detail = "This customer is only authorised to transact for self"
@@ -238,296 +703,43 @@ async def process_quote(async_db, current_user, non_async_oracle_db, payload_in)
         if user.cust_code is None:
             customer_model = await premia_services.sync_user_to_premia_cust(non_async_oracle_db, user)
             user = await user_services.update_user(async_db, user, {"cust_code": customer_model.cust_code})
-    #################
-    #################
-    payload_in.quot_assr_id = user.id
+    return user
+
+
+async def validate_vehicle(async_db, non_async_oracle_db, payload, payload_in):
     for proposal in payload_in.proposals:
-        proposal.pol_assr_code = user.cust_code
-        proposal.pol_flexi.update({"quot_assr_addr": user.user_flexi["quot_assr_addr"]})
-    # TODO Refactor to use quote services
-    quotation: Quote = await quotes_crud.quote.create_v1(async_db, obj_in=payload_in)
-    quote_data = jsonable_encoder(quotation, by_alias=True, exclude_unset=True, exclude_defaults=True, exclude=None,
-                                  exclude_none=True)
-    for proposal in quote_data["proposals"]:
-        proposal["pol_prd_sys_id"] = proposal["prop_sys_id"]
-    policy_quote_data = quote_to_policy(quote_data)
-    # premia_policy_data = []
-    pgit_policy_list_db = []
-    for proposal in policy_quote_data:
-        prop = await quotes_crud.proposal.get_proposal(async_db, proposal["pol_prd_sys_id"])
-
-        policy_template_charges_list = await masters_crud.product.get_charges_by_product(async_db, prod_code=proposal[
-            "pol_prod_code"])
-        policy_template_sections_list = await masters_crud.product.get_sections_by_product(async_db, prod_code=proposal[
-            "pol_prod_code"])
-        policy_template_all_risks_list = await masters_crud.product.get_risks_by_product(async_db, prod_code=proposal[
-            "pol_prod_code"])
-        policy_template_risks_list = [d for d in policy_template_all_risks_list if d.get('prai_remarks_10') == 'risk']
-        policy_template_certs_list = [d for d in policy_template_all_risks_list if d.get('prai_remarks_10') == 'cert']
-        # policy_template_certs_list = await masters_crud.product.get_risks_by_product(async_db, prod_code='1002', risk_code='motor_cert')
-        policy_template_covers_list = await masters_crud.product.get_covers_by_product(async_db, prod_code=proposal[
-            "pol_prod_code"])
-
-        pgit_policy_template = await masters_crud.product.get_product(async_db, prod_code=proposal["pol_prod_code"])
-
-        policy_template_dict = {
-            "pgit_policy_template": {k: v for k, v in pgit_policy_template[0].items() if v != ''},
-            "pgit_pol_charge_template": [{k: v for k, v in charge.items() if v != ''} for charge in
-                                         policy_template_charges_list if charge],
-            "pgit_pol_section": [{k: v for k, v in section.items() if v != ''} for section in
-                                 policy_template_sections_list if section],
-            "pgit_pol_risk_addl_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in
-                                                 policy_template_risks_list if risk],
-            "pgit_pol_risk_cert_info_template": [{k: v for k, v in risk.items() if v != ''} for risk in
-                                                 policy_template_certs_list if risk],
-            "pgit_pol_risk_cover_template": [{k: v for k, v in cover.items() if v != ''} for cover in
-                                             policy_template_covers_list if cover]
-        }
-
-        pol_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pol_sys_id")
-        quote_charges_list = proposal.pop("proposalcharges", None)
-        # policy_template_charges_list = pgit_policy_template["charges"]
-        pgit_pol_charge_data = merge_lists_by_key("pchg_code", policy_template_dict["pgit_pol_charge_template"],
-                                                  quote_charges_list)
-        pgit_pol_charge_list_db = []
-        for charge in pgit_pol_charge_data:
-            pchg_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pchg_sys_id")
-            charge["pchg_sys_id"] = pchg_sys_id
-            charge["pchg_pol_sys_id"] = pol_sys_id
-            charge["pchg_prod_code"] = proposal["pol_prod_code"]
-            charge["pchg_dept_code"] = proposal["pol_dept_code"]
-            charge["pchg_cr_uid"] = "PORTAL-REG"
-            charge["pchg_cr_dt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            pgit_pol_charge_data_pydantic = PolicyChargeCreate(**charge)
-            pgit_pol_charge_list_db.append(premia_models.PolicyCharge(
-                **pgit_pol_charge_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)))
-
-        pgit_pol_hypothecation_list_db = []
-        if proposal["pol_hypothecation_yn"] == "1":
-            phpo_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_phpo_sys_id")
-            pgit_pol_hypothecation_data = {
-                "phpo_sys_id": phpo_sys_id,
-                "phpo_pol_sys_id": pol_sys_id,
-                "phpo_end_no_idx": 0,
-                "phpo_end_sr_no": 0,
-                "phpo_cust_code": prop.prop_hypothecation["prop_bank_cust_code"],
-                "phpo_hypo_type": "2",
-                "phpo_rec_type": "I",
-                "phpo_ds_type": "2",
-                "phpo_cr_uid": "PORTAL-REG",
-                "phpo_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "phpo_bank_name": prop.prop_hypothecation["prop_bank_cust_name"],
-            }
-            pgit_pol_hypothecation_data_pydantic = PolicyHypothecationCreate(**pgit_pol_hypothecation_data)
-            pgit_pol_hypothecation_db = premia_models.PolicyHypothecation(
-                **pgit_pol_hypothecation_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)
-            )
-            pgit_pol_hypothecation_list_db.append(pgit_pol_hypothecation_db)
-
-        pgit_pol_appl_curr_list_db = []
-        pac_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_pac_sys_id")
-        pgit_pol_appl_curr_data = {
-            # **policy_template_dict["pgit_pol_appl_curr"][0],
-            # **quote_section,
-            "pac_sys_id": pac_sys_id,
-            "pac_pol_sys_id": pol_sys_id,
-            "pac_end_no_idx": 0,
-            "pac_end_sr_no": 0,
-            "pac_curr_code": proposal["pol_prem_curr_code"],
-            "pac_curr_rate_type": "B",
-            "pac_curr_rate_1": 1,
-            "pac_curr_rate_2": 1,
-            "pac_curr_rate_3": 1,
-            "pac_rec_type": "I",
-            "pac_comp_code": "001",
-            "pac_divn_code": "118",
-            "pac_dept_code": proposal["pol_dept_code"],
-            "pac_prod_code": proposal["pol_prod_code"],
-            "pac_ds_type": policy_template_dict['pgit_policy_template']['pol_ds_type'],  # "2",
-            "pac_cr_uid": "PORTAL-REG",
-            "pac_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        pgit_pol_appl_curr_data_pydantic = PolicyCurrencyCreate(**pgit_pol_appl_curr_data)
-        pgit_pol_appl_curr_db = premia_models.PolicyCurrency(
-            **pgit_pol_appl_curr_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
-        pgit_pol_appl_curr_list_db.append(pgit_pol_appl_curr_db)
-
-        quote_sections_list = proposal.pop("proposalsections", None)
-        pgit_pol_section_list_db = []
-        for quote_section in quote_sections_list:
-            psec_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_psec_sys_id")
-            quote_risks_list = quote_section.pop("proposalrisks")
-            pgit_pol_risk_addl_info_list_db = []
-            for quote_risk in quote_risks_list:
-                prai_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_prai_sys_id")
-                quote_covers_list = quote_risk.pop("proposalcovers", None)
-
-                pgit_pol_risk_cover_data = merge_lists_by_key("prc_code",
-                                                              policy_template_dict["pgit_pol_risk_cover_template"],
-                                                              quote_covers_list)
-                pgit_pol_risk_cover_list_db = []
-                for cover in pgit_pol_risk_cover_data:
-                    cover["prc_sys_id"] = premia_services.get_sys_id(non_async_oracle_db, "pgi_prc_sys_id")
-                    cover["prc_pol_sys_id"] = pol_sys_id
-                    cover["prc_psec_sys_id"] = psec_sys_id
-                    cover["prc_sec_code"] = quote_section["psec_sec_code"]
-                    cover["prc_lvl1_sys_id"] = prai_sys_id
-                    cover["prc_eff_fm_dt"] = proposal["pol_fm_dt"]
-                    cover["prc_eff_to_dt"] = proposal["pol_to_dt"]
-                    cover["prc_prod_code"] = proposal["pol_prod_code"]
-                    cover["prc_dept_code"] = proposal["pol_dept_code"]
-                    # cover["prc_peril_class_code"] = "PC-MOT-1002"
-                    cover["prc_cr_uid"] = "PORTAL-REG"
-                    cover["prc_cr_dt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    pgit_pol_risk_cover_data_pydantic = PolicyCoverCreate(**cover)
-                    pgit_pol_risk_cover_list_db.append(premia_models.PolicyCover(
-                        **pgit_pol_risk_cover_data_pydantic.model_dump(exclude_none=True, exclude_unset=True)))
-
-                # Motor Risk details
-                pgit_pol_risk_addl_info_data = {
-                    **policy_template_dict["pgit_pol_risk_addl_info_template"][0],
-                    **quote_risk,
-                    "policycover_collection": pgit_pol_risk_cover_list_db,
-                    "prai_sys_id": prai_sys_id,
-                    "prai_pol_sys_id": pol_sys_id,
-                    "prai_psec_sys_id": psec_sys_id,
-                    "prai_lvl1_sys_id": prai_sys_id,
-                    "prai_eff_fm_dt": proposal["pol_fm_dt"],
-                    "prai_eff_to_dt": proposal["pol_to_dt"],
-                    "prai_period": 365,  # TODO: Calculate from dates
-                    "prai_prod_code": proposal["pol_prod_code"],
-                    "prai_dept_code": proposal["pol_dept_code"],
-                    "prai_risk_ref_no": quote_risk["prai_risk_id"],
-                    "prai_cr_uid": "PORTAL-REG",
-                    "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        for section in proposal.proposalsections:
+            for risk in section.proposalrisks:
+                vehicle_reg_no = risk.prai_flexi["vehicle_reg_no"]["prai_data_03"]
+                vehicle_chassis_no = risk.prai_flexi["vehicle_chassis_no"]["prai_data_01"]
+                vehicle_engine_no = risk.prai_flexi["vehicle_engine_no"]["prai_data_02"]
+                # search_criteria = {"vehicle_reg_no": "KDD 990Z","vehicle_chassis_no": "CHASSIS 001", "vehicle_engine_no": "ENGINE 001"}
+                search_criteria = {
+                    "vehicle_reg_no": vehicle_reg_no,
+                    "vehicle_chassis_no": vehicle_chassis_no,
+                    "vehicle_engine_no": vehicle_engine_no
                 }
-                pgit_pol_risk_addl_info_data_pydantic = PolicyRiskCreate(**pgit_pol_risk_addl_info_data)
-                pgit_pol_risk_addl_info_db = premia_models.PolicyRisk(
-                    **pgit_pol_risk_addl_info_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
-                pgit_pol_risk_addl_info_list_db.append(pgit_pol_risk_addl_info_db)
+                veh_status = premia_services.validate_vehicle_json(non_async_oracle_db, search_criteria)
+                if json.loads(veh_status)["Info"] == "Error":
+                    detail = "Vehicle found in active policy. You cannot proceed"
+                    payload_out = await external_apis_crud.external_payload.update(
+                        async_db, db_obj=payload,
+                        obj_in={"payload_out": {"detail": detail}, "updated_at": datetime.now()}
+                    )
+                    raise HTTPException(status_code=400, detail=detail)
 
-                # Motor Cert Details
-                quote_certs_list = quote_risk.pop("proposalmotorcerts", None)
-                prai_cert_sys_id = premia_services.get_sys_id(non_async_oracle_db, "pgi_prai_sys_id")
-                pgit_pol_risk_cert_info_data = {
-                    **policy_template_dict["pgit_pol_risk_cert_info_template"][0],
-                    **quote_certs_list[0],
-                    "prai_sys_id": prai_cert_sys_id,
-                    "prai_pol_sys_id": pol_sys_id,
-                    "prai_psec_sys_id": psec_sys_id,
-                    "prai_lvl1_sys_id": prai_sys_id,
-                    "prai_lvl2_sys_id": prai_cert_sys_id,
-                    "prai_eff_fm_dt": proposal["pol_fm_dt"],
-                    "prai_eff_to_dt": proposal["pol_to_dt"],
-                    "prai_prod_code": proposal["pol_prod_code"],
-                    "prai_dept_code": proposal["pol_dept_code"],
-                    "prai_period": 365,  # TODO: Calculate from dates
-                    # "prai_risk_id": "2",  # TODO: Should be 3.
-                    # # "prai_risk_sr_no": 1,  # TODO: Calculate from number of risks. But check
-                    "prai_cr_uid": "PORTAL-REG",
-                    "prai_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-                pgit_pol_risk_cert_info_data_pydantic = PolicyRiskCreate(**pgit_pol_risk_cert_info_data)
-                pgit_pol_risk_cert_info_db = premia_models.PolicyRisk(
-                    **pgit_pol_risk_cert_info_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
-                pgit_pol_risk_addl_info_list_db.append(pgit_pol_risk_cert_info_db)
 
-            pgit_pol_section_data = {
-                **policy_template_dict["pgit_pol_section"][0],
-                **quote_section,
-                "policyrisk_collection": pgit_pol_risk_addl_info_list_db,
-                "psec_sys_id": psec_sys_id,
-                "psec_pol_sys_id": pol_sys_id,
-                "psec_eff_fm_dt": proposal["pol_fm_dt"],
-                "psec_eff_to_dt": proposal["pol_to_dt"],
-                "psec_prod_code": proposal["pol_prod_code"],
-                "psec_dept_code": proposal["pol_dept_code"],
-                "psec_cr_uid": "PORTAL-REG",
-                "psec_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-            pgit_pol_section_data_pydantic = PolicySectionCreate(**pgit_pol_section_data)
-            pgit_pol_section_db = premia_models.PolicySection(
-                **pgit_pol_section_data_pydantic.model_dump(exclude_none=True, exclude_unset=True))
-            pgit_pol_section_list_db.append(pgit_pol_section_db)
-
-        pgit_policy_data = {
-            **policy_template_dict["pgit_policy_template"],
-            **proposal,
-            "policycharge_collection": pgit_pol_charge_list_db,
-            "policysection_collection": pgit_pol_section_list_db,
-            "policycurrency_collection": pgit_pol_appl_curr_list_db,
-            "policyhypothecation_collection": pgit_pol_hypothecation_list_db,
-            "pol_sys_id": pol_sys_id,
-            "pol_no": str(pol_sys_id),
-            "pol_uw_year": datetime.fromisoformat(proposal["pol_fm_dt"]).year,  #datetime.now().year,
-            "pol_cal_yr": datetime.now().year,
-            "pol_cust_code": current_user.cust_code,
-            # "pol_src_code": proposal["pol_cust_code"], # current_user.cust_code,
-            "pol_src_type": "1" if current_user.cust_cc_code in ['01', '10'] else "2",
-            "pol_src_code": "" if current_user.cust_cc_code in ['01', '10'] else current_user.cust_code,
-            "pol_assr_name": quote_data["quot_assr_name"],
-            "pol_issue_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "pol_period": 365,  # TODO: Calculate based on the period
-            "pol_no_risk": 1,  # TODO: Calculate from number of risks
-            "pol_no_section": 1,  # TODO: Calculate from number of sections
-            "pol_city": "NAIROBI",  # TODO: Get from quote
-            "pol_civil_id": quote_data["quot_assr_pin"],
-            "pol_ref_no": quote_data["quot_assr_nic"],
-            "pol_email_id": quote_data["quot_assr_email"],
-            "pol_quot_recvd_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "pol_cr_uid": "PORTAL-REG",
-            "pol_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        pgit_policy_data_pydantic = PolicyCreate(**pgit_policy_data)
-        pgit_policy_db = premia_models.Policy(**pgit_policy_data)
-        pgit_policy_list_db.append(pgit_policy_db)
-
-        policy = premia_services.create_policy(non_async_oracle_db, pgit_policy_data_pydantic)
-        policy_process_json = premia_services.policy_process_json(non_async_oracle_db, policy)
-        policy = premia_services.get_policy(non_async_oracle_db, policy)
-        policy_process_dict = json.loads(policy_process_json)
-        r_sys_id = premia_services.get_sys_id(non_async_oracle_db, "jaz_r_sys_id")
-        fw_receipt_stage_data = {
-            "r_sys_id": r_sys_id,
-            "r_comp_code": "001",
-            "r_tran_code": "RVCGP100",
-            "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),  # "%Y-%m-%d %H:%M:%S"
-            "r_divn_code": "",
-            "r_dept_code": "",  # TODO: Get from quote
-            "r_rcpt_option": "1",
-            "r_rcpt_mode": "M-pesa",
-            "r_rcvd_from": "2",
-            "r_party_code": current_user.cust_code,
-            "r_curr_code": "KES",
-            "r_fc_amt": quote_data["quot_paymt_amt"],
-            "r_lc_amt": quote_data["quot_paymt_amt"],
-            "r_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
-            "r_cust_ref": quote_data["quot_paymt_ref"],
-            "r_our_ref": quote_data["quot_paymt_ref"],
-            "r_bank_code": "",
-            "r_bank_acnt_no": "",
-            "r_chq_no": quote_data["quot_paymt_ref"],
-            "r_chq_dt": quote_data["quot_paymt_date"],
-            "r_o_main_acnt_code": "151011",
-            "r_o_sub_acnt_code": current_user.cust_code,
-            "r_o_remarks": policy_process_dict["PR_POL_CONFIRM"]["P_POL_NO"],
-            "r_o_fc_amt": quote_data["quot_paymt_amt"],
-            "r_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "r_cr_uid": "PORTAL-REG"
-        }
-        fw_receipt_data_pydantic = ReceiptStagingCreate(**fw_receipt_stage_data)
-        receipt_stage = premia_services.create_receipt_stage(non_async_oracle_db, fw_receipt_data_pydantic)
-        receipt_process_json = premia_services.receipt_process_json(non_async_oracle_db, receipt_stage)
-        receipt_process_dict = json.loads(receipt_process_json)
-        policy_process_dict['AUTO_RECEIPT'] = receipt_process_dict  # {"RCPT_NO": "RVCGP100-2024000161"}  #
-    # TODO: Approve policy, Close RI
-    # TODO: Return policy details and update quote
-    # policy_process_dict = json.loads(policy_process_json)
-        payload_out = await external_apis_crud.external_payload.update(
-            async_db, db_obj=payload,
-            obj_in={"payload_out": policy_process_dict, "updated_at": datetime.now()}
-        )
-    return policy_process_dict
+async def log_payload_in(async_db, payload_in):
+    data = {
+        "external_party": "jazk-web",
+        "transaction_type": "Quote",
+        "notification": "json",
+        "payload": jsonable_encoder(payload_in.model_dump(exclude_unset=True))
+    }
+    payload = await external_apis_crud.external_payload.create_v2(
+        async_db, obj_in=data
+    )
+    return payload
 
 
 def merge_lists_by_key(unique_key: str, dest_list: list[dict[str, Any]], update_list: list[dict[str, Any]]) -> list[
@@ -640,6 +852,8 @@ def quote_to_policy(data):
         for charge in proposal["proposalcharges"]:
             charge_valid = validate_prefix(charge, charge_prefixes)
             proposal_valid['proposalcharges'].append(charge_valid)
+
+        proposal_valid['proposalpremiums'] = proposal['proposalpremiums']
 
         transformed.append(proposal_valid)
 

@@ -166,6 +166,11 @@ def approve_policy(non_async_oracle_db: Session, pol_no: str) -> str:
     return pol_no
 
 
+def run_proc_by_sys_id(non_async_oracle_db: Session, proc: str, sys_id: int) -> str:
+    pol_no = premia_crud.policy.run_proc_by_sys_id(non_async_oracle_db, proc, sys_id)
+    return pol_no
+
+
 def run_report(non_async_oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
     rpt = premia_crud.policy.run_report(non_async_oracle_db, report_params)
     return rpt

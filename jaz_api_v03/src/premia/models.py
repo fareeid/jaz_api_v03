@@ -40,16 +40,12 @@ class DocNumberRange(OrclBase):
     dnr_curr_no: Mapped[int] = mapped_column()
 
 
-class ReceiptStaging(OrclBase):
-    __tablename__ = "fw_receipt"
-    r_sys_id: Mapped[int] = mapped_column(primary_key=True)
-
-
 class Policy(OrclBase):  # type: ignore
     __tablename__ = "pgit_policy"
     pol_sys_id: Mapped[int] = mapped_column(primary_key=True)
     pol_end_no_idx: Mapped[int] = mapped_column(primary_key=True)
     pol_end_sr_no: Mapped[int] = mapped_column(primary_key=True)
+    pol_no: Mapped[str] = mapped_column(nullable=False)
 
     # Relation to PolicySection - down
     policysection_collection: Mapped[list["PolicySection"]] = relationship(
@@ -96,13 +92,39 @@ class Policy(OrclBase):  # type: ignore
         lazy="subquery",
     )
 
-    # Relation to PolicyPremium - down
+    # Relation to PolicyAcntDoc - down
     policyacntdoc_collection: Mapped[list["PolicyAcntDoc"]] = relationship(
         back_populates="policy",
         primaryjoin="and_(Policy.pol_sys_id==PolicyAcntDoc.ad_pol_sys_id, Policy.pol_end_no_idx==PolicyAcntDoc.ad_end_no_idx, Policy.pol_end_sr_no==PolicyAcntDoc.ad_end_sr_no)",
         # noqa: E501
         cascade="all, delete-orphan",
         lazy="subquery",
+    )
+
+    # Relation to ReceiptStaging - down
+    receiptstaging_collection: Mapped[list["ReceiptStaging"]] = relationship(
+        back_populates="policy",
+        primaryjoin="and_(Policy.pol_no==ReceiptStaging.r_remarks)",
+        # noqa: E501
+        cascade="all, delete-orphan",
+        lazy="subquery",
+    )
+
+
+class ReceiptStaging(OrclBase):
+    __tablename__ = "fw_receipt"
+    r_sys_id: Mapped[int] = mapped_column(primary_key=True)
+    r_remarks: Mapped[str] = mapped_column(nullable=True)
+
+    # Relation to Policy - up
+    ForeignKeyConstraint(
+        [r_remarks],
+        [
+            Policy.pol_no,
+        ],
+    )
+    policy: Mapped["Policy"] = relationship(
+        back_populates="receiptstaging_collection",
     )
 
 

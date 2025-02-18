@@ -111,6 +111,13 @@ class Policy(OrclBase):  # type: ignore
     )
 
 
+class OutstandingDebits(OrclBase):
+    __tablename__ = "jaz_debits_os_temp"
+    ost_tran_code_doc_no: Mapped[str] = mapped_column(primary_key=True)
+    ost_pol_no: Mapped[str] = mapped_column(nullable=True)
+
+
+
 class ReceiptStaging(OrclBase):
     __tablename__ = "fw_receipt"
     r_sys_id: Mapped[int] = mapped_column(primary_key=True)

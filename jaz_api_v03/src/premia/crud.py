@@ -130,6 +130,27 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
 
         return p_json.getvalue()
 
+    def validate_paymt_ref(self, oracle_db: Session, search_criteria: dict[str, str]) -> str:
+        cursor = oracle_db.connection().connection.cursor()
+        p_output_cursor = oracle_db.connection().connection.cursor()
+
+        cursor.callproc('JICK_UTILS_V2.P_VALIDATE_PAYMT_REF', [
+            search_criteria["paymt_ref"],
+            p_output_cursor
+        ])
+        oracle_db.commit()
+        rows = p_output_cursor.fetchall()
+        # Fetch column names from cursor description
+        column_names = [col[0] for col in p_output_cursor.description]
+        # Convert rows to a list of dictionaries (JSON-like structure)
+        json_result = [dict(zip(column_names, row)) for row in rows]
+        p_output_cursor.close()
+        # if not json_result[0]["STATUS"].startswith("ORA-0000"):
+        #     return json_result
+        # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
+        return json_result
+        return p_json.getvalue()
+
     def endt_request_depr(self, oracle_db: Session, endt_init_payload: endt_schemas.EndorsementRequestBase) -> None:
         cursor = oracle_db.connection().connection.cursor()
         # p_ref_number = oracle_db.execute(text('SELECT PGI_INF_FLEX_SYS_ID.NEXTVAL FROM dual')).first()[0]
@@ -177,7 +198,7 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
         column_names = [col[0] for col in p_output_cursor.description]
         json_result = [dict(zip(column_names, row)) for row in rows]
         oracle_db.commit()
-        if not json_result[0]["STATUS"].startswith("ORA-0000"):
+        if not json_result[0]["STATUS"] == 'SUCCESS':
             return json_result
 
         # cursor.callproc('JICK_UTILS_V2.P_CALC_PREMIUM', [
@@ -185,21 +206,21 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
         #     p_prem_success,
         #     p_inst_success
         # ])
-
-        cursor.callproc('JICK_UTILS_V2.P_CALC_PREMIUM', [
-            endt_init_payload.policy_no,
-            p_output_cursor
-        ])
-        oracle_db.commit()
-
-        rows = p_output_cursor.fetchall()
-        # Fetch column names from cursor description
-        column_names = [col[0] for col in p_output_cursor.description]
-        # Convert rows to a list of dictionaries (JSON-like structure)
-        json_result = [dict(zip(column_names, row)) for row in rows]
-        p_output_cursor.close()
-        if not json_result[0]["STATUS"].startswith("ORA-0000"):
-            return json_result
+        # cursor = oracle_db.connection().connection.cursor()
+        # cursor.callproc('JICK_UTILS_V2.P_CALC_PREMIUM', [
+        #     json_result[0]["POL_SYS_ID"],
+        #     p_output_cursor
+        # ])
+        # oracle_db.commit()
+        #
+        # rows = p_output_cursor.fetchall()
+        # # Fetch column names from cursor description
+        # column_names = [col[0] for col in p_output_cursor.description]
+        # # Convert rows to a list of dictionaries (JSON-like structure)
+        # json_result = [dict(zip(column_names, row)) for row in rows]
+        # p_output_cursor.close()
+        # if not json_result[0]["STATUS"] == 'SUCCESS':
+        #     return json_result
         # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
         return json_result
 
@@ -268,7 +289,6 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
         #     return json_result
         # return json.dumps(json_result, indent=4, cls=DateTimeEncoder)
         return json_result
-
 
     def run_report(self, oracle_db: Session, report_params: report_schemas.ReportParams) -> str:
         cursor = oracle_db.connection().connection.cursor()

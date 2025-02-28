@@ -154,3 +154,16 @@ Traceback (most recent call last):
   File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\events.py", line 80, in _run
     self._context.run(self._callback, *self._args)
 RuntimeError: Cannot enter into task <Task pending name='Task-1' coro=<Server.serve() running at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\uvicorn\server.py:81> wait_for=<Future finished result=None> cb=[_run_until_complete_cb() at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\asyncio\base_events.py:180, WorkerThread.stop()]> while another task <Task pending name='Task-4' coro=<RequestResponseCycle.run_asgi() running at C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py:426> cb=[set.discard()]> is being executed.
+2025-02-21 16:24:04,222 Error closing cursor
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\engine\base.py", line 2199, in _safe_close_cursor
+    cursor.close()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\cursor.py", line 241, in close
+    self._verify_open()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\cursor.py", line 147, in _verify_open
+    self.connection._verify_connected()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\connection.py", line 84, in _verify_connected
+    errors._raise_err(errors.ERR_NOT_CONNECTED)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\errors.py", line 182, in _raise_err
+    raise error.exc_type(error) from cause
+oracledb.exceptions.InterfaceError: DPY-1001: not connected to database

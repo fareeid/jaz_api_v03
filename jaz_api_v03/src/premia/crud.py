@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import oracledb
 from sqlalchemy import select, text, or_, func, and_
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from . import models as premia_models, schemas as premia_schemas
 from . import schemas as query_schemas
@@ -310,14 +310,30 @@ class CRUDPolicy(CRUDBase[premia_models.Policy, premia_models.PolicyBase, premia
     def query_policy(self, oracle_db: Session, search_criteria: dict[str, str]) -> list[premia_models.Policy]:
         stmt = (
             select(premia_models.Policy)
-            .options(
-                joinedload(premia_models.Policy.policycharge_collection),
-                joinedload(premia_models.Policy.policysection_collection)
-                .joinedload(premia_models.PolicySection.policyrisk_collection)
-                .joinedload(premia_models.PolicyRisk.policycover_collection)
-            )
-            .where(premia_models.Policy.pol_no == search_criteria["pol_no"])
+            .join(premia_models.Policy.policysection_collection)  # Join Policy -> PolicySection
+            .join(premia_models.PolicySection.policyrisk_collection)  # Join PolicySection -> PolicyRisk
+            # .options(
+            #     joinedload(premia_models.Policy.policycharge_collection),
+            #     joinedload(premia_models.Policy.policysection_collection)
+            #     .joinedload(premia_models.PolicySection.policyrisk_collection)
+            #     .joinedload(premia_models.PolicyRisk.policycover_collection)
+            # )
+            # .where(or_(
+            #     premia_models.Policy.pol_no == search_criteria["pol_no"],
+            #     premia_models.PolicyRisk.prai_data_01 == search_criteria["reg_no"]
+            # ))
         )
+        # Dynamically build the WHERE clause
+        filters = []
+        if "pol_no" in search_criteria and search_criteria["pol_no"]:
+            filters.append(premia_models.Policy.pol_no == search_criteria["pol_no"])
+        if "vehicle_reg_no" in search_criteria and search_criteria["vehicle_reg_no"]:
+            filters.append(premia_models.PolicyRisk.prai_data_03 == search_criteria["vehicle_reg_no"])
+
+        # Apply filters only if criteria exist
+        if filters:
+            stmt = stmt.where(or_(*filters))
+
         result = oracle_db.execute(stmt)
         pol_list = result.unique().scalars().all()
         policy_list = [query_schemas.PolicyQuerySchema.model_validate(pol_instance) for pol_instance in pol_list]

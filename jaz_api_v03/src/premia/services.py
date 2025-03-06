@@ -151,6 +151,11 @@ def validate_vehicle_json(non_async_oracle_db: Session, search_criteria: dict[st
     return info
 
 
+def validate_paymt_ref(non_async_oracle_db: Session, search_criteria: dict[str, str]) -> str:
+    info = premia_crud.policy.validate_paymt_ref(non_async_oracle_db, search_criteria)
+    return info
+
+
 def query_policy(non_async_oracle_db: Session, search_criteria: dict[str, str]) -> str:
     pol = premia_crud.policy.query_policy(non_async_oracle_db, search_criteria)
     return pol

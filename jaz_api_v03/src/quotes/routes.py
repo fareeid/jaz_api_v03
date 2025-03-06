@@ -1,7 +1,7 @@
 import json
 from base64 import b64decode, b64encode
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Union
 
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
@@ -59,6 +59,19 @@ async def check_veh_status(
     return json.loads(veh_status)
 
 
+@router.post("/validate_paymt_ref", response_model=Union[dict[str, Any], None])
+async def validate_paymt_ref(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        non_async_oracle_db: Session = Depends(get_non_async_oracle_session),  # Real Premia
+        search_criteria: dict[str, Any],
+        current_user: user_models.User = Depends(auth_dependencies.get_current_user),
+) -> Any:
+    # rcpt_status = premia_services.validate_rcpt(non_async_oracle_db, search_criteria)
+    paymt_ref_status = await validate_single_paymt_ref(non_async_oracle_db, search_criteria)
+    return next(iter(paymt_ref_status), None)  # rcpt_status[0] if rcpt_status else None
+
+
 @router.post("/validate_assr", response_model=user_schemas.UserBaseDisplay)  # dict[str, Any]
 async def validate_assr(
         *,
@@ -70,6 +83,14 @@ async def validate_assr(
     # Normalize current_user attributes, default to empty strings if None
     assr = await validate_assured(async_db, non_async_oracle_db, current_user, assr_in)
     return assr
+
+
+async def validate_single_paymt_ref(non_async_oracle_db, search_criteria):
+    rcpt_status = premia_services.validate_paymt_ref(non_async_oracle_db, search_criteria)
+    if next(iter(rcpt_status), None) is not None:
+        raise HTTPException(status_code=400,
+                            detail=f"Receipt reference {search_criteria['paymt_ref']} is utilized. If you do not agree, please forward to support team for validation.")
+    return rcpt_status
 
 
 async def validate_assured(async_db, non_async_oracle_db, current_user, assr_in):
@@ -170,7 +191,7 @@ async def submit_quote(
     return pol_no_list
 
 
-@router.post("/calc_quote", response_model=dict[str, Any])  # schemas.Quote
+@router.post("/calc_quote", response_model=list[PolicyQuerySchema])  # schemas.Quote dict[str, Any]
 async def calc_quote(
         *,
         async_db: AsyncSession = Depends(get_session),
@@ -182,9 +203,11 @@ async def calc_quote(
     calc_status = \
         premia_services.run_proc_by_sys_id(non_async_oracle_db, 'JICK_UTILS_V2.P_CALC_PREMIUM',
                                            policy_quote.pol_sys_id)[0]
+
+    pol_instance = premia_services.query_policy(non_async_oracle_db, {"pol_no": policy_quote.pol_no})
     # if calc_status["STATUS"] == "SUCCESS":
     #     policy_schema.pol_no = policy["POL_NO"]
-    return calc_status
+    return pol_instance  # calc_status
 
 
 @router.post("/approve_policy", response_model=list[dict[str, Any]])  # PolicyQuerySchema
@@ -207,6 +230,8 @@ async def approve_policy(
 
 async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
     payload = await log_payload_in(async_db, payload_in)
+
+    await validate_payload_paymt_refs(non_async_oracle_db, payload_in)
 
     await validate_vehicle(async_db, non_async_oracle_db, payload, payload_in)
 
@@ -253,7 +278,8 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
                         "r_sys_id": r_sys_id,
                         "r_comp_code": "001",
                         "r_tran_code": "RVCGP100",
-                        "r_doc_dt": (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),
+                        "r_doc_dt": datetime.now().strftime("%Y-%m-%d 00:00:00"),
+                        # (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d 00:00:00"),
                         # "%Y-%m-%d %H:%M:%S"
                         "r_divn_code": "",
                         "r_dept_code": "",  # TODO: Get from quote
@@ -264,8 +290,8 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
                         "r_curr_code": "KES",
                         "r_fc_amt": installment["paymt_amt"],
                         "r_lc_amt": installment["paymt_amt"],
-                        "r_remarks": policy["POL_NO"],
-                        "r_cust_ref": installment["paymt_ref"],
+                        "r_remarks": installment["paymt_ref"],  # policy["POL_NO"],
+                        "r_cust_ref": policy["POL_NO"],  # installment["paymt_ref"],
                         "r_our_ref": installment["paymt_ref"],
                         "r_bank_code": "",
                         "r_bank_acnt_no": "",
@@ -273,7 +299,7 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
                         "r_chq_dt": installment["paymt_dt"],
                         "r_o_main_acnt_code": "151011",
                         "r_o_sub_acnt_code": current_user.cust_code,
-                        "r_o_remarks": policy["POL_NO"],
+                        "r_o_remarks": policy_schema.pol_assr_name,  # policy["POL_NO"],
                         "r_o_fc_amt": installment["paymt_amt"],
                         "r_cr_dt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "r_cr_uid": "PORTAL-REG"
@@ -287,6 +313,18 @@ async def save_quote(async_db, current_user, non_async_oracle_db, payload_in):
             policy_schema.new_rcpt_list = new_rcpt_list
         policy_list.append(policy_schema)
     return policy_list
+
+
+async def validate_payload_paymt_refs(non_async_oracle_db, payload_in):
+    payment_refs = set()
+    # Get from proposals
+    for proposal in payload_in.proposals:
+        # Get from installments
+        for premium in proposal.proposalpremiums:
+            for installment in premium.proposalinstallments:
+                if installment.paymt_ref:
+                    payment_refs.add(installment.paymt_ref)
+                    await validate_single_paymt_ref(non_async_oracle_db, {"paymt_ref": installment.paymt_ref})
 
 
 async def process_quote(async_db, current_user, non_async_oracle_db, payload_in):

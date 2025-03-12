@@ -167,3 +167,16 @@ Traceback (most recent call last):
   File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\errors.py", line 182, in _raise_err
     raise error.exc_type(error) from cause
 oracledb.exceptions.InterfaceError: DPY-1001: not connected to database
+2025-03-04 16:18:33,990 Error closing cursor
+Traceback (most recent call last):
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\sqlalchemy\engine\base.py", line 2199, in _safe_close_cursor
+    cursor.close()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\cursor.py", line 241, in close
+    self._verify_open()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\cursor.py", line 147, in _verify_open
+    self.connection._verify_connected()
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\connection.py", line 84, in _verify_connected
+    errors._raise_err(errors.ERR_NOT_CONNECTED)
+  File "C:\Users\mathew.kimweli.JUBILEE\.conda\envs\jaz_api_v03\Lib\site-packages\oracledb\errors.py", line 182, in _raise_err
+    raise error.exc_type(error) from cause
+oracledb.exceptions.InterfaceError: DPY-1001: not connected to database

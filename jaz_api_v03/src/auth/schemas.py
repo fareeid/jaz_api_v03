@@ -4,7 +4,15 @@ from typing import Union, Any
 from pydantic import BaseModel, EmailStr, ConfigDict, model_validator
 
 
+class AgentFilterCriteria(BaseModel):
+    skip: int = 0
+    limit: int = 100
+    cust_code: Union[list[str], None] = None
+    cust_cc_code: Union[list[str], None] = None
+
+
 class UserBaseDisplay(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: Union[int | None] = None
     first_name: Union[str | None] = None
     last_name: Union[str | None] = None

@@ -81,6 +81,9 @@ async def validate_assr(
         current_user: user_models.User = Depends(auth_dependencies.get_current_user),
 ) -> Any:
     # Normalize current_user attributes, default to empty strings if None
+    if not assr_in.lic_no and not assr_in.nic:
+        raise HTTPException(status_code=400,
+                            detail="You must supply either License No or ID No")
     assr = await validate_assured(async_db, non_async_oracle_db, current_user, assr_in)
     return assr
 

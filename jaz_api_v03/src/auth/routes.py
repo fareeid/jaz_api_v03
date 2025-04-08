@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, Body, Path
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -62,7 +63,8 @@ async def register_agent(
         if len(user_list) > 0:
             # return {"detail": "Assured is invalid"}
             cust_code_list = ", ".join([str(user.cust_code) for user in user_list])
-            raise HTTPException(status_code=400, detail=f"These details already exist. Please forward to support team for validation")
+            raise HTTPException(status_code=400,
+                                detail=f"These details already exist. Please forward to support team for validation")
 
         premia_cust_search_criteria = {"cust_code": agent_in.cust_code, "cust_email1": agent_in.email,
                                        "cust_mobile_no": agent_in.phone}
@@ -175,7 +177,7 @@ async def create_user(
                                                      "nic",
                                                      "dob",
                                                      "gender",
-                                                     "user_flexi",})}
+                                                     "user_flexi", })}
 
     return return_dict
 
@@ -288,6 +290,27 @@ async def login_access_token(
         ),
         "token_type": "bearer",
     }
+
+
+@router.post("/user_list", response_model=list[schemas.UserBaseDisplay])
+async def user_list(
+        *,
+        async_db: AsyncSession = Depends(get_session),
+        search_criteria: schemas.AgentFilterCriteria,
+        current_user: models.User = Depends(dependencies.get_current_user),
+) -> Any:
+    stmt = select(models.User)
+
+    if search_criteria.cust_cc_code:
+        stmt = stmt.where(models.User.cust_cc_code.in_(search_criteria.cust_cc_code))
+    else:
+        raise HTTPException(status_code=400, detail="Provide at least one Customer category")
+
+    if search_criteria.cust_code:
+        stmt = stmt.where(models.User.cust_code.in_(search_criteria.cust_code))
+    result = await async_db.execute(stmt.offset(search_criteria.skip).limit(search_criteria.limit))
+    users = result.scalars().all()
+    return [schemas.UserBaseDisplay.model_validate(user) for user in users]
 
 
 @router.post("/login/test-token", response_model=schemas.User)
